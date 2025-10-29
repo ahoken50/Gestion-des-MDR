@@ -1,0 +1,5 @@
+{
+  "name": "Gestion d'Inventaire et Cueillette",
+  "description": "Une application pour gérer l'inventaire des contenants et créer des demandes de cueillette pour les matières résiduelles. Elle permet de suivre les quantités, de générer des formulaires de demande en PDF, et de conserver un historique des cueillettes.",
+  "requestFramePermissions": []
+}
