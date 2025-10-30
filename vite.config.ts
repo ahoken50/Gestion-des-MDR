@@ -16,6 +16,18 @@ export default defineConfig(({ mode }) => {
         assetsDir: 'assets',
         sourcemap: true,
       },
+      base: '/Gestion-des-MDR/',
+      build: {
+        outDir: 'dist',
+        assetsDir: 'assets',
+        sourcemap: true,
+      },
+      base: '/Gestion-des-MDR/',
+      build: {
+        outDir: 'dist',
+        assetsDir: 'assets',
+        sourcemap: true,
+      },
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
