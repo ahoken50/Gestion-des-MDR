@@ -50,9 +50,9 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     };
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex justify-between items-center mb-4 border-b pb-2">
-                <h2 className="text-xl font-bold text-gray-800">Historique des demandes</h2>
+        <div className="card p-6 slide-up">
+            <div className="flex justify-between items-center mb-6 card-header p-4 -m-6 mb-6">
+                <h2 className="text-2xl font-bold gradient-text">📋 Historique des demandes</h2>
                 <div className="flex items-center space-x-2">
                     <label htmlFor="statusFilter" className="text-sm font-medium text-gray-700">Filtrer:</label>
                     <select
@@ -69,16 +69,16 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
             </div>
             
             {filteredRequests.length > 0 ? (
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                         <thead className="bg-gray-50">
+                <div className="table-container">
+                    <table className="table">
+                         <thead className="table-header">
                             <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Numéro</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lieu</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contenants</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                                <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+                                <th scope="col" className="table-header-cell">Numéro</th>
+                                <th scope="col" className="table-header-cell">Date</th>
+                                <th scope="col" className="table-header-cell">Lieu</th>
+                                <th scope="col" className="table-header-cell">Contenants</th>
+                                <th scope="col" className="table-header-cell">Statut</th>
+                                <th scope="col" className="table-header-cell text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -89,7 +89,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                     : request.id.substring(0, 8);
                                 
                                 return (
-                                    <tr key={request.id} className="hover:bg-gray-50">
+                                    <tr key={request.id} className="table-row">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                             {displayNumber}
                                             {request.bcNumber && (

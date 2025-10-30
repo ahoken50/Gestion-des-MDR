@@ -77,21 +77,23 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ inventory, onUpdate
     return (
         <div className="space-y-8">
             {inventoryByLocation.map(({ location, items }) => (
-                <div key={location} className="bg-white p-6 rounded-lg shadow-lg">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">{location}</h2>
+                <div key={location} className="card p-6 slide-up">
+                    <div className="card-header p-4 -m-6 mb-6">
+                        <h2 className="text-2xl font-bold gradient-text">📍 {location}</h2>
+                    </div>
                     {items.length > 0 ? (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
+                        <div className="table-container">
+                            <table className="table">
+                                <thead className="table-header">
                                     <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contenant</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Quantité (Vide)</th>
-                                        <th scope="col" className="relative px-6 py-3 w-20"><span className="sr-only">Actions</span></th>
+                                        <th scope="col" className="table-header-cell">Contenant</th>
+                                        <th scope="col" className="table-header-cell w-32">Quantité (Vide)</th>
+                                        <th scope="col" className="table-header-cell w-20 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {items.map(item => (
-                                        <tr key={item.id} className="hover:bg-gray-50">
+                                        <tr key={item.id} className="table-row">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 <input 

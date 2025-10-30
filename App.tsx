@@ -166,9 +166,9 @@ const App: React.FC = () => {
     };
 
     return (
-        <div className="bg-gray-50 min-h-screen font-sans">
+        <div className="min-h-screen font-sans bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
             <Header currentView={currentView} onViewChange={setCurrentView} />
-            <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+            <main className="container mx-auto p-4 sm:p-6 lg:p-8 fade-in">
                 {currentView === 'inventory' && (
                     <InventoryManager inventory={inventory} onUpdateInventory={setInventory} />
                 )}

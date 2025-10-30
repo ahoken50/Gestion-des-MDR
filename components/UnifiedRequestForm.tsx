@@ -229,27 +229,27 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
     return (
         <div className="space-y-6">
             {/* Sélecteur de mode */}
-            <div className="bg-white p-6 rounded-lg shadow-lg">
+            <div className="card p-6 slide-up">
                 <h2 className="text-xl font-bold text-gray-800 border-b pb-2 mb-4">
                     Créer une nouvelle demande de cueillette
                 </h2>
                 <div className="flex gap-4 mb-6">
                     <button
                         onClick={() => setMode('single')}
-                        className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
+                        className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
                             mode === 'single' 
-                                ? 'bg-blue-600 text-white' 
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105' 
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
                         }`}
                     >
                         📍 Demande simple (un lieu)
                     </button>
                     <button
                         onClick={() => setMode('multi')}
-                        className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
+                        className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
                             mode === 'multi' 
-                                ? 'bg-blue-600 text-white' 
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105' 
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
                         }`}
                     >
                         📋 Sélection multiple (plusieurs lieux)
@@ -258,7 +258,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             </div>
 
             {/* Formulaire de contact (commun aux deux modes) */}
-            <div className="bg-white p-6 rounded-lg shadow-lg">
+            <div className="card p-6 slide-up">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Informations de demande</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -317,7 +317,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
 
             {mode === 'single' ? (
                 /* Mode simple */
-                <form onSubmit={handleSingleSubmit} className="bg-white p-6 rounded-lg shadow-lg space-y-6">
+                <form onSubmit={handleSingleSubmit} className="card p-6 space-y-6 slide-up">
                     <div>
                         <label htmlFor="location" className="block text-sm font-medium text-gray-700">Lieu de cueillette</label>
                         <select 
@@ -367,8 +367,8 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                     </div>
                     
                     <div className="text-right">
-                        <button type="submit" className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                            Soumettre la demande
+                        <button type="submit" className="btn btn-primary py-3 px-8 text-lg">
+                            ✅ Soumettre la demande
                         </button>
                     </div>
                 </form>
@@ -376,7 +376,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                 /* Mode multiple */
                 <div className="space-y-6">
                     {/* Sélection des contenants */}
-                    <div className="bg-white p-6 rounded-lg shadow-lg">
+                    <div className="card p-6 slide-up">
                         <h3 className="text-lg font-bold text-gray-800 mb-4">Sélectionner les contenants à ramasser</h3>
                         
                         {inventoryByLocation.length > 0 ? (
@@ -438,7 +438,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
 
                     {/* Récapitulatif de la sélection */}
                     {selectedItems.length > 0 && (
-                        <div className="bg-white p-6 rounded-lg shadow-lg">
+                        <div className="card p-6 slide-up">
                             <h3 className="text-lg font-bold text-gray-800 mb-4">Récapitulatif de la sélection</h3>
                             
                             <div className="mb-4">
@@ -506,10 +506,10 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                         <button
                             onClick={handleGeneratePDF}
                             disabled={isGenerating || selectedItems.length === 0}
-                            className="bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+                            className="btn btn-primary py-3 px-8 text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
                         >
                             <DocumentArrowDownIcon className="w-5 h-5" />
-                            {isGenerating ? 'Génération en cours...' : 'Générer le PDF de ramassage'}
+                            {isGenerating ? '⏳ Génération en cours...' : '📄 Générer le PDF de ramassage'}
                         </button>
                     </div>
                 </div>
