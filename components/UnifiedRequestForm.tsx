@@ -94,6 +94,17 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             }
         }
     };
+    
+    const handleAddCustomItem = () => {
+        const customName = prompt('Entrez le nom du contenant personnalisé (ex: Baril de colasse vide):');
+        if (customName && customName.trim()) {
+            if (!requestedItems.some(item => item.name === customName.trim())) {
+                setRequestedItems([...requestedItems, { name: customName.trim(), quantity: 1 }]);
+            } else {
+                alert('Ce contenant est déjà dans la demande.');
+            }
+        }
+    };
 
     const handleRemoveItem = (index: number) => {
         setRequestedItems(requestedItems.filter((_, i) => i !== index));
@@ -230,9 +241,12 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
         <div className="space-y-6">
             {/* Sélecteur de mode */}
             <div className="card p-6 slide-up">
-                <h2 className="text-xl font-bold text-gray-800 border-b pb-2 mb-4">
-                    Créer une nouvelle demande de cueillette
-                </h2>
+                <div className="card-header p-4 -m-6 mb-6">
+                    <h2 className="text-2xl font-bold gradient-text">
+                        ➕ Créer une nouvelle demande de cueillette
+                    </h2>
+                    <p className="text-sm text-gray-600 mt-1">Choisissez le type de demande selon vos besoins</p>
+                </div>
                 <div className="flex gap-4 mb-6">
                     <button
                         onClick={() => setMode('single')}
@@ -259,7 +273,10 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
 
             {/* Formulaire de contact (commun aux deux modes) */}
             <div className="card p-6 slide-up">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Informations de demande</h3>
+                <div className="card-header p-4 -m-6 mb-6">
+                    <h3 className="text-xl font-bold gradient-text">📋 Informations de demande</h3>
+                    <p className="text-sm text-gray-600 mt-1">Remplissez les informations de contact et de référence</p>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label htmlFor="bcNumber" className="block text-sm font-medium text-gray-700">
@@ -318,20 +335,33 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             {mode === 'single' ? (
                 /* Mode simple */
                 <form onSubmit={handleSingleSubmit} className="card p-6 space-y-6 slide-up">
-                    <div>
-                        <label htmlFor="location" className="block text-sm font-medium text-gray-700">Lieu de cueillette</label>
+                    <div className="card-header p-4 -m-6 mb-6">
+                        <h3 className="text-xl font-bold gradient-text">📦 Détails de la demande</h3>
+                        <p className="text-sm text-gray-600 mt-1">Sélectionnez le lieu et les contenants à ramasser</p>
+                    </div>
+                    
+                    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                        <label htmlFor="location" className="block text-sm font-semibold text-blue-900 mb-2">📍 Lieu de cueillette</label>
                         <select 
                             id="location" 
                             value={location} 
                             onChange={e => setLocation(e.target.value)} 
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2"
+                            className="block w-full rounded-lg border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base p-3 bg-white font-medium"
                         >
                             {LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
                         </select>
                     </div>
 
-                    <div>
-                        <h3 className="text-lg font-medium text-gray-800 mb-2">Contenants à ramasser</h3>
+                    <div className="border-t pt-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-800">📦 Contenants à ramasser</h3>
+                                <p className="text-sm text-gray-600">Ajoutez les contenants de l'inventaire ou créez-en manuellement</p>
+                            </div>
+                            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+                                {requestedItems.length} contenant{requestedItems.length !== 1 ? 's' : ''}
+                            </span>
+                        </div>
                         {requestedItems.map((item, index) => {
                             const inventoryItem = inventory.find(i => i.name === item.name && i.location === location);
                             const maxQuantity = inventoryItem ? inventoryItem.quantity : undefined;
@@ -361,9 +391,14 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                                 </div>
                             );
                         })}
-                        <button type="button" onClick={handleAddItem} className="mt-2 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 flex items-center gap-2 text-sm">
-                            <PlusIcon className="w-4 h-4" /> Ajouter un contenant
-                        </button>
+                        <div className="mt-2 flex gap-2">
+                            <button type="button" onClick={handleAddItem} className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 flex items-center justify-center gap-2 text-sm">
+                                <PlusIcon className="w-4 h-4" /> Ajouter de l'inventaire
+                            </button>
+                            <button type="button" onClick={handleAddCustomItem} className="flex-1 bg-blue-100 text-blue-800 py-2 px-4 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 flex items-center justify-center gap-2 text-sm font-medium">
+                                ✏️ Ajouter manuellement
+                            </button>
+                        </div>
                     </div>
                     
                     <div className="text-right">
@@ -377,7 +412,10 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                 <div className="space-y-6">
                     {/* Sélection des contenants */}
                     <div className="card p-6 slide-up">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">Sélectionner les contenants à ramasser</h3>
+                        <div className="card-header p-4 -m-6 mb-6">
+                            <h3 className="text-xl font-bold gradient-text">📦 Sélectionner les contenants à ramasser</h3>
+                            <p className="text-sm text-gray-600 mt-1">Choisissez les contenants de différents lieux et ajoutez des commentaires spécifiques</p>
+                        </div>
                         
                         {inventoryByLocation.length > 0 ? (
                             inventoryByLocation.map(({ location: loc, items }) => (
@@ -438,8 +476,11 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
 
                     {/* Récapitulatif de la sélection */}
                     {selectedItems.length > 0 && (
-                        <div className="card p-6 slide-up">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Récapitulatif de la sélection</h3>
+                        <div className="card p-6 slide-up border-2 border-blue-200">
+                            <div className="card-header p-4 -m-6 mb-6 bg-gradient-to-r from-blue-100 to-indigo-100">
+                                <h3 className="text-xl font-bold gradient-text">✅ Récapitulatif de la sélection</h3>
+                                <p className="text-sm text-gray-600 mt-1">Vérifiez votre sélection avant de générer le PDF</p>
+                            </div>
                             
                             <div className="mb-4">
                                 <div className="flex justify-between items-center mb-2">

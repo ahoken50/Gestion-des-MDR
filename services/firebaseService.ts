@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, query, orderBy, limit, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, query, orderBy, limit, serverTimestamp, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // Configuration Firebase (utilisera les variables d'environnement)
@@ -50,27 +50,33 @@ export interface InventoryItem {
 class FirebaseService {
   // Obtenir le prochain numéro de requête
   async getNextRequestNumber(): Promise<number> {
-    const counterDoc = doc(db, 'counters', 'requestNumber');
-    const counterSnap = await getDoc(counterDoc);
-    
-    if (!counterSnap.exists()) {
-      // Créer le compteur s'il n'existe pas
+    try {
+      const counterDoc = doc(db, 'counters', 'requestNumber');
+      const counterSnap = await getDoc(counterDoc);
+      
+      if (!counterSnap.exists()) {
+        // Créer le compteur s'il n'existe pas
+        await setDoc(counterDoc, {
+          value: 1,
+          updatedAt: serverTimestamp()
+        });
+        return 1;
+      }
+      
+      const currentValue = counterSnap.data()?.value || 0;
+      const nextValue = currentValue + 1;
+      
       await updateDoc(counterDoc, {
-        value: 1,
+        value: nextValue,
         updatedAt: serverTimestamp()
       });
-      return 1;
+      
+      return nextValue;
+    } catch (error) {
+      console.error('Error getting next request number:', error);
+      // Fallback to timestamp-based ID if Firebase fails
+      return Date.now();
     }
-    
-    const currentValue = counterSnap.data()?.value || 0;
-    const nextValue = currentValue + 1;
-    
-    await updateDoc(counterDoc, {
-      value: nextValue,
-      updatedAt: serverTimestamp()
-    });
-    
-    return nextValue;
   }
 
   // Ajouter une nouvelle demande
@@ -158,17 +164,19 @@ class FirebaseService {
   }
 
   async updateInventory(items: InventoryItem[]): Promise<void> {
-    const batch = db.batch();
-    
-    items.forEach(item => {
-      const docRef = doc(db, 'inventory', item.id);
-      batch.set(docRef, {
-        ...item,
-        updatedAt: serverTimestamp()
-      });
-    });
-    
-    await batch.commit();
+    try {
+      // Update items one by one instead of using batch
+      for (const item of items) {
+        const docRef = doc(db, 'inventory', item.id);
+        await setDoc(docRef, {
+          ...item,
+          updatedAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      console.error('Error updating inventory:', error);
+      throw error;
+    }
   }
 
   // Synchroniser l'inventaire local avec Firebase

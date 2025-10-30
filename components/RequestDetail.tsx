@@ -21,6 +21,8 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
   const [editedRequest, setEditedRequest] = useState(request);
   const [emails, setEmails] = useState<string[]>(request.emails || []);
   const [newEmail, setNewEmail] = useState('');
+  const [images, setImages] = useState<string[]>(request.images || []);
+  const [isUploading, setIsUploading] = useState(false);
   const [isFirebase, setIsFirebase] = useState('id' in request && 'requestNumber' in request);
 
   // Obtenir les items disponibles selon le lieu
@@ -35,6 +37,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
   useEffect(() => {
     setEditedRequest(request);
     setEmails(request.emails || []);
+    setImages(request.images || []);
     setIsFirebase('id' in request && 'requestNumber' in request);
   }, [request]);
 
@@ -89,11 +92,55 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
     setEmails(emails.filter(email => email !== emailToRemove));
   };
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        if (file.size > 10 * 1024 * 1024) {
+          alert(`Le fichier ${file.name} est trop volumineux (max 10MB)`);
+          continue;
+        }
+
+        if (!file.type.startsWith('image/')) {
+          alert(`Le fichier ${file.name} n'est pas une image`);
+          continue;
+        }
+
+        if (isFirebase && 'id' in request) {
+          const imageUrl = await firebaseService.addImageToRequest(request.id!, file);
+          setImages(prev => [...prev, imageUrl]);
+        } else {
+          // Pour le mode local, convertir en base64
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            if (e.target?.result) {
+              setImages(prev => [...prev, e.target!.result as string]);
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Erreur lors du téléchargement de l\'image');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemoveImage = (imageUrl: string) => {
+    setImages(images.filter(img => img !== imageUrl));
+  };
+
   const handleSave = async () => {
     try {
       const updatedRequest = {
         ...editedRequest,
-        emails
+        emails,
+        images
       };
 
       if (isFirebase && 'id' in request) {
@@ -323,6 +370,69 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
               </div>
             </div>
           )}
+
+          {/* Images / Pièces jointes */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-800 mb-3">📎 Pièces jointes (Images)</h3>
+            <div className="space-y-3">
+              {images.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {images.map((imageUrl, index) => (
+                    <div key={index} className="relative group">
+                      <img 
+                        src={imageUrl} 
+                        alt={`Pièce jointe ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                      />
+                      {isEditing && (
+                        <button
+                          onClick={() => handleRemoveImage(imageUrl)}
+                          className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <XMarkIcon className="w-4 h-4" />
+                        </button>
+                      )}
+                      <a 
+                        href={imageUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="absolute bottom-1 right-1 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        Voir
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {isEditing && (
+                <div>
+                  <label className="block">
+                    <span className="sr-only">Choisir des images</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      disabled={isUploading}
+                      className="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-md file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100
+                        disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {isUploading ? '⏳ Téléchargement en cours...' : 'Max 10MB par image. Formats: JPG, PNG, GIF, WEBP'}
+                  </p>
+                </div>
+              )}
+              {images.length === 0 && !isEditing && (
+                <p className="text-gray-500 italic text-sm">Aucune pièce jointe</p>
+              )}
+            </div>
+          </div>
 
           {/* Status */}
           {isFirebase && (

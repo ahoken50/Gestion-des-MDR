@@ -52,15 +52,21 @@ const App: React.FC = () => {
         const initFirebase = async () => {
             try {
                 // Vérifier si Firebase est configuré
-                if (import.meta.env.VITE_FIREBASE_API_KEY) {
+                const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+                const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+                
+                if (apiKey && projectId && apiKey !== 'undefined' && projectId !== 'undefined') {
+                    console.log('Firebase configuration detected, initializing...');
                     setIsFirebaseEnabled(true);
                     
                     // Charger les demandes depuis Firebase
                     const fbRequests = await firebaseService.getPickupRequests();
                     setFirebaseRequests(fbRequests);
                     
-                    // Synchroniser l'inventaire avec Firebase
-                    await firebaseService.syncInventoryWithFirebase(inventory);
+                    console.log('Firebase initialized successfully');
+                } else {
+                    console.log('Firebase not configured, using local storage only');
+                    setIsFirebaseEnabled(false);
                 }
             } catch (error) {
                 console.error('Error initializing Firebase:', error);
@@ -69,7 +75,7 @@ const App: React.FC = () => {
         };
 
         initFirebase();
-    }, [inventory]);
+    }, []);
 
     // Combiner les demandes locales et Firebase
     const allRequests = [...firebaseRequests, ...pickupRequests];
