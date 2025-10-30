@@ -71,10 +71,23 @@ export class PDFService {
     // Préparer les données pour le tableau avec regroupement
     const tableData: string[][] = [];
     
-    Object.entries(groupedItems).forEach(([location, items]) => {
+    Object.entries(groupedItems).forEach(([location, locationData]) => {
+      // Support des deux formats: array direct ou objet avec items/comments
+      const items = Array.isArray(locationData) ? locationData : locationData.items;
+      const comments = !Array.isArray(locationData) ? locationData.comments : null;
+      
+      // Ajouter les commentaires s'ils existent
+      if (comments && comments.trim()) {
+        tableData.push([
+          location,
+          `Commentaires: ${comments}`,
+          ''
+        ]);
+      }
+      
       items.forEach((item, index) => {
         tableData.push([
-          index === 0 ? location : '', // Afficher le lieu seulement sur la première ligne
+          index === 0 && !comments ? location : '', // Afficher le lieu seulement sur la première ligne si pas de commentaires
           item.name,
           item.quantity.toString()
         ]);
