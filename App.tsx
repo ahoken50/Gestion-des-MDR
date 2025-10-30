@@ -3,8 +3,10 @@ import Header, { type View } from './components/Header';
 import InventoryManager from './components/InventoryManager';
 import RequestForm from './components/RequestForm';
 import RequestHistory from './components/RequestHistory';
+import MultiSelectionForm from './components/MultiSelectionForm';
 import { INITIAL_INVENTORY } from './constants';
 import type { InventoryItem, PickupRequest } from './types';
+import type { PickupRequestPDF } from './types-pdf';
 
 // FIX: Provide implementation for the main App component.
 const App: React.FC = () => {
@@ -68,6 +70,11 @@ const App: React.FC = () => {
         setPickupRequests(prev => prev.map(req => req.id === requestId ? {...req, status} : req));
     };
 
+    const handleMultiSelectionRequest = (request: PickupRequestPDF) => {
+        console.log('PDF Request generated:', request);
+        // Vous pouvez ici ajouter la logique pour sauvegarder la demande si nécessaire
+    };
+
     return (
         <div className="bg-gray-50 min-h-screen font-sans">
             <Header currentView={currentView} onViewChange={setCurrentView} />
@@ -77,6 +84,9 @@ const App: React.FC = () => {
                 )}
                 {currentView === 'new_request' && (
                     <RequestForm inventory={inventory} onSubmit={handleAddRequest} />
+                )}
+                {currentView === 'multi_selection' && (
+                    <MultiSelectionForm inventory={inventory} onRequestGenerated={handleMultiSelectionRequest} />
                 )}
                 {currentView === 'history' && (
                     <RequestHistory requests={pickupRequests} onUpdateRequestStatus={handleUpdateRequestStatus} />

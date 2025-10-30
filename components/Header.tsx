@@ -1,7 +1,7 @@
 import React from 'react';
 import { TruckIcon } from './icons';
 
-export type View = 'inventory' | 'new_request' | 'history';
+export type View = 'inventory' | 'new_request' | 'history' | 'multi_selection';
 
 interface HeaderProps {
     currentView: View;
@@ -33,6 +33,12 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange }) => {
                             className={`${navItemClasses} ${currentView === 'new_request' ? activeClasses : inactiveClasses}`}
                         >
                             Nouvelle Demande
+                        </button>
+                        <button
+                            onClick={() => onViewChange('multi_selection')}
+                            className={`${navItemClasses} ${currentView === 'multi_selection' ? activeClasses : inactiveClasses}`}
+                        >
+                            Sélection Multiple
                         </button>
                          <button
                             onClick={() => onViewChange('history')}
