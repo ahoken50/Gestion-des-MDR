@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { InventoryItem, RequestedItem, PickupRequest } from '../types';
 import type { SelectedItem, PickupRequestPDF } from '../types-pdf';
 import { PDFService, createPickupRequestPDF } from '../services/pdfServiceMulti';
@@ -22,6 +22,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
     
     // État pour le mode simple
     const [location, setLocation] = useState(LOCATIONS[0]);
+    const [bcNumber, setBcNumber] = useState(''); // Numéro de BC
     const [contactName, setContactName] = useState('');
     const [contactPhone, setContactPhone] = useState('');
     const [notes, setNotes] = useState('');
@@ -29,6 +30,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
     
     // État pour le mode multiple
     const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+    const [locationComments, setLocationComments] = useState<Record<string, string>>({}); // Commentaires par lieu
     const [isGenerating, setIsGenerating] = useState(false);
 
     // Logique pour le mode simple
@@ -57,6 +59,31 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             return groups;
         }, {} as Record<string, SelectedItem[]>);
     }, [selectedItems]);
+
+    // Effet pour synchroniser avec les changements d'inventaire
+    useEffect(() => {
+        // Nettoyer les sélections qui ne sont plus valides (items supprimés ou quantité réduite)
+        const validSelectedItems = selectedItems.filter(selectedItem => {
+            const inventoryItem = inventory.find(item => item.id === selectedItem.id);
+            return inventoryItem && inventoryItem.quantity >= selectedItem.quantity;
+        });
+
+        // Nettoyer les requestedItems qui ne sont plus valides (mode simple)
+        const validRequestedItems = requestedItems.filter(requestedItem => {
+            const inventoryItem = inventory.find(item => 
+                item.name === requestedItem.name && item.location === location
+            );
+            return inventoryItem && inventoryItem.quantity >= requestedItem.quantity;
+        });
+
+        // Mettre à jour si des items sont devenus invalides
+        if (validSelectedItems.length !== selectedItems.length) {
+            setSelectedItems(validSelectedItems);
+        }
+        if (validRequestedItems.length !== requestedItems.length) {
+            setRequestedItems(validRequestedItems);
+        }
+    }, [inventory, selectedItems, requestedItems, location]);
 
     // Fonctions pour le mode simple
     const handleAddItem = () => {
@@ -96,6 +123,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
         }
 
         onSubmit({
+            bcNumber: bcNumber.trim() || undefined,
             location,
             items: requestedItems,
             date: new Date().toISOString(),
@@ -106,6 +134,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
 
         // Reset form
         setLocation(LOCATIONS[0]);
+        setBcNumber('');
         setContactName('');
         setContactPhone('');
         setNotes('');
@@ -157,11 +186,24 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
         setIsGenerating(true);
         
         try {
+            // Créer les données groupées avec commentaires
+            const groupedItemsWithComments = selectedItems.reduce((acc, item) => {
+                if (!acc[item.location]) {
+                    acc[item.location] = {
+                        items: [],
+                        comments: locationComments[item.location] || undefined
+                    };
+                }
+                acc[item.location].items.push(item);
+                return acc;
+            }, {} as Record<string, { items: SelectedItem[], comments?: string }>);
+
             const request = createPickupRequestPDF(selectedItems, {
                 name: contactName,
                 phone: contactPhone,
-                notes: notes.trim() || undefined
-            });
+                notes: notes.trim() || undefined,
+                bcNumber: bcNumber.trim() || undefined
+            }, groupedItemsWithComments);
 
             const pdfService = new PDFService();
             pdfService.generatePickupRequestPDF(request);
@@ -172,6 +214,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             }
 
             setSelectedItems([]);
+            setLocationComments({});
             setNotes('');
             
             alert('PDF généré avec succès !');
@@ -216,8 +259,21 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
 
             {/* Formulaire de contact (commun aux deux modes) */}
             <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Informations de contact</h3>
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Informations de demande</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label htmlFor="bcNumber" className="block text-sm font-medium text-gray-700">
+                            Numéro de BC (optionnel)
+                        </label>
+                        <input
+                            type="text"
+                            id="bcNumber"
+                            value={bcNumber}
+                            onChange={e => setBcNumber(e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2"
+                            placeholder="Ex: BC-2024-001"
+                        />
+                    </div>
                     <div>
                         <label htmlFor="contactName" className="block text-sm font-medium text-gray-700">
                             Nom du contact *
@@ -247,7 +303,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                 </div>
                 <div className="mt-4">
                     <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-                        Notes (optionnel)
+                        Notes générales (optionnel)
                     </label>
                     <textarea
                         id="notes"
@@ -408,7 +464,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                                 {Object.entries(selectedByLocation).map(([loc, items]) => (
                                     <div key={loc} className="border-l-4 border-blue-500 pl-4">
                                         <h5 className="font-semibold text-gray-800 mb-2">{loc}</h5>
-                                        <div className="space-y-2">
+                                        <div className="space-y-2 mb-3">
                                             {items.map(item => (
                                                 <div key={item.id} className="flex justify-between items-center text-sm">
                                                     <span className="text-gray-700">{item.name}</span>
@@ -423,6 +479,21 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                                                     </div>
                                                 </div>
                                             ))}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Commentaires pour {loc} (optionnel)
+                                            </label>
+                                            <textarea
+                                                value={locationComments[loc] || ''}
+                                                onChange={e => setLocationComments(prev => ({
+                                                    ...prev,
+                                                    [loc]: e.target.value
+                                                }))}
+                                                rows={2}
+                                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2"
+                                                placeholder="Instructions spécifiques pour ce lieu..."
+                                            />
                                         </div>
                                     </div>
                                 ))}

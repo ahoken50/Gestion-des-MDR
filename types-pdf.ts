@@ -6,11 +6,17 @@ export interface SelectedItem {
 }
 
 export interface GroupedItemsByLocation {
-  [location: string]: SelectedItem[];
+  [location: string]: LocationData;
+}
+
+export interface LocationData {
+  items: SelectedItem[];
+  comments?: string; // Commentaires spécifiques à ce lieu
 }
 
 export interface PickupRequestPDF {
   id: string;
+  bcNumber?: string; // Numéro de bon de commande
   date: string;
   contactName: string;
   contactPhone: string;

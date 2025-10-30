@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Règles pour les compteurs
+    match /counters/{document} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Règles pour les demandes de ramassage
+    match /pickupRequests/{requestId} {
+      // Lecture: uniquement les utilisateurs authentifiés
+      allow read: if request.auth != null;
+      
+      // Création: uniquement les utilisateurs authentifiés
+      allow create: if request.auth != null 
+        && request.resource.data.requestNumber is number
+        && request.resource.data.contactName is string
+        && request.resource.data.contactPhone is string
+        && request.resource.data.status in ['pending', 'completed']
+        && request.resource.data.items is list
+        && request.resource.data.items.size() > 0;
+      
+      // Mise à jour: uniquement les utilisateurs authentifiés
+      allow update: if request.auth != null 
+        && request.resource.data.requestNumber is number
+        && request.auth.uid == resource.data.authorUid 
+        || request.auth != null && 'admin' in request.auth.token;
+      
+      // Suppression: uniquement les administrateurs
+      allow delete: if request.auth != null && 'admin' in request.auth.token;
+    }
+    
+    // Règles pour l'inventaire
+    match /inventory/{itemId} {
+      // Lecture: tous les utilisateurs authentifiés
+      allow read: if request.auth != null;
+      
+      // Écriture: uniquement les administrateurs
+      allow write: if request.auth != null && 'admin' in request.auth.token;
+    }
+  }
+}
+
+// Règles pour Firebase Storage
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Images des demandes
+    match /requests/{requestId}/{allPaths=**} {
+      // Lecture: uniquement si l'utilisateur a accès à la demande
+      allow read: if request.auth != null && 
+        exists(/databases/(default)/documents/pickupRequests/$(requestId));
+      
+      // Écriture: uniquement si l'utilisateur est propriétaire de la demande ou admin
+      allow write: if request.auth != null && (
+        exists(/databases/(default)/documents/pickupRequests/$(requestId)) && 
+        (request.auth.uid == resource.data.authorUid || 'admin' in request.auth.token)
+      );
+    }
+  }
+}

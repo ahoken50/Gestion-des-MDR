@@ -42,12 +42,18 @@ export class PDFService {
     
     this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('Informations de contact', 20, startY);
+    this.doc.text('Informations de demande', 20, startY);
     
     this.doc.setFontSize(11);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(`Nom: ${request.contactName}`, 20, startY + 10);
-    this.doc.text(`Téléphone: ${request.contactPhone}`, 20, startY + 20);
+    if (request.bcNumber) {
+      this.doc.text(`Numéro BC: ${request.bcNumber}`, 20, startY + 10);
+      this.doc.text(`Nom: ${request.contactName}`, 20, startY + 20);
+      this.doc.text(`Téléphone: ${request.contactPhone}`, 20, startY + 30);
+    } else {
+      this.doc.text(`Nom: ${request.contactName}`, 20, startY + 10);
+      this.doc.text(`Téléphone: ${request.contactPhone}`, 20, startY + 20);
+    }
     this.doc.text(`Date: ${new Date(request.date).toLocaleDateString('fr-CA')}`, 20, startY + 30);
     this.doc.text(`ID de demande: ${request.id}`, 20, startY + 40);
     
@@ -180,9 +186,12 @@ export function groupItemsByLocation(selectedItems: Array<{
 }>): GroupedItemsByLocation {
   return selectedItems.reduce((groups, item) => {
     if (!groups[item.location]) {
-      groups[item.location] = [];
+      groups[item.location] = {
+        items: [],
+        comments: undefined
+      };
     }
-    groups[item.location].push(item);
+    groups[item.location].items.push(item);
     return groups;
   }, {} as GroupedItemsByLocation);
 }
@@ -199,13 +208,16 @@ export function createPickupRequestPDF(
     name: string;
     phone: string;
     notes?: string;
-  }
+    bcNumber?: string;
+  },
+  groupedItemsWithComments?: Record<string, { items: any[], comments?: string }>
 ): PickupRequestPDF {
-  const groupedItems = groupItemsByLocation(selectedItems);
+  const groupedItems = groupedItemsWithComments || groupItemsByLocation(selectedItems);
   const totalItems = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
   
   return {
     id: `REQ-${Date.now()}`,
+    bcNumber: contactInfo.bcNumber,
     date: new Date().toISOString(),
     contactName: contactInfo.name,
     contactPhone: contactInfo.phone,

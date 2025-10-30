@@ -12,6 +12,7 @@ export interface RequestedItem {
 
 export interface PickupRequest {
   id: string;
+  bcNumber?: string; // Numéro de bon de commande
   location: string;
   items: RequestedItem[];
   date: string; // ISO date string

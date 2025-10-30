@@ -1,16 +1,26 @@
 import React, { useState } from 'react';
 import type { PickupRequest } from '../types';
+import { FirebasePickupRequest } from '../services/firebaseService';
 import { generatePdf } from '../services/pdfService';
 import { FileTextIcon } from './icons';
+import RequestDetail from './RequestDetail';
 
 interface RequestHistoryProps {
-    requests: PickupRequest[];
+    requests: (PickupRequest | FirebasePickupRequest)[];
     onUpdateRequestStatus: (requestId: string, status: 'pending' | 'completed') => void;
+    onRequestUpdated?: (updatedRequest: PickupRequest | FirebasePickupRequest) => void;
+    inventory: Array<{ id: string; name: string; quantity: number; location: string }>;
 }
 
 // FIX: Provide implementation for RequestHistory component.
-const RequestHistory: React.FC<RequestHistoryProps> = ({ requests, onUpdateRequestStatus }) => {
+const RequestHistory: React.FC<RequestHistoryProps> = ({ 
+    requests, 
+    onUpdateRequestStatus, 
+    onRequestUpdated,
+    inventory 
+}) => {
     const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+    const [selectedRequest, setSelectedRequest] = useState<PickupRequest | FirebasePickupRequest | null>(null);
 
     const filteredRequests = requests.filter(request => {
         if (filter === 'all') return true;
@@ -26,6 +36,17 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({ requests, onUpdateReque
             default:
                 return 'bg-gray-100 text-gray-800';
         }
+    };
+
+    const handleViewDetails = (request: PickupRequest | FirebasePickupRequest) => {
+        setSelectedRequest(request);
+    };
+
+    const handleRequestUpdated = (updatedRequest: PickupRequest | FirebasePickupRequest) => {
+        if (onRequestUpdated) {
+            onRequestUpdated(updatedRequest);
+        }
+        setSelectedRequest(null);
     };
 
     return (
@@ -52,6 +73,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({ requests, onUpdateReque
                     <table className="min-w-full divide-y divide-gray-200">
                          <thead className="bg-gray-50">
                             <tr>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Numéro</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lieu</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contenants</th>
@@ -60,35 +82,72 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({ requests, onUpdateReque
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredRequests.map(request => (
-                                <tr key={request.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(request.date).toLocaleDateString('fr-CA')}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{request.location}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {request.items.map(item => `${item.name} (x${item.quantity})`).join(', ')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                         <select
-                                            value={request.status}
-                                            onChange={(e) => onUpdateRequestStatus(request.id, e.target.value as 'pending' | 'completed')}
-                                            className={`text-xs font-semibold rounded-full px-2 py-1 border-0 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-500 ${getStatusBadge(request.status)}`}
-                                        >
-                                            <option value="pending">En attente</option>
-                                            <option value="completed">Complétée</option>
-                                        </select>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button onClick={() => generatePdf(request)} className="text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1">
-                                            <FileTextIcon className="w-4 h-4"/> PDF
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                            {filteredRequests.map(request => {
+                                const isFirebaseRequest = 'requestNumber' in request;
+                                const displayNumber = isFirebaseRequest 
+                                    ? `#${(request as FirebasePickupRequest).requestNumber}`
+                                    : request.id.substring(0, 8);
+                                
+                                return (
+                                    <tr key={request.id} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {displayNumber}
+                                            {request.bcNumber && (
+                                                <span className="ml-2 text-xs text-gray-500">({request.bcNumber})</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {new Date(request.date).toLocaleDateString('fr-CA')}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{request.location}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {request.items.map(item => `${item.name} (x${item.quantity})`).join(', ')}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                             <select
+                                                value={request.status}
+                                                onChange={(e) => onUpdateRequestStatus(request.id, e.target.value as 'pending' | 'completed')}
+                                                className={`text-xs font-semibold rounded-full px-2 py-1 border-0 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-500 ${getStatusBadge(request.status)}`}
+                                            >
+                                                <option value="pending">En attente</option>
+                                                <option value="completed">Complétée</option>
+                                            </select>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <div className="flex justify-end gap-2">
+                                                <button 
+                                                    onClick={() => handleViewDetails(request)} 
+                                                    className="text-blue-600 hover:text-blue-800 transition-colors"
+                                                    title="Voir les détails"
+                                                >
+                                                    Détails
+                                                </button>
+                                                <button 
+                                                    onClick={() => generatePdf(request as PickupRequest)} 
+                                                    className="text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1"
+                                                    title="Générer PDF"
+                                                >
+                                                    <FileTextIcon className="w-4 h-4"/>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
             ) : (
                 <p className="text-gray-500 italic mt-4">Aucune demande trouvée pour ce filtre.</p>
+            )}
+            
+            {selectedRequest && (
+                <RequestDetail
+                    request={selectedRequest}
+                    onUpdate={handleRequestUpdated}
+                    onCancel={() => setSelectedRequest(null)}
+                    inventory={inventory}
+                />
             )}
         </div>
     );

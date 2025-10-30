@@ -4,6 +4,7 @@ import InventoryManager from './components/InventoryManager';
 import UnifiedRequestForm from './components/UnifiedRequestForm';
 import RequestHistory from './components/RequestHistory';
 import { INITIAL_INVENTORY } from './constants';
+import { firebaseService, type FirebasePickupRequest } from './services/firebaseService';
 import type { InventoryItem, PickupRequest } from './types';
 import type { PickupRequestPDF } from './types-pdf';
 
@@ -22,8 +23,8 @@ const App: React.FC = () => {
         }
     });
 
-    // State for pickup requests, loading from localStorage
-    const [pickupRequests, setPickupRequests] = useState<PickupRequest[]>(() => {
+    // State for pickup requests - combine local and Firebase
+    const [pickupRequests, setPickupRequests] = useState<(PickupRequest | FirebasePickupRequest)[]>(() => {
         try {
             const savedRequests = localStorage.getItem('pickupRequests');
             return savedRequests ? JSON.parse(savedRequests) : [];
@@ -32,6 +33,9 @@ const App: React.FC = () => {
             return [];
         }
     });
+    
+    const [firebaseRequests, setFirebaseRequests] = useState<FirebasePickupRequest[]>([]);
+    const [isFirebaseEnabled, setIsFirebaseEnabled] = useState(false);
 
     // Persist inventory to localStorage whenever it changes
     useEffect(() => {
@@ -43,30 +47,117 @@ const App: React.FC = () => {
         localStorage.setItem('pickupRequests', JSON.stringify(pickupRequests));
     }, [pickupRequests]);
 
-    const handleAddRequest = (newRequest: Omit<PickupRequest, 'id' | 'status'>) => {
-        const requestWithId: PickupRequest = {
-            ...newRequest,
-            id: Date.now().toString(),
-            status: 'pending',
-        };
-        setPickupRequests(prev => [requestWithId, ...prev]);
-        
-        // Update inventory: subtract requested items from empty container counts
-        const updatedInventory = inventory.map(invItem => {
-            const requested = newRequest.items.find(reqItem => reqItem.name === invItem.name && newRequest.location === invItem.location);
-            if (requested) {
-                return { ...invItem, quantity: Math.max(0, invItem.quantity - requested.quantity) };
+    // Initialize Firebase and sync data
+    useEffect(() => {
+        const initFirebase = async () => {
+            try {
+                // Vérifier si Firebase est configuré
+                if (import.meta.env.VITE_FIREBASE_API_KEY) {
+                    setIsFirebaseEnabled(true);
+                    
+                    // Charger les demandes depuis Firebase
+                    const fbRequests = await firebaseService.getPickupRequests();
+                    setFirebaseRequests(fbRequests);
+                    
+                    // Synchroniser l'inventaire avec Firebase
+                    await firebaseService.syncInventoryWithFirebase(inventory);
+                }
+            } catch (error) {
+                console.error('Error initializing Firebase:', error);
+                setIsFirebaseEnabled(false);
             }
-            return invItem;
-        });
-        setInventory(updatedInventory);
+        };
 
-        // Switch view to history to see the new request
-        setCurrentView('history');
+        initFirebase();
+    }, [inventory]);
+
+    // Combiner les demandes locales et Firebase
+    const allRequests = [...firebaseRequests, ...pickupRequests];
+
+    const handleAddRequest = async (newRequest: Omit<PickupRequest, 'id' | 'status'>) => {
+        try {
+            let savedRequest;
+            
+            if (isFirebaseEnabled) {
+                // Sauvegarder dans Firebase
+                const firebaseRequest: Omit<FirebasePickupRequest, 'id' | 'requestNumber' | 'createdAt' | 'updatedAt'> = {
+                    ...newRequest,
+                    status: 'pending',
+                };
+                const docId = await firebaseService.addPickupRequest(firebaseRequest);
+                
+                // Récupérer la demande sauvegardée avec son ID
+                savedRequest = await firebaseService.getPickupRequest(docId);
+                if (savedRequest) {
+                    setFirebaseRequests(prev => [savedRequest, ...prev]);
+                }
+            } else {
+                // Sauvegarder localement
+                const requestWithId: PickupRequest = {
+                    ...newRequest,
+                    id: Date.now().toString(),
+                    status: 'pending',
+                };
+                setPickupRequests(prev => [requestWithId, ...prev]);
+                savedRequest = requestWithId;
+            }
+            
+            // Update inventory: subtract requested items from empty container counts
+            const updatedInventory = inventory.map(invItem => {
+                const requested = newRequest.items.find(reqItem => reqItem.name === invItem.name && newRequest.location === invItem.location);
+                if (requested) {
+                    return { ...invItem, quantity: Math.max(0, invItem.quantity - requested.quantity) };
+                }
+                return invItem;
+            });
+            setInventory(updatedInventory);
+
+            // Switch view to history to see the new request
+            setCurrentView('history');
+        } catch (error) {
+            console.error('Error saving request:', error);
+            alert('Erreur lors de la sauvegarde de la demande');
+        }
     };
     
-    const handleUpdateRequestStatus = (requestId: string, status: 'pending' | 'completed') => {
-        setPickupRequests(prev => prev.map(req => req.id === requestId ? {...req, status} : req));
+    const handleUpdateRequestStatus = async (requestId: string, status: 'pending' | 'completed') => {
+        try {
+            // Vérifier si c'est une demande Firebase
+            const firebaseRequest = firebaseRequests.find(req => req.id === requestId);
+            
+            if (firebaseRequest && isFirebaseEnabled) {
+                await firebaseService.updatePickupRequest(requestId, { status });
+                setFirebaseRequests(prev => 
+                    prev.map(req => req.id === requestId ? {...req, status} : req)
+                );
+            } else {
+                setPickupRequests(prev => 
+                    prev.map(req => req.id === requestId ? {...req, status} : req)
+                );
+            }
+        } catch (error) {
+            console.error('Error updating request status:', error);
+            alert('Erreur lors de la mise à jour du statut');
+        }
+    };
+
+    const handleRequestUpdated = async (updatedRequest: PickupRequest | FirebasePickupRequest) => {
+        try {
+            // Vérifier si c'est une demande Firebase
+            if ('requestNumber' in updatedRequest && isFirebaseEnabled) {
+                await firebaseService.updatePickupRequest(updatedRequest.id!, updatedRequest);
+                setFirebaseRequests(prev => 
+                    prev.map(req => req.id === updatedRequest.id ? updatedRequest : req)
+                );
+            } else {
+                setPickupRequests(prev => 
+                    prev.map(req => req.id === updatedRequest.id ? updatedRequest : req)
+                );
+            }
+        } catch (error) {
+            console.error('Error updating request:', error);
+            alert('Erreur lors de la mise à jour de la demande');
+        }
     };
 
     const handlePDFGenerated = (request: PickupRequestPDF) => {
@@ -89,7 +180,12 @@ const App: React.FC = () => {
                     />
                 )}
                 {currentView === 'history' && (
-                    <RequestHistory requests={pickupRequests} onUpdateRequestStatus={handleUpdateRequestStatus} />
+                    <RequestHistory 
+                        requests={allRequests} 
+                        onUpdateRequestStatus={handleUpdateRequestStatus}
+                        onRequestUpdated={handleRequestUpdated}
+                        inventory={inventory}
+                    />
                 )}
             </main>
         </div>
