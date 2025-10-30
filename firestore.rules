@@ -1,60 +1,49 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Règles pour les compteurs
+    // Règles pour les compteurs - Accès public pour permettre la numérotation
     match /counters/{document} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
     
-    // Règles pour les demandes de ramassage
+    // Règles pour les demandes de ramassage - Accès public
     match /pickupRequests/{requestId} {
-      // Lecture: uniquement les utilisateurs authentifiés
-      allow read: if request.auth != null;
+      // Lecture: accès public
+      allow read: if true;
       
-      // Création: uniquement les utilisateurs authentifiés
-      allow create: if request.auth != null 
-        && request.resource.data.requestNumber is number
+      // Création: accès public avec validation des données
+      allow create: if request.resource.data.requestNumber is number
         && request.resource.data.contactName is string
         && request.resource.data.contactPhone is string
         && request.resource.data.status in ['pending', 'completed']
         && request.resource.data.items is list
         && request.resource.data.items.size() > 0;
       
-      // Mise à jour: uniquement les utilisateurs authentifiés
-      allow update: if request.auth != null 
-        && request.resource.data.requestNumber is number
-        && request.auth.uid == resource.data.authorUid 
-        || request.auth != null && 'admin' in request.auth.token;
+      // Mise à jour: accès public
+      allow update: if request.resource.data.requestNumber is number;
       
-      // Suppression: uniquement les administrateurs
-      allow delete: if request.auth != null && 'admin' in request.auth.token;
+      // Suppression: accès public (peut être restreint plus tard)
+      allow delete: if true;
     }
     
-    // Règles pour l'inventaire
+    // Règles pour l'inventaire - Accès public
     match /inventory/{itemId} {
-      // Lecture: tous les utilisateurs authentifiés
-      allow read: if request.auth != null;
-      
-      // Écriture: uniquement les administrateurs
-      allow write: if request.auth != null && 'admin' in request.auth.token;
+      // Lecture et écriture: accès public
+      allow read, write: if true;
     }
   }
 }
 
-// Règles pour Firebase Storage
+// Règles pour Firebase Storage - Accès public
 service firebase.storage {
   match /b/{bucket}/o {
-    // Images des demandes
+    // Images des demandes - Accès public
     match /requests/{requestId}/{allPaths=**} {
-      // Lecture: uniquement si l'utilisateur a accès à la demande
-      allow read: if request.auth != null && 
-        exists(/databases/(default)/documents/pickupRequests/$(requestId));
+      // Lecture: accès public
+      allow read: if true;
       
-      // Écriture: uniquement si l'utilisateur est propriétaire de la demande ou admin
-      allow write: if request.auth != null && (
-        exists(/databases/(default)/documents/pickupRequests/$(requestId)) && 
-        (request.auth.uid == resource.data.authorUid || 'admin' in request.auth.token)
-      );
+      // Écriture: accès public avec limite de taille (10MB)
+      allow write: if request.resource.size < 10 * 1024 * 1024;
     }
   }
 }

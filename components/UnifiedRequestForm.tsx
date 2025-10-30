@@ -183,6 +183,60 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
         ));
     };
 
+    const handleAddCustomMultiItem = () => {
+        const customName = prompt('Entrez le nom du contenant personnalisé (ex: Baril de colasse vide):');
+        if (!customName || !customName.trim()) {
+            return;
+        }
+
+        // Demander le lieu
+        const locationChoice = prompt(`Choisissez le lieu pour "${customName.trim()}":\n\n${LOCATIONS.map((loc, i) => `${i + 1}. ${loc}`).join('\n')}\n\nEntrez le numéro:`);
+        if (!locationChoice) {
+            return;
+        }
+
+        const locationIndex = parseInt(locationChoice, 10) - 1;
+        if (locationIndex < 0 || locationIndex >= LOCATIONS.length) {
+            alert('Numéro de lieu invalide.');
+            return;
+        }
+
+        const selectedLocation = LOCATIONS[locationIndex];
+
+        // Demander la quantité
+        const quantityStr = prompt(`Quantité de "${customName.trim()}" pour ${selectedLocation}:`, '1');
+        if (!quantityStr) {
+            return;
+        }
+
+        const quantity = parseInt(quantityStr, 10);
+        if (isNaN(quantity) || quantity < 1) {
+            alert('Quantité invalide.');
+            return;
+        }
+
+        // Vérifier si l'item existe déjà
+        const existingItem = selectedItems.find(
+            item => item.name === customName.trim() && item.location === selectedLocation
+        );
+
+        if (existingItem) {
+            alert('Ce contenant est déjà dans la sélection pour ce lieu.');
+            return;
+        }
+
+        // Ajouter l'item personnalisé avec un ID unique
+        const newItem: SelectedItem = {
+            id: `custom-${Date.now()}-${Math.random()}`,
+            name: customName.trim(),
+            quantity,
+            location: selectedLocation
+        };
+
+        setSelectedItems([...selectedItems, newItem]);
+        alert(`✅ "${customName.trim()}" ajouté avec succès pour ${selectedLocation}!`);
+    };
+
     const handleGeneratePDF = async () => {
         if (selectedItems.length === 0) {
             alert('Veuillez sélectionner au moins un contenant.');
@@ -415,6 +469,20 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                         <div className="card-header p-4 -m-6 mb-6">
                             <h3 className="text-xl font-bold gradient-text">📦 Sélectionner les contenants à ramasser</h3>
                             <p className="text-sm text-gray-600 mt-1">Choisissez les contenants de différents lieux et ajoutez des commentaires spécifiques</p>
+                        </div>
+                        
+                        {/* Bouton d'ajout manuel */}
+                        <div className="mb-6">
+                            <button 
+                                type="button" 
+                                onClick={handleAddCustomMultiItem} 
+                                className="w-full bg-blue-100 text-blue-800 py-3 px-4 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 flex items-center justify-center gap-2 font-medium transition-all hover:scale-105"
+                            >
+                                ✏️ Ajouter un contenant manuellement
+                            </button>
+                            <p className="text-xs text-gray-500 mt-2 text-center">
+                                Pour ajouter un contenant qui n'est pas dans l'inventaire (ex: Baril de colasse vide)
+                            </p>
                         </div>
                         
                         {inventoryByLocation.length > 0 ? (
