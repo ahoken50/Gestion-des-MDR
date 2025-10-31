@@ -42,13 +42,15 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
 
     // Logique pour le mode multiple
     const inventoryByLocation = useMemo(() => {
+        // On ne filtre plus par group.items.length > 0 pour afficher tous les lieux
         const grouped = LOCATIONS.map(loc => ({
             location: loc,
+            // On filtre toujours l'inventaire pour n'afficher que les items disponibles (> 0)
             items: inventory.filter(item => item.location === loc && item.quantity > 0)
-        })).filter(group => group.items.length > 0);
+        }));
         
         return grouped;
-    }, [inventory]);
+    }, [inventory, LOCATIONS]); // Ajout de LOCATIONS comme dépendance pour s'assurer que tous les lieux sont pris en compte
 
     const selectedByLocation = useMemo(() => {
         return selectedItems.reduce((groups, item) => {
@@ -486,12 +488,11 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                             </p>
                         </div>
                         
-                        {inventoryByLocation.length > 0 ? (
-                            inventoryByLocation.map(({ location: loc, items }) => (
-                                <div key={loc} className="mb-6">
-                                    <h4 className="text-md font-semibold text-gray-700 mb-3">
-                                        {loc}
-                                    </h4>
+                        {inventoryByLocation.map(({ location: loc, items }) => (
+                            <div key={loc} className="mb-6">
+                                <h4 className="text-md font-semibold text-gray-700 mb-3">
+                                    {loc}
+                                </h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {items.map(item => {
                                             const selectedItem = selectedItems.find(
@@ -535,14 +536,14 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                                                 </div>
                                             );
                                         })}
+                                        {items.length === 0 && (
+                                            <p className="text-gray-500 italic col-span-full">
+                                                Aucun contenant disponible dans l'inventaire pour ce lieu.
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
-                            ))
-                        ) : (
-                            <p className="text-gray-500 italic">
-                                Aucun contenant disponible dans l'inventaire.
-                            </p>
-                        )}
+                            ))}
                     </div>
 
                     {/* Récapitulatif de la sélection */}
