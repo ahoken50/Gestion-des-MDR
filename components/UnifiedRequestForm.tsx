@@ -49,8 +49,9 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             items: inventory.filter(item => item.location === loc && item.quantity > 0)
         }));
         
+        // console.log('Inventory by Location:', grouped); // Décommenter pour le débogage
         return grouped;
-    }, [inventory, LOCATIONS]); // Ajout de LOCATIONS comme dépendance pour s'assurer que tous les lieux sont pris en compte
+    }, [inventory, LOCATIONS]);
 
     const selectedByLocation = useMemo(() => {
         return selectedItems.reduce((groups, item) => {
