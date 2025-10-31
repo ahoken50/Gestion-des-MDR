@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, query, orderBy, limit, serverTimestamp, setDoc } from 'firebase/firestore';
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, query, orderBy, limit, serverTimestamp, setDoc, runTransaction } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // Configuration Firebase (utilisera les variables d'environnement)
@@ -48,33 +48,41 @@ export interface InventoryItem {
 }
 
 class FirebaseService {
-  // Obtenir le prochain numéro de requête
+  // Obtenir le prochain numéro de requête de manière atomique
   async getNextRequestNumber(): Promise<number> {
+    const counterDocRef = doc(db, 'counters', 'requestNumber');
+    
     try {
-      const counterDoc = doc(db, 'counters', 'requestNumber');
-      const counterSnap = await getDoc(counterDoc);
-      
-      if (!counterSnap.exists()) {
-        // Créer le compteur s'il n'existe pas
-        await setDoc(counterDoc, {
-          value: 1,
-          updatedAt: serverTimestamp()
-        });
-        return 1;
-      }
-      
-      const currentValue = counterSnap.data()?.value || 0;
-      const nextValue = currentValue + 1;
-      
-      await updateDoc(counterDoc, {
-        value: nextValue,
-        updatedAt: serverTimestamp()
+      const newRequestNumber = await runTransaction(db, async (transaction) => {
+        const counterDoc = await transaction.get(counterDocRef);
+        
+        let nextValue: number;
+        
+        if (!counterDoc.exists()) {
+          // Créer le compteur s'il n'existe pas
+          nextValue = 1;
+          transaction.set(counterDocRef, {
+            value: nextValue,
+            updatedAt: serverTimestamp()
+          });
+        } else {
+          const currentValue = counterDoc.data()?.value || 0;
+          nextValue = currentValue + 1;
+          
+          transaction.update(counterDocRef, {
+            value: nextValue,
+            updatedAt: serverTimestamp()
+          });
+        }
+        
+        return nextValue;
       });
       
-      return nextValue;
+      return newRequestNumber;
+      
     } catch (error) {
-      console.error('Error getting next request number:', error);
-      // Fallback to timestamp-based ID if Firebase fails
+      console.error('Error getting next request number with transaction:', error);
+      // Fallback to timestamp-based ID if transaction fails
       return Date.now();
     }
   }
