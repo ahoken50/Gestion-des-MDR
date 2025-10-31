@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { GroupedItemsByLocation, PickupRequestPDF, PDFGenerationOptions } from '../types-pdf';
+import { LOCATION_ADDRESSES } from '../constants';
 
 export class PDFService {
   private doc: jsPDF;
@@ -67,9 +68,6 @@ export class PDFService {
 
   private addItemsTable(groupedItems: GroupedItemsByLocation): number {
     let currentY = 120;
-    
-    // Import des adresses
-    const { LOCATION_ADDRESSES } = require('../constants');
     
     // Créer une section séparée pour chaque lieu
     Object.entries(groupedItems).forEach(([location, locationData], index) => {
