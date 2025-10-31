@@ -68,65 +68,101 @@ export class PDFService {
   private addItemsTable(groupedItems: GroupedItemsByLocation): number {
     let currentY = 120;
     
-    // Préparer les données pour le tableau avec regroupement
-    const tableData: string[][] = [];
+    // Import des adresses
+    const { LOCATION_ADDRESSES } = require('../constants');
     
-    Object.entries(groupedItems).forEach(([location, locationData]) => {
+    // Créer une section séparée pour chaque lieu
+    Object.entries(groupedItems).forEach(([location, locationData], index) => {
       // Support des deux formats: array direct ou objet avec items/comments
       const items = Array.isArray(locationData) ? locationData : locationData.items;
       const comments = !Array.isArray(locationData) ? locationData.comments : null;
       
-      // Ajouter les commentaires s'ils existent
-      if (comments && comments.trim()) {
-        tableData.push([
-          location,
-          `Commentaires: ${comments}`,
-          ''
-        ]);
+      // Vérifier si on a besoin d'une nouvelle page
+      if (currentY > 240) {
+        this.doc.addPage();
+        currentY = 20;
       }
       
-      items.forEach((item, index) => {
-        tableData.push([
-          index === 0 && !comments ? location : '', // Afficher le lieu seulement sur la première ligne si pas de commentaires
-          item.name,
-          item.quantity.toString()
-        ]);
+      // En-tête de section pour le lieu
+      this.doc.setFillColor(59, 130, 246);
+      this.doc.roundedRect(20, currentY, 170, 12, 2, 2, 'F');
+      
+      this.doc.setTextColor(255, 255, 255);
+      this.doc.setFontSize(12);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text(`📍 Lieu ${index + 1}: ${location}`, 25, currentY + 8);
+      
+      currentY += 15;
+      
+      // Adresse complète
+      const addressInfo = LOCATION_ADDRESSES[location];
+      if (addressInfo) {
+        this.doc.setTextColor(0, 0, 0);
+        this.doc.setFontSize(10);
+        this.doc.setFont('helvetica', 'normal');
+        this.doc.text(`Adresse: ${addressInfo.fullAddress}`, 25, currentY);
+        currentY += 7;
+      }
+      
+      // Commentaires spécifiques au lieu (si présents)
+      if (comments && comments.trim()) {
+        this.doc.setFillColor(255, 250, 205); // Jaune pâle
+        this.doc.roundedRect(20, currentY, 170, 15, 2, 2, 'F');
+        
+        this.doc.setTextColor(0, 0, 0);
+        this.doc.setFontSize(9);
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.text('💬 Instructions spécifiques:', 25, currentY + 5);
+        
+        this.doc.setFont('helvetica', 'normal');
+        const splitComments = this.doc.splitTextToSize(comments, 160);
+        this.doc.text(splitComments, 25, currentY + 11);
+        
+        currentY += 18;
+      }
+      
+      // Préparer les données du tableau pour ce lieu
+      const tableData: string[][] = items.map(item => [
+        item.name,
+        item.quantity.toString()
+      ]);
+      
+      // Tableau des contenants pour ce lieu
+      autoTable(this.doc, {
+        head: [['Contenant', 'Quantité']],
+        body: tableData,
+        startY: currentY,
+        theme: 'striped',
+        styles: {
+          fontSize: 10,
+          cellPadding: 4,
+        },
+        headStyles: {
+          fillColor: [79, 150, 246],
+          textColor: 255,
+          fontStyle: 'bold',
+          halign: 'left'
+        },
+        columnStyles: {
+          0: { cellWidth: 130 },
+          1: { halign: 'center', cellWidth: 40, fontStyle: 'bold' }
+        },
+        margin: { left: 20, right: 20 }
       });
-    });
-    
-    // Tableau des contenants
-    autoTable(this.doc, {
-      head: [['Lieu', 'Contenant', 'Quantité']],
-      body: tableData,
-      startY: currentY,
-      theme: 'grid',
-      styles: {
-        fontSize: 10,
-        cellPadding: 3,
-      },
-      headStyles: {
-        fillColor: [59, 130, 246],
-        textColor: 255,
-        fontStyle: 'bold'
-      },
-      columnStyles: {
-        0: { fontStyle: 'bold' }, // Lieu en gras
-        2: { halign: 'center' }   // Quantité centrée
-      },
-      didParseCell: (data) => {
-        // Fusionner visuellement les cellules de localisation
-        if (data.column.index === 0 && data.cell.raw && data.cell.raw !== '') {
-          const location = data.cell.raw as string;
-          const items = groupedItems[location];
-          if (items && items.length > 1) {
-            data.cell.styles.fillColor = [245, 245, 245];
-          }
-        }
+      
+      // Mettre à jour currentY après le tableau
+      currentY = (this.doc as any).lastAutoTable.finalY + 10;
+      
+      // Ligne de séparation entre les lieux (sauf pour le dernier)
+      if (index < Object.keys(groupedItems).length - 1) {
+        this.doc.setDrawColor(200, 200, 200);
+        this.doc.setLineWidth(0.5);
+        this.doc.line(20, currentY, 190, currentY);
+        currentY += 10;
       }
     });
     
-    // Retourner la position Y après le tableau
-    return (this.doc as any).lastAutoTable.finalY + 10;
+    return currentY;
   }
 
   private addSummary(request: PickupRequestPDF, lastY: number): void {
@@ -228,6 +264,14 @@ export function createPickupRequestPDF(
   const groupedItems = groupedItemsWithComments || groupItemsByLocation(selectedItems);
   const totalItems = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
   
+  // Extraire les commentaires par lieu
+  const locationComments: Record<string, string> = {};
+  Object.entries(groupedItems).forEach(([location, data]) => {
+    if (!Array.isArray(data) && data.comments) {
+      locationComments[location] = data.comments;
+    }
+  });
+  
   return {
     id: `REQ-${Date.now()}`,
     bcNumber: contactInfo.bcNumber,
@@ -237,6 +281,7 @@ export function createPickupRequestPDF(
     notes: contactInfo.notes,
     groupedItems,
     totalItems,
-    totalLocations: Object.keys(groupedItems).length
+    totalLocations: Object.keys(groupedItems).length,
+    locationComments: Object.keys(locationComments).length > 0 ? locationComments : undefined
   };
 }

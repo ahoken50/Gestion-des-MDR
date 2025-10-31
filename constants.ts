@@ -7,6 +7,34 @@ export const LOCATIONS = [
   "Forêt Récréative",
 ];
 
+// Adresses complètes pour chaque lieu (utilisées dans les PDFs)
+export const LOCATION_ADDRESSES: Record<string, { street: string; city: string; postalCode: string; fullAddress: string }> = {
+  "2200 Jean-Jacques Cossette": {
+    street: "2200 Jean-Jacques Cossette",
+    city: "Saguenay, QC",
+    postalCode: "G7S 3H1",
+    fullAddress: "2200 Jean-Jacques Cossette, Saguenay, QC G7S 3H1"
+  },
+  "1200 6e rue": {
+    street: "1200 6e rue",
+    city: "Saguenay, QC",
+    postalCode: "G7B 2Z7",
+    fullAddress: "1200 6e rue, Saguenay, QC G7B 2Z7"
+  },
+  "1199 rue de l'Escale": {
+    street: "1199 rue de l'Escale",
+    city: "Saguenay, QC",
+    postalCode: "G7H 7Y1",
+    fullAddress: "1199 rue de l'Escale, Saguenay, QC G7H 7Y1"
+  },
+  "Forêt Récréative": {
+    street: "Forêt Récréative",
+    city: "Saguenay, QC",
+    postalCode: "",
+    fullAddress: "Forêt Récréative, Saguenay, QC"
+  }
+};
+
 export const INITIAL_INVENTORY: InventoryItem[] = [
   // 2200 Jean-Jacques Cossette
   { id: '1', name: 'Bac contenant Urée vide', quantity: 2, location: LOCATIONS[0] },

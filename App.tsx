@@ -166,9 +166,79 @@ const App: React.FC = () => {
         }
     };
 
-    const handlePDFGenerated = (request: PickupRequestPDF) => {
+    const handlePDFGenerated = async (request: PickupRequestPDF) => {
         console.log('PDF Request generated:', request);
-        // Vous pouvez ici ajouter la logique pour sauvegarder la demande si nécessaire
+        
+        try {
+            // Convertir la demande PDF en demande normale pour l'historique
+            // Extraire tous les items de tous les lieux
+            const allItems: RequestedItem[] = [];
+            const locations: string[] = [];
+            
+            Object.entries(request.groupedItems).forEach(([location, locationData]) => {
+                locations.push(location);
+                const items = Array.isArray(locationData) ? locationData : locationData.items;
+                items.forEach(item => {
+                    allItems.push({
+                        name: item.name,
+                        quantity: item.quantity
+                    });
+                });
+            });
+            
+            // Créer une demande pour l'historique
+            const historyRequest: Omit<PickupRequest, 'id' | 'status'> = {
+                bcNumber: request.bcNumber,
+                location: locations.join(', '), // Combiner tous les lieux
+                items: allItems,
+                date: request.date,
+                contactName: request.contactName,
+                contactPhone: request.contactPhone,
+                notes: request.notes,
+                locationComments: request.locationComments
+            };
+            
+            // Sauvegarder dans Firebase ou localement
+            if (isFirebaseEnabled) {
+                const firebaseRequest: Omit<FirebasePickupRequest, 'id' | 'requestNumber' | 'createdAt' | 'updatedAt'> = {
+                    ...historyRequest,
+                    status: 'pending',
+                };
+                const docId = await firebaseService.addPickupRequest(firebaseRequest);
+                
+                // Récupérer la demande sauvegardée avec son ID et numéro
+                const savedRequest = await firebaseService.getPickupRequest(docId);
+                if (savedRequest) {
+                    setFirebaseRequests(prev => [savedRequest, ...prev]);
+                    console.log('Multi-selection request saved to Firebase:', savedRequest);
+                }
+            } else {
+                // Sauvegarder localement
+                const requestWithId: PickupRequest = {
+                    ...historyRequest,
+                    id: Date.now().toString(),
+                    status: 'pending',
+                };
+                setPickupRequests(prev => [requestWithId, ...prev]);
+                console.log('Multi-selection request saved locally:', requestWithId);
+            }
+            
+            // Mettre à jour l'inventaire (soustraire les quantités)
+            const updatedInventory = inventory.map(invItem => {
+                const totalRequested = allItems
+                    .filter(reqItem => reqItem.name === invItem.name)
+                    .reduce((sum, item) => sum + item.quantity, 0);
+                
+                if (totalRequested > 0) {
+                    return { ...invItem, quantity: Math.max(0, invItem.quantity - totalRequested) };
+                }
+                return invItem;
+            });
+            setInventory(updatedInventory);
+            
+        } catch (error) {
+            console.error('Error saving PDF request to history:', error);
+        }
     };
 
     return (

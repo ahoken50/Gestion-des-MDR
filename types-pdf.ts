@@ -24,6 +24,7 @@ export interface PickupRequestPDF {
   groupedItems: GroupedItemsByLocation;
   totalItems: number;
   totalLocations: number;
+  locationComments?: Record<string, string>; // Commentaires par lieu
 }
 
 export interface PDFGenerationOptions {
