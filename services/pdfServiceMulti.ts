@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { GroupedItemsByLocation, PickupRequestPDF, PDFGenerationOptions } from '../types-pdf';
+import type { GroupedItemsByLocation, PickupRequestPDF, PDFGenerationOptions, SelectedItem } from '../types-pdf';
 import { LOCATION_ADDRESSES } from '../constants';
 
 export class PDFService {
@@ -23,253 +23,202 @@ export class PDFService {
   }
 
   private addHeader(title: string): void {
-    // En-tête avec bordure
-    this.doc.setFillColor(59, 130, 246); // Bleu
-    this.doc.rect(0, 0, 210, 40, 'F');
-    
-    // Titre
+    this.doc.setFillColor(30, 58, 138); // Bleu foncé
+    this.doc.rect(0, 0, 210, 30, 'F');
     this.doc.setTextColor(255, 255, 255);
     this.doc.setFontSize(20);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(title, 105, 25, { align: 'center' });
-    
-    // Réinitialiser les styles
-    this.doc.setTextColor(0, 0, 0);
+    this.doc.text(title, 105, 20, { align: 'center' });
     this.doc.setFont('helvetica', 'normal');
   }
 
   private addContactInfo(request: PickupRequestPDF): void {
-    const startY = 50;
-    
+    let y = 40;
     this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('Informations de demande', 20, startY);
-    
+    this.doc.text('Informations de demande', 14, y);
+    y += 8;
+
     this.doc.setFontSize(11);
     this.doc.setFont('helvetica', 'normal');
-    if (request.bcNumber) {
-      this.doc.text(`Numéro BC: ${request.bcNumber}`, 20, startY + 10);
-      this.doc.text(`Nom: ${request.contactName}`, 20, startY + 20);
-      this.doc.text(`Téléphone: ${request.contactPhone}`, 20, startY + 30);
-    } else {
-      this.doc.text(`Nom: ${request.contactName}`, 20, startY + 10);
-      this.doc.text(`Téléphone: ${request.contactPhone}`, 20, startY + 20);
-    }
-    this.doc.text(`Date: ${new Date(request.date).toLocaleDateString('fr-CA')}`, 20, startY + 30);
-    this.doc.text(`ID de demande: ${request.id}`, 20, startY + 40);
-    
-    // Notes si présentes
+    const info = [
+      { label: 'Numéro BC', value: request.bcNumber },
+      { label: 'Nom du contact', value: request.contactName },
+      { label: 'Téléphone', value: request.contactPhone },
+      { label: 'Date', value: new Date(request.date).toLocaleDateString('fr-CA') },
+      { label: 'ID de demande', value: request.id },
+    ];
+
+    info.forEach(item => {
+      if (item.value) {
+        this.doc.text(`${item.label}: ${item.value}`, 14, y);
+        y += 7;
+      }
+    });
+
     if (request.notes && request.notes.trim()) {
-      this.doc.text('Notes:', 20, startY + 55);
-      const splitNotes = this.doc.splitTextToSize(request.notes, 170);
-      this.doc.text(splitNotes, 20, startY + 65);
+      y += 3; // Espace avant les notes
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text('Notes générales:', 14, y);
+      y += 5;
+      this.doc.setFont('helvetica', 'normal');
+      const splitNotes = this.doc.splitTextToSize(request.notes, 182);
+      this.doc.text(splitNotes, 14, y);
     }
   }
 
   private addItemsTable(groupedItems: GroupedItemsByLocation): number {
-    let currentY = 120;
-    
-    // Créer une section séparée pour chaque lieu
+    let y = (this.doc as any).lastAutoTable.finalY || 95;
+
     Object.entries(groupedItems).forEach(([location, locationData], index) => {
-      // Support des deux formats: array direct ou objet avec items/comments
       const items = Array.isArray(locationData) ? locationData : locationData.items;
       const comments = !Array.isArray(locationData) ? locationData.comments : null;
-      
-      // Vérifier si on a besoin d'une nouvelle page
-      if (currentY > 240) {
+
+      if (items.length === 0) return; // Ne pas afficher le lieu s'il n'y a pas d'articles
+
+      if (y > 250) {
         this.doc.addPage();
-        currentY = 20;
+        y = 20;
       }
-      
-      // En-tête de section pour le lieu
-      this.doc.setFillColor(59, 130, 246);
-      this.doc.roundedRect(20, currentY, 170, 12, 2, 2, 'F');
-      
+
+      y += 10;
+      this.doc.setFillColor(59, 130, 246); // Bleu
+      this.doc.roundedRect(14, y, 182, 10, 2, 2, 'F');
       this.doc.setTextColor(255, 255, 255);
       this.doc.setFontSize(12);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text(`📍 Lieu ${index + 1}: ${location}`, 25, currentY + 8);
-      
-      currentY += 15;
-      
-      // Adresse complète
+      this.doc.text(`📍 Lieu ${index + 1}: ${location}`, 18, y + 7);
+      y += 13;
+
       const addressInfo = LOCATION_ADDRESSES[location];
       if (addressInfo) {
-        this.doc.setTextColor(0, 0, 0);
+        this.doc.setTextColor(80);
         this.doc.setFontSize(10);
         this.doc.setFont('helvetica', 'normal');
-        this.doc.text(`Adresse: ${addressInfo.fullAddress}`, 25, currentY);
-        currentY += 7;
+        this.doc.text(`Adresse: ${addressInfo.fullAddress}`, 18, y);
+        y += 7;
       }
-      
-      // Commentaires spécifiques au lieu (si présents)
+
       if (comments && comments.trim()) {
         this.doc.setFillColor(255, 250, 205); // Jaune pâle
-        this.doc.roundedRect(20, currentY, 170, 15, 2, 2, 'F');
-        
-        this.doc.setTextColor(0, 0, 0);
+        this.doc.roundedRect(18, y, 174, 12, 2, 2, 'F');
+        this.doc.setTextColor(0);
         this.doc.setFontSize(9);
         this.doc.setFont('helvetica', 'bold');
-        this.doc.text('💬 Instructions spécifiques:', 25, currentY + 5);
-        
+        this.doc.text('💬 Instructions spécifiques:', 22, y + 5);
         this.doc.setFont('helvetica', 'normal');
-        const splitComments = this.doc.splitTextToSize(comments, 160);
-        this.doc.text(splitComments, 25, currentY + 11);
-        
-        currentY += 18;
+        const splitComments = this.doc.splitTextToSize(comments, 166);
+        this.doc.text(splitComments, 22, y + 9);
+        y += 15;
       }
-      
-      // Préparer les données du tableau pour ce lieu
-      const tableData: string[][] = items.map(item => [
-        item.name,
-        item.quantity.toString()
-      ]);
-      
-      // Tableau des contenants pour ce lieu
+
+      const tableData: string[][] = items.map(item => [item.name, item.quantity.toString()]);
+
       autoTable(this.doc, {
         head: [['Contenant', 'Quantité']],
         body: tableData,
-        startY: currentY,
+        startY: y,
         theme: 'striped',
-        styles: {
-          fontSize: 10,
-          cellPadding: 4,
-        },
-        headStyles: {
-          fillColor: [79, 150, 246],
-          textColor: 255,
-          fontStyle: 'bold',
-          halign: 'left'
-        },
+        styles: { fontSize: 10, cellPadding: 3 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
         columnStyles: {
-          0: { cellWidth: 130 },
+          0: { cellWidth: 142 },
           1: { halign: 'center', cellWidth: 40, fontStyle: 'bold' }
         },
-        margin: { left: 20, right: 20 }
+        margin: { left: 14, right: 14 }
       });
-      
-      // Mettre à jour currentY après le tableau
-      currentY = (this.doc as any).lastAutoTable.finalY + 10;
-      
-      // Ligne de séparation entre les lieux (sauf pour le dernier)
-      if (index < Object.keys(groupedItems).length - 1) {
-        this.doc.setDrawColor(200, 200, 200);
-        this.doc.setLineWidth(0.5);
-        this.doc.line(20, currentY, 190, currentY);
-        currentY += 10;
-      }
+
+      y = (this.doc as any).lastAutoTable.finalY;
     });
-    
-    return currentY;
+
+    return y;
   }
 
   private addSummary(request: PickupRequestPDF, lastY: number): void {
-    const startY = Math.max(lastY, 220);
-    
-    // Cadre récapitulatif
-    this.doc.setFillColor(240, 240, 240);
-    this.doc.roundedRect(20, startY, 170, 30, 3, 3, 'F');
-    
+    let y = lastY + 15;
+    if (y > 260) {
+        this.doc.addPage();
+        y = 20;
+    }
+
+    this.doc.setFillColor(243, 244, 246); // Gris clair
+    this.doc.roundedRect(14, y, 182, 20, 3, 3, 'F');
     this.doc.setFontSize(12);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('Résumé', 30, startY + 15);
-    
+    this.doc.text('Résumé', 20, y + 8);
     this.doc.setFont('helvetica', 'normal');
     this.doc.setFontSize(11);
-    this.doc.text(`Total de contenants: ${request.totalItems}`, 30, startY + 25);
-    this.doc.text(`Nombre de lieux: ${request.totalLocations}`, 120, startY + 25);
+    this.doc.text(`Total de contenants: ${request.totalItems}`, 20, y + 15);
+    this.doc.text(`Nombre de lieux: ${request.totalLocations}`, 100, y + 15);
   }
 
   private addFooter(): void {
-    const pageHeight = this.doc.internal.pageSize.height;
-    
-    // Pied de page
-    this.doc.setFontSize(8);
-    this.doc.setTextColor(128, 128, 128);
-    this.doc.text(
-      `Document généré le ${new Date().toLocaleString('fr-CA')}`,
-      105,
-      pageHeight - 10,
-      { align: 'center' }
-    );
+    const pageCount = this.doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      this.doc.setPage(i);
+      const pageHeight = this.doc.internal.pageSize.height;
+      this.doc.setFontSize(8);
+      this.doc.setTextColor(128);
+      this.doc.text(`Document généré le ${new Date().toLocaleString('fr-CA')}`, 105, pageHeight - 10, { align: 'center' });
+      this.doc.text(`Page ${i} sur ${pageCount}`, 198, pageHeight - 10, { align: 'right' });
+    }
   }
 
   generatePickupRequestPDF(request: PickupRequestPDF): void {
-    // En-tête
     this.addHeader('DEMANDE DE RAMASSAGE DE CONTENANTS');
-    
-    // Informations de contact
     this.addContactInfo(request);
-    
-    // Tableau des contenants
     const lastTableY = this.addItemsTable(request.groupedItems);
-    
-    // Résumé
     this.addSummary(request, lastTableY);
-    
-    // Pied de page
     this.addFooter();
   }
 
   save(filename: string): void {
     this.doc.save(filename);
   }
-
   getBlob(): Blob {
     return this.doc.output('blob');
   }
-
   getDataURL(): string {
     return this.doc.output('datauristring');
   }
 }
 
-// Fonction utilitaire pour regrouper les items par localisation
-export function groupItemsByLocation(selectedItems: Array<{
-  id: string;
-  name: string;
-  quantity: number;
-  location: string;
-}>): GroupedItemsByLocation {
+export function groupItemsByLocation(selectedItems: SelectedItem[]): GroupedItemsByLocation {
   return selectedItems.reduce((groups, item) => {
-    if (!groups[item.location]) {
-      groups[item.location] = {
-        items: [],
-        comments: undefined
-      };
+    const location = item.location || 'Non spécifié';
+    if (!groups[location]) {
+      groups[location] = { items: [], comments: undefined };
     }
-    groups[item.location].items.push(item);
+    groups[location].items.push(item);
     return groups;
   }, {} as GroupedItemsByLocation);
 }
 
-// Fonction utilitaire pour créer une demande PDF
 export function createPickupRequestPDF(
-  selectedItems: Array<{
-    id: string;
-    name: string;
-    quantity: number;
-    location: string;
-  }>,
-  contactInfo: {
-    name: string;
-    phone: string;
-    notes?: string;
-    bcNumber?: string;
-  },
+  selectedItems: SelectedItem[],
+  contactInfo: { name: string; phone: string; notes?: string; bcNumber?: string; },
   groupedItemsWithComments?: Record<string, { items: any[], comments?: string }>
 ): PickupRequestPDF {
-  const groupedItems = groupedItemsWithComments || groupItemsByLocation(selectedItems);
-  const totalItems = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
-  
-  // Extraire les commentaires par lieu
+  const allItems = [...selectedItems];
+  if (groupedItemsWithComments) {
+      Object.values(groupedItemsWithComments).forEach(data => {
+          data.items.forEach(item => {
+              if (!allItems.some(i => i.id === item.id)) {
+                  allItems.push(item);
+              }
+          });
+      });
+  }
+
+  const groupedItems = groupedItemsWithComments || groupItemsByLocation(allItems);
+  const totalItems = allItems.reduce((sum, item) => sum + item.quantity, 0);
   const locationComments: Record<string, string> = {};
   Object.entries(groupedItems).forEach(([location, data]) => {
     if (!Array.isArray(data) && data.comments) {
       locationComments[location] = data.comments;
     }
   });
-  
+
   return {
     id: `REQ-${Date.now()}`,
     bcNumber: contactInfo.bcNumber,

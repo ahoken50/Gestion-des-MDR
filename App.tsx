@@ -77,8 +77,9 @@ const App: React.FC = () => {
         initFirebase();
     }, []);
 
-    // Combiner les demandes locales et Firebase
-    const allRequests = [...firebaseRequests, ...pickupRequests];
+	    // Combiner les demandes locales et Firebase
+	    // S'assurer que les requêtes Firebase sont triées par requestNumber (déjà fait dans getPickupRequests)
+	    const allRequests = [...firebaseRequests, ...pickupRequests];
 
     const handleAddRequest = async (newRequest: Omit<PickupRequest, 'id' | 'status'>) => {
         try {
@@ -92,11 +93,12 @@ const App: React.FC = () => {
                 };
                 const docId = await firebaseService.addPickupRequest(firebaseRequest);
                 
-                // Récupérer la demande sauvegardée avec son ID
-                savedRequest = await firebaseService.getPickupRequest(docId);
-                if (savedRequest) {
-                    setFirebaseRequests(prev => [savedRequest, ...prev]);
-                }
+                // Recharger toutes les demandes depuis Firebase pour s'assurer de la synchronisation
+                const fbRequests = await firebaseService.getPickupRequests();
+                setFirebaseRequests(fbRequests);
+                
+                // Trouver la nouvelle demande dans la liste rechargée (pour l'affichage immédiat si nécessaire)
+                savedRequest = fbRequests.find(req => req.id === docId);
             } else {
                 // Sauvegarder localement
                 const requestWithId: PickupRequest = {
@@ -206,12 +208,15 @@ const App: React.FC = () => {
                 };
                 const docId = await firebaseService.addPickupRequest(firebaseRequest);
                 
-                // Récupérer la demande sauvegardée avec son ID et numéro
-                const savedRequest = await firebaseService.getPickupRequest(docId);
-                if (savedRequest) {
-                    setFirebaseRequests(prev => [savedRequest, ...prev]);
-                    console.log('Multi-selection request saved to Firebase:', savedRequest);
-                }
+	                // Recharger toutes les demandes depuis Firebase pour s'assurer de la synchronisation
+	                const fbRequests = await firebaseService.getPickupRequests();
+	                setFirebaseRequests(fbRequests);
+	                
+	                // Trouver la nouvelle demande dans la liste rechargée (pour l'affichage immédiat si nécessaire)
+	                const savedRequest = fbRequests.find(req => req.id === docId);
+	                if (savedRequest) {
+	                    console.log('Multi-selection request saved to Firebase:', savedRequest);
+	                }
             } else {
                 // Sauvegarder localement
                 const requestWithId: PickupRequest = {
@@ -223,18 +228,19 @@ const App: React.FC = () => {
                 console.log('Multi-selection request saved locally:', requestWithId);
             }
             
-            // Mettre à jour l'inventaire (soustraire les quantités)
-            const updatedInventory = inventory.map(invItem => {
-                const totalRequested = allItems
-                    .filter(reqItem => reqItem.name === invItem.name)
-                    .reduce((sum, item) => sum + item.quantity, 0);
-                
-                if (totalRequested > 0) {
-                    return { ...invItem, quantity: Math.max(0, invItem.quantity - totalRequested) };
-                }
-                return invItem;
-            });
-            setInventory(updatedInventory);
+	            // Mettre à jour l'inventaire (soustraire les quantités)
+	            const updatedInventory = inventory.map(invItem => {
+	                // On ne soustrait que les items qui proviennent de l'inventaire (pas les custom items)
+	                const totalRequested = allItems
+	                    .filter(reqItem => !reqItem.id.startsWith('custom-') && reqItem.name === invItem.name && reqItem.location === invItem.location)
+	                    .reduce((sum, item) => sum + item.quantity, 0);
+	                
+	                if (totalRequested > 0) {
+	                    return { ...invItem, quantity: Math.max(0, invItem.quantity - totalRequested) };
+	                }
+	                return invItem;
+	            });
+	            setInventory(updatedInventory);
             
         } catch (error) {
             console.error('Error saving PDF request to history:', error);

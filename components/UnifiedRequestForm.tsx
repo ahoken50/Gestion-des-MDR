@@ -155,7 +155,8 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
     // Fonctions pour le mode multiple
     const handleAddMultiItem = (item: InventoryItem, quantity: number) => {
         const existingIndex = selectedItems.findIndex(
-            selected => selected.id === item.id
+            // On vérifie par ID pour les items d'inventaire, et par nom/location pour les items spontanés
+            selected => selected.id === item.id || (selected.name === item.name && selected.location === item.location)
         );
         
         if (existingIndex >= 0) {
@@ -513,12 +514,14 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                                                         <input
                                                             type="number"
                                                             min="0"
-                                                            max={item.quantity}
+                                                            max={item.quantity} // La quantité max est celle de l'inventaire
                                                             value={selectedQuantity}
                                                             onChange={e => {
                                                                 const quantity = parseInt(e.target.value, 10) || 0;
                                                                 if (quantity > 0) {
-                                                                    handleAddMultiItem(item, Math.min(quantity, item.quantity));
+                                                                    // Pour les items d'inventaire, on ne peut pas dépasser la quantité disponible
+                                                                    const maxQuantity = item.id.startsWith('custom-') ? Infinity : item.quantity;
+                                                                    handleAddMultiItem(item, Math.min(quantity, maxQuantity));
                                                                 } else if (selectedItem) {
                                                                     handleRemoveMultiItem(item.id);
                                                                 }
