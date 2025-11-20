@@ -13,28 +13,42 @@ interface RequestHistoryProps {
 }
 
 // FIX: Provide implementation for RequestHistory component.
-const RequestHistory: React.FC<RequestHistoryProps> = ({ 
-    requests, 
-    onUpdateRequestStatus, 
+const RequestHistory: React.FC<RequestHistoryProps> = ({
+    requests,
+    onUpdateRequestStatus,
     onRequestUpdated,
-    inventory 
+    inventory
 }) => {
-    const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+    const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed' | 'cancelled'>('all');
     const [selectedRequest, setSelectedRequest] = useState<PickupRequest | FirebasePickupRequest | null>(null);
 
     const filteredRequests = requests.filter(request => {
         if (filter === 'all') return true;
         return request.status === filter;
     });
-    
-    const getStatusBadge = (status: 'pending' | 'completed') => {
+
+    const getStatusBadge = (status: string) => {
         switch (status) {
             case 'pending':
                 return 'bg-yellow-100 text-yellow-800';
+            case 'in_progress':
+                return 'bg-blue-100 text-blue-800';
             case 'completed':
                 return 'bg-green-100 text-green-800';
+            case 'cancelled':
+                return 'bg-red-100 text-red-800';
             default:
                 return 'bg-gray-100 text-gray-800';
+        }
+    };
+
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case 'pending': return 'En attente';
+            case 'in_progress': return 'En cours';
+            case 'completed': return 'Complétée';
+            case 'cancelled': return 'Annulée';
+            default: return status;
         }
     };
 
@@ -58,20 +72,22 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                     <select
                         id="statusFilter"
                         value={filter}
-                        onChange={(e) => setFilter(e.target.value as 'all' | 'pending' | 'completed')}
+                        onChange={(e) => setFilter(e.target.value as any)}
                         className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-1.5"
                     >
                         <option value="all">Toutes</option>
                         <option value="pending">En attente</option>
+                        <option value="in_progress">En cours</option>
                         <option value="completed">Complétées</option>
+                        <option value="cancelled">Annulées</option>
                     </select>
                 </div>
             </div>
-            
+
             {filteredRequests.length > 0 ? (
                 <div className="table-container">
                     <table className="table">
-                         <thead className="table-header">
+                        <thead className="table-header">
                             <tr>
                                 <th scope="col" className="table-header-cell">Numéro</th>
                                 <th scope="col" className="table-header-cell">Date</th>
@@ -84,10 +100,10 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                         <tbody className="bg-white divide-y divide-gray-200">
                             {filteredRequests.map(request => {
                                 const isFirebaseRequest = 'requestNumber' in request;
-                                const displayNumber = isFirebaseRequest 
+                                const displayNumber = isFirebaseRequest
                                     ? `#${(request as FirebasePickupRequest).requestNumber}`
                                     : request.id.substring(0, 8);
-                                
+
                                 return (
                                     <tr key={request.id} className="table-row">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -99,35 +115,42 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {new Date(request.date).toLocaleDateString('fr-CA')}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{request.location}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {request.items.map(item => `${item.name} (x${item.quantity})`).join(', ')}
+                                            {request.location.length > 30 ? request.location.substring(0, 30) + '...' : request.location}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {request.items.length} contenant(s)
+                                            <div className="text-xs text-gray-400 truncate max-w-[200px]">
+                                                {request.items.map(i => i.name).join(', ')}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                             <select
+                                            <select
                                                 value={request.status}
-                                                onChange={(e) => onUpdateRequestStatus(request.id, e.target.value as 'pending' | 'completed')}
+                                                onChange={(e) => onUpdateRequestStatus(request.id, e.target.value as any)}
                                                 className={`text-xs font-semibold rounded-full px-2 py-1 border-0 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-500 ${getStatusBadge(request.status)}`}
                                             >
                                                 <option value="pending">En attente</option>
+                                                <option value="in_progress">En cours</option>
                                                 <option value="completed">Complétée</option>
+                                                <option value="cancelled">Annulée</option>
                                             </select>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex justify-end gap-2">
-                                                <button 
-                                                    onClick={() => handleViewDetails(request)} 
+                                                <button
+                                                    onClick={() => handleViewDetails(request)}
                                                     className="text-blue-600 hover:text-blue-800 transition-colors"
                                                     title="Voir les détails"
                                                 >
                                                     Détails
                                                 </button>
-                                                <button 
-                                                    onClick={() => generatePdf(request as PickupRequest)} 
+                                                <button
+                                                    onClick={() => generatePdf(request as PickupRequest)}
                                                     className="text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1"
                                                     title="Générer PDF"
                                                 >
-                                                    <FileTextIcon className="w-4 h-4"/>
+                                                    <FileTextIcon className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         </td>
@@ -140,7 +163,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
             ) : (
                 <p className="text-gray-500 italic mt-4">Aucune demande trouvée pour ce filtre.</p>
             )}
-            
+
             {selectedRequest && (
                 <RequestDetail
                     request={selectedRequest}

@@ -128,7 +128,7 @@ const App: React.FC = () => {
         }
     };
 
-    const handleUpdateRequestStatus = async (requestId: string, status: 'pending' | 'completed') => {
+    const handleUpdateRequestStatus = async (requestId: string, status: 'pending' | 'in_progress' | 'completed' | 'cancelled') => {
         try {
             // Vérifier si c'est une demande Firebase
             const firebaseRequest = firebaseRequests.find(req => req.id === requestId);

@@ -31,7 +31,7 @@ export interface FirebasePickupRequest {
   contactName: string;
   contactPhone: string;
   notes?: string;
-  status: 'pending' | 'completed';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   emails?: string[]; // Courriels en suivi
   images?: string[]; // URLs des images
   locationComments?: Record<string, string>; // Commentaires par lieu
@@ -51,13 +51,13 @@ class FirebaseService {
   // Obtenir le prochain numéro de requête de manière atomique
   async getNextRequestNumber(): Promise<number> {
     const counterDocRef = doc(db, 'counters', 'requestNumber');
-    
+
     try {
       const newRequestNumber = await runTransaction(db, async (transaction) => {
         const counterDoc = await transaction.get(counterDocRef);
-        
+
         let nextValue: number;
-        
+
         if (!counterDoc.exists()) {
           // Créer le compteur s'il n'existe pas
           nextValue = 1;
@@ -68,18 +68,18 @@ class FirebaseService {
         } else {
           const currentValue = counterDoc.data()?.value || 0;
           nextValue = currentValue + 1;
-          
+
           transaction.update(counterDocRef, {
             value: nextValue,
             updatedAt: serverTimestamp()
           });
         }
-        
+
         return nextValue;
       });
-      
+
       return newRequestNumber;
-      
+
     } catch (error) {
       console.error('Error getting next request number with transaction:', error);
       // Fallback to timestamp-based ID if transaction fails
@@ -112,7 +112,7 @@ class FirebaseService {
   async getPickupRequests(): Promise<FirebasePickupRequest[]> {
     const q = query(collection(db, 'pickupRequests'), orderBy('requestNumber', 'desc'));
     const querySnapshot = await getDocs(q);
-    
+
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -123,14 +123,14 @@ class FirebaseService {
   async getPickupRequest(id: string): Promise<FirebasePickupRequest | null> {
     const docRef = doc(db, 'pickupRequests', id);
     const docSnap = await getDoc(docRef);
-    
+
     if (docSnap.exists()) {
       return {
         id: docSnap.id,
         ...docSnap.data()
       } as FirebasePickupRequest;
     }
-    
+
     return null;
   }
 
@@ -144,7 +144,7 @@ class FirebaseService {
     const storageRef = ref(storage, `requests/${requestId}/${Date.now()}_${file.name}`);
     await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(storageRef);
-    
+
     // Ajouter l'URL à la demande
     const request = await this.getPickupRequest(requestId);
     if (request) {
@@ -152,7 +152,7 @@ class FirebaseService {
       images.push(downloadURL);
       await this.updatePickupRequest(requestId, { images });
     }
-    
+
     return downloadURL;
   }
 
@@ -164,7 +164,7 @@ class FirebaseService {
   // Gestion de l'inventaire
   async getInventory(): Promise<InventoryItem[]> {
     const querySnapshot = await getDocs(collection(db, 'inventory'));
-    
+
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -191,7 +191,7 @@ class FirebaseService {
   async syncInventoryWithFirebase(localInventory: InventoryItem[]): Promise<void> {
     try {
       const firebaseInventory = await this.getInventory();
-      
+
       // Fusionner les données
       const mergedInventory = localInventory.map(localItem => {
         const firebaseItem = firebaseInventory.find(fi => fi.id === localItem.id);
@@ -200,7 +200,7 @@ class FirebaseService {
           updatedAt: serverTimestamp()
         };
       });
-      
+
       await this.updateInventory(mergedInventory);
       return mergedInventory;
     } catch (error) {

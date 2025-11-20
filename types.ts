@@ -18,7 +18,7 @@ export interface PickupRequest {
   location: string;
   items: RequestedItem[];
   date: string; // ISO date string
-  status: 'pending' | 'completed';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   contactName: string;
   contactPhone: string;
   notes?: string;

@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { GroupedItemsByLocation, PickupRequestPDF, PDFGenerationOptions, SelectedItem } from '../types-pdf';
 import { LOCATION_ADDRESSES } from '../constants';
+import logoValdor from '../src/assets/logo_valdor.png';
 
 export class PDFService {
   private doc: jsPDF;
@@ -23,41 +24,60 @@ export class PDFService {
   }
 
   private addHeader(title: string): void {
-    this.doc.setFillColor(30, 58, 138); // Bleu foncé
-    this.doc.rect(0, 0, 210, 30, 'F');
-    this.doc.setTextColor(255, 255, 255);
-    this.doc.setFontSize(20);
+    // En-tête avec Logo et Titre
+    this.doc.setFillColor(255, 255, 255);
+    this.doc.rect(0, 0, 210, 40, 'F'); // Fond blanc pour l'en-tête
+
+    // Ajouter le logo
+    try {
+      this.doc.addImage(logoValdor, 'PNG', 14, 5, 40, 25); // Ajuster dimensions et position
+    } catch (e) {
+      console.error("Erreur lors de l'ajout du logo", e);
+      // Fallback texte si le logo échoue
+      this.doc.setFontSize(10);
+      this.doc.text("VILLE DE VAL-D'OR", 14, 20);
+    }
+
+    this.doc.setTextColor(30, 58, 138); // Bleu foncé
+    this.doc.setFontSize(18);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(title, 105, 20, { align: 'center' });
+    this.doc.text(title, 200, 20, { align: 'right' });
+
+    // Ligne de séparation
+    this.doc.setDrawColor(30, 58, 138);
+    this.doc.setLineWidth(0.5);
+    this.doc.line(14, 35, 196, 35);
+
     this.doc.setFont('helvetica', 'normal');
   }
 
   private addContactInfo(request: PickupRequestPDF): void {
-    let y = 40;
-    this.doc.setFontSize(14);
+    let y = 45;
+    this.doc.setFontSize(12);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('Informations de demande', 14, y);
+    this.doc.setTextColor(0, 0, 0);
+    this.doc.text('Informations de la demande', 14, y);
     y += 8;
 
-    this.doc.setFontSize(11);
+    this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
     const info = [
       { label: 'Numéro BC', value: request.bcNumber },
-      { label: 'Nom du contact', value: request.contactName },
+      { label: 'Demandeur', value: request.contactName },
       { label: 'Téléphone', value: request.contactPhone },
       { label: 'Date', value: new Date(request.date).toLocaleDateString('fr-CA') },
-      { label: 'ID de demande', value: request.id },
+      { label: 'ID', value: request.id },
     ];
 
     info.forEach(item => {
       if (item.value) {
         this.doc.text(`${item.label}: ${item.value}`, 14, y);
-        y += 7;
+        y += 5;
       }
     });
 
     if (request.notes && request.notes.trim()) {
-      y += 3; // Espace avant les notes
+      y += 3;
       this.doc.setFont('helvetica', 'bold');
       this.doc.text('Notes générales:', 14, y);
       y += 5;
@@ -68,13 +88,13 @@ export class PDFService {
   }
 
   private addItemsTable(groupedItems: GroupedItemsByLocation): number {
-    let y = (this.doc as any).lastAutoTable?.finalY || 95;
+    let y = (this.doc as any).lastAutoTable?.finalY || 90;
 
     Object.entries(groupedItems).forEach(([location, locationData], index) => {
       const items = Array.isArray(locationData) ? locationData : locationData.items;
       const comments = !Array.isArray(locationData) ? locationData.comments : null;
 
-      if (items.length === 0) return; // Ne pas afficher le lieu s'il n'y a pas d'articles
+      if (items.length === 0) return;
 
       if (y > 250) {
         this.doc.addPage();
@@ -82,34 +102,30 @@ export class PDFService {
       }
 
       y += 10;
-      this.doc.setFillColor(59, 130, 246); // Bleu
-      this.doc.roundedRect(14, y, 182, 10, 2, 2, 'F');
-      this.doc.setTextColor(255, 255, 255);
-      this.doc.setFontSize(12);
+      // Titre du lieu (sans emoji pour éviter les problèmes d'encodage)
+      this.doc.setFillColor(240, 240, 240);
+      this.doc.rect(14, y - 6, 182, 8, 'F');
+      this.doc.setTextColor(0, 0, 0);
+      this.doc.setFontSize(11);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text(`📍 Lieu ${index + 1}: ${location}`, 18, y + 7);
-      y += 13;
+      this.doc.text(`Lieu ${index + 1}: ${location}`, 16, y);
+      y += 8;
 
       const addressInfo = LOCATION_ADDRESSES[location];
       if (addressInfo) {
         this.doc.setTextColor(80, 80, 80);
-        this.doc.setFontSize(10);
+        this.doc.setFontSize(9);
         this.doc.setFont('helvetica', 'normal');
-        this.doc.text(`Adresse: ${addressInfo.fullAddress}`, 18, y);
-        y += 7;
+        this.doc.text(`Adresse: ${addressInfo.fullAddress}`, 16, y);
+        y += 6;
       }
 
       if (comments && comments.trim()) {
-        this.doc.setFillColor(255, 250, 205); // Jaune pâle
-        this.doc.roundedRect(18, y, 174, 12, 2, 2, 'F');
-        this.doc.setTextColor(0, 0, 0);
         this.doc.setFontSize(9);
-        this.doc.setFont('helvetica', 'bold');
-        this.doc.text('💬 Instructions spécifiques:', 22, y + 5);
-        this.doc.setFont('helvetica', 'normal');
-        const splitComments = this.doc.splitTextToSize(comments, 166);
-        this.doc.text(splitComments, 22, y + 9);
-        y += 15;
+        this.doc.setFont('helvetica', 'italic');
+        this.doc.setTextColor(100, 100, 100);
+        this.doc.text(`Instructions: ${comments}`, 16, y);
+        y += 6;
       }
 
       const tableData: string[][] = items.map(item => [item.name, item.quantity.toString()]);
@@ -118,12 +134,12 @@ export class PDFService {
         head: [['Contenant', 'Quantité']],
         body: tableData,
         startY: y,
-        theme: 'striped',
-        styles: { fontSize: 10, cellPadding: 3 },
-        headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
+        theme: 'grid',
+        styles: { fontSize: 10, cellPadding: 3, textColor: [0, 0, 0] },
+        headStyles: { fillColor: [220, 220, 220], textColor: 0, fontStyle: 'bold' },
         columnStyles: {
           0: { cellWidth: 142 },
-          1: { halign: 'center', cellWidth: 40, fontStyle: 'bold' }
+          1: { halign: 'center', cellWidth: 40 }
         },
         margin: { left: 14, right: 14 }
       });
@@ -141,15 +157,16 @@ export class PDFService {
       y = 20;
     }
 
-    this.doc.setFillColor(243, 244, 246); // Gris clair
-    this.doc.roundedRect(14, y, 182, 20, 3, 3, 'F');
-    this.doc.setFontSize(12);
-    this.doc.setFont('helvetica', 'bold');
-    this.doc.text('Résumé', 20, y + 8);
-    this.doc.setFont('helvetica', 'normal');
+    this.doc.setDrawColor(200, 200, 200);
+    this.doc.line(14, y, 196, y);
+    y += 10;
+
     this.doc.setFontSize(11);
-    this.doc.text(`Total de contenants: ${request.totalItems}`, 20, y + 15);
-    this.doc.text(`Nombre de lieux: ${request.totalLocations}`, 100, y + 15);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text('Résumé', 14, y);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.text(`Total de contenants: ${request.totalItems}`, 14, y + 7);
+    this.doc.text(`Nombre de lieux: ${request.totalLocations}`, 80, y + 7);
   }
 
   private addFooter(): void {
@@ -159,13 +176,13 @@ export class PDFService {
       const pageHeight = this.doc.internal.pageSize.height;
       this.doc.setFontSize(8);
       this.doc.setTextColor(128, 128, 128);
-      this.doc.text(`Document généré le ${new Date().toLocaleString('fr-CA')}`, 105, pageHeight - 10, { align: 'center' });
-      this.doc.text(`Page ${i} sur ${pageCount}`, 198, pageHeight - 10, { align: 'right' });
+      this.doc.text(`Généré le ${new Date().toLocaleString('fr-CA')}`, 14, pageHeight - 10);
+      this.doc.text(`Page ${i} / ${pageCount}`, 196, pageHeight - 10, { align: 'right' });
     }
   }
 
   generatePickupRequestPDF(request: PickupRequestPDF): void {
-    this.addHeader('DEMANDE DE RAMASSAGE DE CONTENANTS');
+    this.addHeader('DEMANDE DE RAMASSAGE');
     this.addContactInfo(request);
     const lastTableY = this.addItemsTable(request.groupedItems);
     this.addSummary(request, lastTableY);
