@@ -2,14 +2,14 @@ declare module 'jspdf' {
   interface jsPDF {
     autoTable(options: any): void;
   }
-  
+
   class jsPDF {
     constructor(options?: {
       orientation?: 'portrait' | 'landscape';
       unit?: 'mm' | 'pt' | 'in' | 'px';
       format?: 'a4' | 'letter' | string;
     });
-    
+
     addPage(): void;
     text(text: string | string[], x: number, y: number, options?: any): void;
     setFontSize(size: number): void;
@@ -27,7 +27,14 @@ declare module 'jspdf' {
     };
     save(filename: string): void;
     output(type: string): Blob | string;
+    getNumberOfPages(): number;
+    setPage(page: number): void;
   }
-  
+
   export default jsPDF;
+}
+
+declare module 'jspdf-autotable' {
+  import jsPDF from 'jspdf';
+  export default function autoTable(doc: jsPDF, options: any): void;
 }

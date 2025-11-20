@@ -68,7 +68,7 @@ export class PDFService {
   }
 
   private addItemsTable(groupedItems: GroupedItemsByLocation): number {
-    let y = (this.doc as any).lastAutoTable.finalY || 95;
+    let y = (this.doc as any).lastAutoTable?.finalY || 95;
 
     Object.entries(groupedItems).forEach(([location, locationData], index) => {
       const items = Array.isArray(locationData) ? locationData : locationData.items;
@@ -92,7 +92,7 @@ export class PDFService {
 
       const addressInfo = LOCATION_ADDRESSES[location];
       if (addressInfo) {
-        this.doc.setTextColor(80);
+        this.doc.setTextColor(80, 80, 80);
         this.doc.setFontSize(10);
         this.doc.setFont('helvetica', 'normal');
         this.doc.text(`Adresse: ${addressInfo.fullAddress}`, 18, y);
@@ -102,7 +102,7 @@ export class PDFService {
       if (comments && comments.trim()) {
         this.doc.setFillColor(255, 250, 205); // Jaune pâle
         this.doc.roundedRect(18, y, 174, 12, 2, 2, 'F');
-        this.doc.setTextColor(0);
+        this.doc.setTextColor(0, 0, 0);
         this.doc.setFontSize(9);
         this.doc.setFont('helvetica', 'bold');
         this.doc.text('💬 Instructions spécifiques:', 22, y + 5);
@@ -128,7 +128,7 @@ export class PDFService {
         margin: { left: 14, right: 14 }
       });
 
-      y = (this.doc as any).lastAutoTable.finalY;
+      y = (this.doc as any).lastAutoTable?.finalY;
     });
 
     return y;
@@ -137,8 +137,8 @@ export class PDFService {
   private addSummary(request: PickupRequestPDF, lastY: number): void {
     let y = lastY + 15;
     if (y > 260) {
-        this.doc.addPage();
-        y = 20;
+      this.doc.addPage();
+      y = 20;
     }
 
     this.doc.setFillColor(243, 244, 246); // Gris clair
@@ -153,12 +153,12 @@ export class PDFService {
   }
 
   private addFooter(): void {
-    const pageCount = this.doc.getNumberOfPages();
+    const pageCount = (this.doc as any).getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
-      this.doc.setPage(i);
+      (this.doc as any).setPage(i);
       const pageHeight = this.doc.internal.pageSize.height;
       this.doc.setFontSize(8);
-      this.doc.setTextColor(128);
+      this.doc.setTextColor(128, 128, 128);
       this.doc.text(`Document généré le ${new Date().toLocaleString('fr-CA')}`, 105, pageHeight - 10, { align: 'center' });
       this.doc.text(`Page ${i} sur ${pageCount}`, 198, pageHeight - 10, { align: 'right' });
     }
@@ -176,10 +176,10 @@ export class PDFService {
     this.doc.save(filename);
   }
   getBlob(): Blob {
-    return this.doc.output('blob');
+    return this.doc.output('blob') as Blob;
   }
   getDataURL(): string {
-    return this.doc.output('datauristring');
+    return this.doc.output('datauristring') as string;
   }
 }
 
@@ -201,13 +201,13 @@ export function createPickupRequestPDF(
 ): PickupRequestPDF {
   const allItems = [...selectedItems];
   if (groupedItemsWithComments) {
-      Object.values(groupedItemsWithComments).forEach(data => {
-          data.items.forEach(item => {
-              if (!allItems.some(i => i.id === item.id)) {
-                  allItems.push(item);
-              }
-          });
+    Object.values(groupedItemsWithComments).forEach(data => {
+      data.items.forEach(item => {
+        if (!allItems.some(i => i.id === item.id)) {
+          allItems.push(item);
+        }
       });
+    });
   }
 
   const groupedItems = groupedItemsWithComments || groupItemsByLocation(allItems);
