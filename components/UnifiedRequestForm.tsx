@@ -13,13 +13,13 @@ interface UnifiedRequestFormProps {
 
 type RequestMode = 'single' | 'multi';
 
-const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({ 
-    inventory, 
+const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
+    inventory,
     onSubmit,
-    onPDFGenerated 
+    onPDFGenerated
 }) => {
     const [mode, setMode] = useState<RequestMode>('single');
-    
+
     // État pour le mode simple
     const [location, setLocation] = useState(LOCATIONS[0]);
     const [bcNumber, setBcNumber] = useState(''); // Numéro de BC
@@ -27,7 +27,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
     const [contactPhone, setContactPhone] = useState('');
     const [notes, setNotes] = useState('');
     const [requestedItems, setRequestedItems] = useState<RequestedItem[]>([]);
-    
+
     // État pour le mode multiple
     const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
     const [locationComments, setLocationComments] = useState<Record<string, string>>({}); // Commentaires par lieu
@@ -48,7 +48,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             // On filtre toujours l'inventaire pour n'afficher que les items disponibles (> 0)
             items: inventory.filter(item => item.location === loc && item.quantity > 0)
         }));
-        
+
         // console.log('Inventory by Location:', grouped); // Décommenter pour le débogage
         return grouped;
     }, [inventory, LOCATIONS]);
@@ -67,13 +67,17 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
     useEffect(() => {
         // Nettoyer les sélections qui ne sont plus valides (items supprimés ou quantité réduite)
         const validSelectedItems = selectedItems.filter(selectedItem => {
+            // Les items personnalisés (manuels) ne sont pas dans l'inventaire, on les garde toujours
+            if (selectedItem.id.startsWith('custom-')) {
+                return true;
+            }
             const inventoryItem = inventory.find(item => item.id === selectedItem.id);
             return inventoryItem && inventoryItem.quantity >= selectedItem.quantity;
         });
 
         // Nettoyer les requestedItems qui ne sont plus valides (mode simple)
         const validRequestedItems = requestedItems.filter(requestedItem => {
-            const inventoryItem = inventory.find(item => 
+            const inventoryItem = inventory.find(item =>
                 item.name === requestedItem.name && item.location === location
             );
             return inventoryItem && inventoryItem.quantity >= requestedItem.quantity;
@@ -97,7 +101,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             }
         }
     };
-    
+
     const handleAddCustomItem = () => {
         const customName = prompt('Entrez le nom du contenant personnalisé (ex: Baril de colasse vide):');
         if (customName && customName.trim()) {
@@ -161,7 +165,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             // On vérifie par ID pour les items d'inventaire, et par nom/location pour les items spontanés
             selected => selected.id === item.id || (selected.name === item.name && selected.location === item.location)
         );
-        
+
         if (existingIndex >= 0) {
             const newSelected = [...selectedItems];
             newSelected[existingIndex].quantity = quantity;
@@ -182,7 +186,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
     };
 
     const handleUpdateMultiQuantity = (itemId: string, quantity: number) => {
-        setSelectedItems(selectedItems.map(item => 
+        setSelectedItems(selectedItems.map(item =>
             item.id === itemId ? { ...item, quantity } : item
         ));
     };
@@ -246,14 +250,14 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             alert('Veuillez sélectionner au moins un contenant.');
             return;
         }
-        
+
         if (!contactName.trim() || !contactPhone.trim()) {
             alert('Veuillez remplir les informations de contact.');
             return;
         }
 
         setIsGenerating(true);
-        
+
         try {
             // Créer les données groupées avec commentaires
             const groupedItemsWithComments = selectedItems.reduce((acc, item) => {
@@ -285,7 +289,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             setSelectedItems([]);
             setLocationComments({});
             setNotes('');
-            
+
             alert('PDF généré avec succès !');
         } catch (error) {
             console.error('Erreur lors de la génération du PDF:', error);
@@ -308,21 +312,19 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                 <div className="flex gap-4 mb-6">
                     <button
                         onClick={() => setMode('single')}
-                        className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
-                            mode === 'single' 
-                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105' 
+                        className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${mode === 'single'
+                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
-                        }`}
+                            }`}
                     >
                         📍 Demande simple (un lieu)
                     </button>
                     <button
                         onClick={() => setMode('multi')}
-                        className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
-                            mode === 'multi' 
-                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105' 
+                        className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${mode === 'multi'
+                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
-                        }`}
+                            }`}
                     >
                         📋 Sélection multiple (plusieurs lieux)
                     </button>
@@ -397,13 +399,13 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                         <h3 className="text-xl font-bold gradient-text">📦 Détails de la demande</h3>
                         <p className="text-sm text-gray-600 mt-1">Sélectionnez le lieu et les contenants à ramasser</p>
                     </div>
-                    
+
                     <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
                         <label htmlFor="location" className="block text-sm font-semibold text-blue-900 mb-2">📍 Lieu de cueillette</label>
-                        <select 
-                            id="location" 
-                            value={location} 
-                            onChange={e => setLocation(e.target.value)} 
+                        <select
+                            id="location"
+                            value={location}
+                            onChange={e => setLocation(e.target.value)}
                             className="block w-full rounded-lg border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base p-3 bg-white font-medium"
                         >
                             {LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
@@ -426,14 +428,14 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
 
                             return (
                                 <div key={index} className="flex items-center gap-4 mb-2 p-2 bg-gray-50 rounded-md">
-                                   <select
+                                    <select
                                         value={item.name}
                                         onChange={e => handleItemChange(index, 'name', e.target.value)}
                                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 flex-grow"
                                     >
                                         {availableItems.map(name => <option key={name} value={name}>{name}</option>)}
                                     </select>
-                                   <input
+                                    <input
                                         type="number"
                                         value={item.quantity}
                                         onChange={e => handleItemChange(index, 'quantity', parseInt(e.target.value, 10) || 1)}
@@ -458,7 +460,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                             </button>
                         </div>
                     </div>
-                    
+
                     <div className="text-right">
                         <button type="submit" className="btn btn-primary py-3 px-8 text-lg">
                             ✅ Soumettre la demande
@@ -474,12 +476,12 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                             <h3 className="text-xl font-bold gradient-text">📦 Sélectionner les contenants à ramasser</h3>
                             <p className="text-sm text-gray-600 mt-1">Choisissez les contenants de différents lieux et ajoutez des commentaires spécifiques</p>
                         </div>
-                        
+
                         {/* Bouton d'ajout manuel */}
                         <div className="mb-6">
-                            <button 
-                                type="button" 
-                                onClick={handleAddCustomMultiItem} 
+                            <button
+                                type="button"
+                                onClick={handleAddCustomMultiItem}
                                 className="w-full bg-blue-100 text-blue-800 py-3 px-4 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 flex items-center justify-center gap-2 font-medium transition-all hover:scale-105"
                             >
                                 ✏️ Ajouter un contenant manuellement
@@ -488,63 +490,63 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                                 Pour ajouter un contenant qui n'est pas dans l'inventaire (ex: Baril de colasse vide)
                             </p>
                         </div>
-                        
+
                         {inventoryByLocation.map(({ location: loc, items }) => (
                             <div key={loc} className="mb-6">
                                 <h4 className="text-md font-semibold text-gray-700 mb-3">
                                     {loc}
                                 </h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {items.map(item => {
-                                            const selectedItem = selectedItems.find(
-                                                selected => selected.id === item.id
-                                            );
-                                            const selectedQuantity = selectedItem?.quantity || 0;
-                                            
-                                            return (
-                                                <div
-                                                    key={item.id}
-                                                    className="border rounded-lg p-4 hover:shadow-md transition-shadow"
-                                                >
-                                                    <div className="font-medium text-gray-900 mb-2">
-                                                        {item.name}
-                                                    </div>
-                                                    <div className="text-sm text-gray-500 mb-3">
-                                                        Disponible: {item.quantity}
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            max={item.quantity} // La quantité max est celle de l'inventaire
-                                                            value={selectedQuantity}
-                                                            onChange={e => {
-                                                                const quantity = parseInt(e.target.value, 10) || 0;
-                                                                if (quantity > 0) {
-                                                                    // Pour les items d'inventaire, on ne peut pas dépasser la quantité disponible
-                                                                    const maxQuantity = item.id.startsWith('custom-') ? Infinity : item.quantity;
-                                                                    handleAddMultiItem(item, Math.min(quantity, maxQuantity));
-                                                                } else if (selectedItem) {
-                                                                    handleRemoveMultiItem(item.id);
-                                                                }
-                                                            }}
-                                                            className="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-1"
-                                                        />
-                                                        <span className="text-sm text-gray-500">
-                                                            / {item.quantity}
-                                                        </span>
-                                                    </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {items.map(item => {
+                                        const selectedItem = selectedItems.find(
+                                            selected => selected.id === item.id
+                                        );
+                                        const selectedQuantity = selectedItem?.quantity || 0;
+
+                                        return (
+                                            <div
+                                                key={item.id}
+                                                className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                                            >
+                                                <div className="font-medium text-gray-900 mb-2">
+                                                    {item.name}
                                                 </div>
-                                            );
-                                        })}
-                                        {items.length === 0 && (
-                                            <p className="text-gray-500 italic col-span-full">
-                                                Aucun contenant disponible dans l'inventaire pour ce lieu.
-                                            </p>
-                                        )}
-                                    </div>
+                                                <div className="text-sm text-gray-500 mb-3">
+                                                    Disponible: {item.quantity}
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max={item.quantity} // La quantité max est celle de l'inventaire
+                                                        value={selectedQuantity}
+                                                        onChange={e => {
+                                                            const quantity = parseInt(e.target.value, 10) || 0;
+                                                            if (quantity > 0) {
+                                                                // Pour les items d'inventaire, on ne peut pas dépasser la quantité disponible
+                                                                const maxQuantity = item.id.startsWith('custom-') ? Infinity : item.quantity;
+                                                                handleAddMultiItem(item, Math.min(quantity, maxQuantity));
+                                                            } else if (selectedItem) {
+                                                                handleRemoveMultiItem(item.id);
+                                                            }
+                                                        }}
+                                                        className="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-1"
+                                                    />
+                                                    <span className="text-sm text-gray-500">
+                                                        / {item.quantity}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    {items.length === 0 && (
+                                        <p className="text-gray-500 italic col-span-full">
+                                            Aucun contenant disponible dans l'inventaire pour ce lieu.
+                                        </p>
+                                    )}
                                 </div>
-                            ))}
+                            </div>
+                        ))}
                     </div>
 
                     {/* Récapitulatif de la sélection */}
@@ -554,7 +556,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                                 <h3 className="text-xl font-bold gradient-text">✅ Récapitulatif de la sélection</h3>
                                 <p className="text-sm text-gray-600 mt-1">Vérifiez votre sélection avant de générer le PDF</p>
                             </div>
-                            
+
                             <div className="mb-4">
                                 <div className="flex justify-between items-center mb-2">
                                     <span className="text-sm font-medium text-gray-700">
@@ -573,7 +575,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                                     </span>
                                 </div>
                             </div>
-                            
+
                             <div className="space-y-4">
                                 {Object.entries(selectedByLocation).map(([loc, items]) => (
                                     <div key={loc} className="border-l-4 border-blue-500 pl-4">
