@@ -6,8 +6,10 @@ export interface InventoryItem {
 }
 
 export interface RequestedItem {
+  id?: string;
   name: string;
   quantity: number;
+  location?: string;
 }
 
 export interface PickupRequest {
@@ -20,4 +22,5 @@ export interface PickupRequest {
   contactName: string;
   contactPhone: string;
   notes?: string;
+  locationComments?: Record<string, string>;
 }

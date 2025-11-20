@@ -5,13 +5,13 @@ import UnifiedRequestForm from './components/UnifiedRequestForm';
 import RequestHistory from './components/RequestHistory';
 import { INITIAL_INVENTORY } from './constants';
 import { firebaseService, type FirebasePickupRequest } from './services/firebaseService';
-import type { InventoryItem, PickupRequest } from './types';
+import type { InventoryItem, PickupRequest, RequestedItem } from './types';
 import type { PickupRequestPDF } from './types-pdf';
 
 // FIX: Provide implementation for the main App component.
 const App: React.FC = () => {
     const [currentView, setCurrentView] = useState<View>('inventory');
-    
+
     // State for inventory, loading from localStorage or using initial data
     const [inventory, setInventory] = useState<InventoryItem[]>(() => {
         try {
@@ -33,7 +33,7 @@ const App: React.FC = () => {
             return [];
         }
     });
-    
+
     const [firebaseRequests, setFirebaseRequests] = useState<FirebasePickupRequest[]>([]);
     const [isFirebaseEnabled, setIsFirebaseEnabled] = useState(false);
 
@@ -54,15 +54,15 @@ const App: React.FC = () => {
                 // Vérifier si Firebase est configuré
                 const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
                 const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
-                
+
                 if (apiKey && projectId && apiKey !== 'undefined' && projectId !== 'undefined') {
                     console.log('Firebase configuration detected, initializing...');
                     setIsFirebaseEnabled(true);
-                    
+
                     // Charger les demandes depuis Firebase
                     const fbRequests = await firebaseService.getPickupRequests();
                     setFirebaseRequests(fbRequests);
-                    
+
                     console.log('Firebase initialized successfully');
                 } else {
                     console.log('Firebase not configured, using local storage only');
@@ -77,14 +77,14 @@ const App: React.FC = () => {
         initFirebase();
     }, []);
 
-	    // Combiner les demandes locales et Firebase
-	    // S'assurer que les requêtes Firebase sont triées par requestNumber (déjà fait dans getPickupRequests)
-	    const allRequests = [...firebaseRequests, ...pickupRequests];
+    // Combiner les demandes locales et Firebase
+    // S'assurer que les requêtes Firebase sont triées par requestNumber (déjà fait dans getPickupRequests)
+    const allRequests = [...firebaseRequests, ...pickupRequests];
 
     const handleAddRequest = async (newRequest: Omit<PickupRequest, 'id' | 'status'>) => {
         try {
             let savedRequest;
-            
+
             if (isFirebaseEnabled) {
                 // Sauvegarder dans Firebase
                 const firebaseRequest: Omit<FirebasePickupRequest, 'id' | 'requestNumber' | 'createdAt' | 'updatedAt'> = {
@@ -92,11 +92,11 @@ const App: React.FC = () => {
                     status: 'pending',
                 };
                 const docId = await firebaseService.addPickupRequest(firebaseRequest);
-                
+
                 // Recharger toutes les demandes depuis Firebase pour s'assurer de la synchronisation
                 const fbRequests = await firebaseService.getPickupRequests();
                 setFirebaseRequests(fbRequests);
-                
+
                 // Trouver la nouvelle demande dans la liste rechargée (pour l'affichage immédiat si nécessaire)
                 savedRequest = fbRequests.find(req => req.id === docId);
             } else {
@@ -109,7 +109,7 @@ const App: React.FC = () => {
                 setPickupRequests(prev => [requestWithId, ...prev]);
                 savedRequest = requestWithId;
             }
-            
+
             // Update inventory: subtract requested items from empty container counts
             const updatedInventory = inventory.map(invItem => {
                 const requested = newRequest.items.find(reqItem => reqItem.name === invItem.name && newRequest.location === invItem.location);
@@ -127,20 +127,20 @@ const App: React.FC = () => {
             alert('Erreur lors de la sauvegarde de la demande');
         }
     };
-    
+
     const handleUpdateRequestStatus = async (requestId: string, status: 'pending' | 'completed') => {
         try {
             // Vérifier si c'est une demande Firebase
             const firebaseRequest = firebaseRequests.find(req => req.id === requestId);
-            
+
             if (firebaseRequest && isFirebaseEnabled) {
                 await firebaseService.updatePickupRequest(requestId, { status });
-                setFirebaseRequests(prev => 
-                    prev.map(req => req.id === requestId ? {...req, status} : req)
+                setFirebaseRequests(prev =>
+                    prev.map(req => req.id === requestId ? { ...req, status } : req)
                 );
             } else {
-                setPickupRequests(prev => 
-                    prev.map(req => req.id === requestId ? {...req, status} : req)
+                setPickupRequests(prev =>
+                    prev.map(req => req.id === requestId ? { ...req, status } : req)
                 );
             }
         } catch (error) {
@@ -154,11 +154,11 @@ const App: React.FC = () => {
             // Vérifier si c'est une demande Firebase
             if ('requestNumber' in updatedRequest && isFirebaseEnabled) {
                 await firebaseService.updatePickupRequest(updatedRequest.id!, updatedRequest);
-                setFirebaseRequests(prev => 
+                setFirebaseRequests(prev =>
                     prev.map(req => req.id === updatedRequest.id ? updatedRequest : req)
                 );
             } else {
-                setPickupRequests(prev => 
+                setPickupRequests(prev =>
                     prev.map(req => req.id === updatedRequest.id ? updatedRequest : req)
                 );
             }
@@ -170,24 +170,26 @@ const App: React.FC = () => {
 
     const handlePDFGenerated = async (request: PickupRequestPDF) => {
         console.log('PDF Request generated:', request);
-        
+
         try {
             // Convertir la demande PDF en demande normale pour l'historique
             // Extraire tous les items de tous les lieux
             const allItems: RequestedItem[] = [];
             const locations: string[] = [];
-            
+
             Object.entries(request.groupedItems).forEach(([location, locationData]) => {
                 locations.push(location);
                 const items = Array.isArray(locationData) ? locationData : locationData.items;
                 items.forEach(item => {
                     allItems.push({
+                        id: item.id,
                         name: item.name,
-                        quantity: item.quantity
+                        quantity: item.quantity,
+                        location: item.location
                     });
                 });
             });
-            
+
             // Créer une demande pour l'historique
             const historyRequest: Omit<PickupRequest, 'id' | 'status'> = {
                 bcNumber: request.bcNumber,
@@ -199,7 +201,7 @@ const App: React.FC = () => {
                 notes: request.notes,
                 locationComments: request.locationComments
             };
-            
+
             // Sauvegarder dans Firebase ou localement
             if (isFirebaseEnabled) {
                 const firebaseRequest: Omit<FirebasePickupRequest, 'id' | 'requestNumber' | 'createdAt' | 'updatedAt'> = {
@@ -207,16 +209,16 @@ const App: React.FC = () => {
                     status: 'pending',
                 };
                 const docId = await firebaseService.addPickupRequest(firebaseRequest);
-                
-	                // Recharger toutes les demandes depuis Firebase pour s'assurer de la synchronisation
-	                const fbRequests = await firebaseService.getPickupRequests();
-	                setFirebaseRequests(fbRequests);
-	                
-	                // Trouver la nouvelle demande dans la liste rechargée (pour l'affichage immédiat si nécessaire)
-	                const savedRequest = fbRequests.find(req => req.id === docId);
-	                if (savedRequest) {
-	                    console.log('Multi-selection request saved to Firebase:', savedRequest);
-	                }
+
+                // Recharger toutes les demandes depuis Firebase pour s'assurer de la synchronisation
+                const fbRequests = await firebaseService.getPickupRequests();
+                setFirebaseRequests(fbRequests);
+
+                // Trouver la nouvelle demande dans la liste rechargée (pour l'affichage immédiat si nécessaire)
+                const savedRequest = fbRequests.find(req => req.id === docId);
+                if (savedRequest) {
+                    console.log('Multi-selection request saved to Firebase:', savedRequest);
+                }
             } else {
                 // Sauvegarder localement
                 const requestWithId: PickupRequest = {
@@ -227,21 +229,21 @@ const App: React.FC = () => {
                 setPickupRequests(prev => [requestWithId, ...prev]);
                 console.log('Multi-selection request saved locally:', requestWithId);
             }
-            
-	            // Mettre à jour l'inventaire (soustraire les quantités)
-	            const updatedInventory = inventory.map(invItem => {
-	                // On ne soustrait que les items qui proviennent de l'inventaire (pas les custom items)
-	                const totalRequested = allItems
-	                    .filter(reqItem => !reqItem.id.startsWith('custom-') && reqItem.name === invItem.name && reqItem.location === invItem.location)
-	                    .reduce((sum, item) => sum + item.quantity, 0);
-	                
-	                if (totalRequested > 0) {
-	                    return { ...invItem, quantity: Math.max(0, invItem.quantity - totalRequested) };
-	                }
-	                return invItem;
-	            });
-	            setInventory(updatedInventory);
-            
+
+            // Mettre à jour l'inventaire (soustraire les quantités)
+            const updatedInventory = inventory.map(invItem => {
+                // On ne soustrait que les items qui proviennent de l'inventaire (pas les custom items)
+                const totalRequested = allItems
+                    .filter(reqItem => !reqItem.id.startsWith('custom-') && reqItem.name === invItem.name && reqItem.location === invItem.location)
+                    .reduce((sum, item) => sum + item.quantity, 0);
+
+                if (totalRequested > 0) {
+                    return { ...invItem, quantity: Math.max(0, invItem.quantity - totalRequested) };
+                }
+                return invItem;
+            });
+            setInventory(updatedInventory);
+
         } catch (error) {
             console.error('Error saving PDF request to history:', error);
         }
@@ -255,15 +257,15 @@ const App: React.FC = () => {
                     <InventoryManager inventory={inventory} onUpdateInventory={setInventory} />
                 )}
                 {currentView === 'new_request' && (
-                    <UnifiedRequestForm 
-                        inventory={inventory} 
+                    <UnifiedRequestForm
+                        inventory={inventory}
                         onSubmit={handleAddRequest}
                         onPDFGenerated={handlePDFGenerated}
                     />
                 )}
                 {currentView === 'history' && (
-                    <RequestHistory 
-                        requests={allRequests} 
+                    <RequestHistory
+                        requests={allRequests}
                         onUpdateRequestStatus={handleUpdateRequestStatus}
                         onRequestUpdated={handleRequestUpdated}
                         inventory={inventory}
