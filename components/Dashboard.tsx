@@ -17,7 +17,7 @@ import {
 import type { PickupRequest, InventoryItem } from '../types';
 import { FirebasePickupRequest } from '../services/firebaseService';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
 import { ArrowDownTrayIcon } from './icons';
 
 interface DashboardProps {
