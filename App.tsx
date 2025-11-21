@@ -80,11 +80,17 @@ const App: React.FC = () => {
                             console.log('Loaded inventory from Firebase:', fbInventory.length, 'items');
                             setInventory(fbInventory);
                         } else {
-                            // Si l'inventaire Firebase est vide, charger depuis localStorage ou INITIAL_INVENTORY
+                            // Si l'inventaire Firebase est vide, essayer localStorage
                             const savedInventory = localStorage.getItem('inventory');
-                            const localInventory = savedInventory ? JSON.parse(savedInventory) : INITIAL_INVENTORY;
+                            let localInventory = savedInventory ? JSON.parse(savedInventory) : [];
 
-                            // Initialiser Firebase avec l'inventaire local
+                            // Si localStorage est aussi vide (ou tableau vide), utiliser INITIAL_INVENTORY
+                            if (!localInventory || localInventory.length === 0) {
+                                console.log('No inventory found in Firebase or localStorage, using INITIAL_INVENTORY');
+                                localInventory = INITIAL_INVENTORY;
+                            }
+
+                            // Initialiser Firebase avec l'inventaire local (ou initial)
                             await firebaseService.updateInventory(localInventory);
                             console.log('Initialized Firebase inventory from local data');
                             setInventory(localInventory);
@@ -93,7 +99,12 @@ const App: React.FC = () => {
                         console.error('Error loading inventory from Firebase:', error);
                         // Fallback to localStorage
                         const savedInventory = localStorage.getItem('inventory');
-                        setInventory(savedInventory ? JSON.parse(savedInventory) : INITIAL_INVENTORY);
+                        let localInventory = savedInventory ? JSON.parse(savedInventory) : [];
+
+                        if (!localInventory || localInventory.length === 0) {
+                            localInventory = INITIAL_INVENTORY;
+                        }
+                        setInventory(localInventory);
                     }
 
                     // Charger les demandes depuis Firebase

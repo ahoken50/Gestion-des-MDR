@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import type { InventoryItem } from '../types';
-import { LOCATIONS } from '../constants';
+import { LOCATIONS, INITIAL_INVENTORY } from '../constants';
 import { PlusIcon, TrashIcon } from './icons';
 
 interface InventoryManagerProps {
-  inventory: InventoryItem[];
-  onUpdateInventory: (updatedInventory: InventoryItem[]) => void;
+    inventory: InventoryItem[];
+    onUpdateInventory: (updatedInventory: InventoryItem[]) => void;
 }
 
 const AddItemForm: React.FC<{ onAddItem: (item: Omit<InventoryItem, 'id'>) => void }> = ({ onAddItem }) => {
@@ -33,7 +33,7 @@ const AddItemForm: React.FC<{ onAddItem: (item: Omit<InventoryItem, 'id'>) => vo
                 <input type="number" id="itemQuantity" value={quantity} onChange={e => setQuantity(parseInt(e.target.value, 10))} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2" min="0" required />
             </div>
             <div>
-                 <label htmlFor="itemLocation" className="block text-sm font-medium text-gray-700">Lieu</label>
+                <label htmlFor="itemLocation" className="block text-sm font-medium text-gray-700">Lieu</label>
                 <select id="itemLocation" value={location} onChange={e => setLocation(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
                     {LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
                 </select>
@@ -60,11 +60,11 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ inventory, onUpdate
     };
 
     const handleDeleteItem = (id: string) => {
-        if(window.confirm("Êtes-vous sûr de vouloir supprimer ce type de contenant?")) {
+        if (window.confirm("Êtes-vous sûr de vouloir supprimer ce type de contenant?")) {
             onUpdateInventory(inventory.filter(item => item.id !== id));
         }
     };
-    
+
     const handleQuantityChange = (id: string, newQuantity: number) => {
         onUpdateInventory(inventory.map(item => item.id === id ? { ...item, quantity: Math.max(0, newQuantity) } : item));
     };
@@ -96,8 +96,8 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ inventory, onUpdate
                                         <tr key={item.id} className="table-row">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     value={item.quantity}
                                                     onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value, 10) || 0)}
                                                     className="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-1"
@@ -105,7 +105,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ inventory, onUpdate
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <button onClick={() => handleDeleteItem(item.id)} className="text-red-600 hover:text-red-800 transition-colors">
-                                                    <TrashIcon className="w-5 h-5"/>
+                                                    <TrashIcon className="w-5 h-5" />
                                                 </button>
                                             </td>
                                         </tr>
@@ -119,9 +119,21 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ inventory, onUpdate
                 </div>
             ))}
             <div className="mt-6 bg-white p-6 rounded-lg shadow-lg">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Gérer les types de contenants</h2>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-gray-800">Gérer les types de contenants</h2>
+                    <button
+                        onClick={() => {
+                            if (window.confirm("Êtes-vous sûr de vouloir réinitialiser l'inventaire avec les valeurs par défaut ? Cela effacera les modifications actuelles.")) {
+                                onUpdateInventory(INITIAL_INVENTORY);
+                            }
+                        }}
+                        className="text-sm text-gray-500 hover:text-red-600 underline"
+                    >
+                        Réinitialiser l'inventaire par défaut
+                    </button>
+                </div>
                 {!showAddForm && (
-                     <button onClick={() => setShowAddForm(true)} className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-2 transition-colors">
+                    <button onClick={() => setShowAddForm(true)} className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-2 transition-colors">
                         <PlusIcon className="w-5 h-5" /> Ajouter un type de contenant
                     </button>
                 )}
