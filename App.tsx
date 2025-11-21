@@ -37,10 +37,24 @@ const App: React.FC = () => {
     const [firebaseRequests, setFirebaseRequests] = useState<FirebasePickupRequest[]>([]);
     const [isFirebaseEnabled, setIsFirebaseEnabled] = useState(false);
 
-    // Persist inventory to localStorage whenever it changes
+    // Persist inventory to Firebase (or localStorage if Firebase not available)
     useEffect(() => {
-        localStorage.setItem('inventory', JSON.stringify(inventory));
-    }, [inventory]);
+        const saveInventory = async () => {
+            if (isFirebaseEnabled) {
+                try {
+                    await firebaseService.updateInventory(inventory);
+                } catch (error) {
+                    console.error('Error saving inventory to Firebase:', error);
+                    // Fallback to localStorage
+                    localStorage.setItem('inventory', JSON.stringify(inventory));
+                }
+            } else {
+                localStorage.setItem('inventory', JSON.stringify(inventory));
+            }
+        };
+
+        saveInventory();
+    }, [inventory, isFirebaseEnabled]);
 
     // Persist pickup requests to localStorage whenever they change
     useEffect(() => {
@@ -58,6 +72,29 @@ const App: React.FC = () => {
                 if (apiKey && projectId && apiKey !== 'undefined' && projectId !== 'undefined') {
                     console.log('Firebase configuration detected, initializing...');
                     setIsFirebaseEnabled(true);
+
+                    // Charger l'inventaire depuis Firebase
+                    try {
+                        const fbInventory = await firebaseService.getInventory();
+                        if (fbInventory.length > 0) {
+                            console.log('Loaded inventory from Firebase:', fbInventory.length, 'items');
+                            setInventory(fbInventory);
+                        } else {
+                            // Si l'inventaire Firebase est vide, charger depuis localStorage ou INITIAL_INVENTORY
+                            const savedInventory = localStorage.getItem('inventory');
+                            const localInventory = savedInventory ? JSON.parse(savedInventory) : INITIAL_INVENTORY;
+
+                            // Initialiser Firebase avec l'inventaire local
+                            await firebaseService.updateInventory(localInventory);
+                            console.log('Initialized Firebase inventory from local data');
+                            setInventory(localInventory);
+                        }
+                    } catch (error) {
+                        console.error('Error loading inventory from Firebase:', error);
+                        // Fallback to localStorage
+                        const savedInventory = localStorage.getItem('inventory');
+                        setInventory(savedInventory ? JSON.parse(savedInventory) : INITIAL_INVENTORY);
+                    }
 
                     // Charger les demandes depuis Firebase
                     const fbRequests = await firebaseService.getPickupRequests();

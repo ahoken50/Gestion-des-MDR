@@ -57,24 +57,26 @@ export class PDFService {
   private addContactInfo(request: PickupRequestPDF): void {
     let y = 52;
 
-    // Section avec fond coloré
-    this.doc.setFillColor(240, 245, 255); // Bleu très clair
-    this.doc.rect(14, y - 2, 182, 10, 'F');
+    // Section avec fond coloré et bordure
+    this.doc.setFillColor(240, 245, 255);
+    this.doc.setDrawColor(30, 58, 138);
+    this.doc.setLineWidth(0.5);
+    this.doc.rect(14, y - 2, 182, 12, 'FD');
 
-    this.doc.setFontSize(13);
+    this.doc.setFontSize(12);
     this.doc.setFont('helvetica', 'bold');
     this.doc.setTextColor(30, 58, 138);
-    this.doc.text('INFORMATIONS DE LA DEMANDE', 16, y + 5);
-    y += 14;
+    this.doc.text('INFORMATIONS DE LA DEMANDE', 105, y + 6, { align: 'center' });
+    y += 18;
 
-    this.doc.setFontSize(11);
+    this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.setTextColor(0, 0, 0);
+    this.doc.setTextColor(40, 40, 40);
 
     const info = [
-      { label: 'Numéro BC', value: request.bcNumber },
+      { label: 'Numero BC', value: request.bcNumber },
       { label: 'Demandeur', value: request.contactName },
-      { label: 'Téléphone', value: request.contactPhone },
+      { label: 'Telephone', value: request.contactPhone },
       { label: 'Date', value: new Date(request.date).toLocaleDateString('fr-CA') },
       { label: 'ID', value: request.id },
     ];
@@ -82,28 +84,37 @@ export class PDFService {
     info.forEach(item => {
       if (item.value) {
         this.doc.setFont('helvetica', 'bold');
-        this.doc.text(`${item.label}:`, 16, y);
+        this.doc.text(`${item.label}:`, 18, y);
         this.doc.setFont('helvetica', 'normal');
-        this.doc.text(`${item.value}`, 50, y);
-        y += 6;
+        this.doc.text(`${item.value}`, 55, y);
+        y += 7;
       }
     });
 
     if (request.notes && request.notes.trim()) {
-      y += 3;
+      y += 8;
+      this.doc.setFillColor(250, 250, 250);
+      this.doc.rect(14, y - 4, 182, 8, 'F');
       this.doc.setFont('helvetica', 'bold');
       this.doc.setTextColor(30, 58, 138);
-      this.doc.text('NOTES GENERALES:', 16, y);
-      y += 6;
+      this.doc.text('NOTES GENERALES:', 18, y);
+      y += 8;
       this.doc.setFont('helvetica', 'normal');
-      this.doc.setTextColor(0, 0, 0);
-      const splitNotes = this.doc.splitTextToSize(request.notes, 182);
-      this.doc.text(splitNotes, 16, y);
+      this.doc.setTextColor(40, 40, 40);
+      const splitNotes = this.doc.splitTextToSize(request.notes, 178);
+      this.doc.text(splitNotes, 18, y);
+      y += (splitNotes.length * 5) + 5;
+    } else {
+      y += 5;
     }
+
+    // Store the final Y position for the next section
+    (this.doc as any).contactInfoFinalY = y;
   }
 
   private addItemsTable(groupedItems: GroupedItemsByLocation): number {
-    let y = (this.doc as any).lastAutoTable?.finalY || 90;
+    let y = (this.doc as any).contactInfoFinalY || 110;
+    y += 10; // Extra spacing before first location
 
     Object.entries(groupedItems).forEach(([location, locationData], index) => {
       const items = Array.isArray(locationData) ? locationData : locationData.items;
