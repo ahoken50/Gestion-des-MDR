@@ -341,17 +341,13 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {request.status === 'completed' ? (
-                                                <button
-                                                    onClick={() => handleUpdateCost(request)}
-                                                    className={`font-medium hover:underline ${request.cost ? 'text-gray-900' : 'text-blue-600 italic'}`}
-                                                    title="Cliquez pour modifier le coût"
-                                                >
-                                                    {request.cost ? `${request.cost.toFixed(2)} $` : 'Ajouter coût'}
-                                                </button>
-                                            ) : (
-                                                <span className="text-gray-400">-</span>
-                                            )}
+                                            <button
+                                                onClick={() => handleUpdateCost(request)}
+                                                className={`font-medium hover:underline ${request.cost ? 'text-gray-900' : 'text-blue-600 italic'}`}
+                                                title="Cliquez pour modifier le coût"
+                                            >
+                                                {request.cost ? `${request.cost.toFixed(2)} $` : 'Ajouter coût'}
+                                            </button>
                                             {request.invoiceUrl && (
                                                 <a
                                                     href={request.invoiceUrl}

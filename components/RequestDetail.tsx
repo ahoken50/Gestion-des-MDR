@@ -98,7 +98,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
 
     setIsUploading(true);
     try {
-      for (const file of Array.from(files)) {
+      for (const file of Array.from(files) as File[]) {
         if (file.size > 10 * 1024 * 1024) {
           alert(`Le fichier ${file.name} est trop volumineux (max 10MB)`);
           continue;

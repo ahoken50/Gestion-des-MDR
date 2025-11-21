@@ -115,7 +115,47 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                 scale: 2, // Better resolution
                 useCORS: true,
                 logging: false,
-                backgroundColor: '#f3f4f6' // Match app background
+                backgroundColor: '#f3f4f6', // Match app background
+                onclone: (clonedDoc) => {
+                    // Convert all oklch colors to RGB for html2canvas compatibility
+                    const stylesheet = clonedDoc.createElement('style');
+                    stylesheet.textContent = `
+                        * {
+                            color: rgb(31, 41, 55) !important;
+                        }
+                        .text-gray-500 {
+                            color: rgb(107, 114, 128) !important;
+                        }
+                        .text-gray-700 {
+                            color: rgb(55, 65, 81) !important;
+                        }
+                        .text-gray-800 {
+                            color: rgb(31, 41, 55) !important;
+                        }
+                        .border-blue-500 {
+                            border-color: rgb(59, 130, 246) !important;
+                        }
+                        .border-yellow-500 {
+                            border-color: rgb(234, 179, 8) !important;
+                        }
+                        .border-green-500 {
+                            border-color: rgb(34, 197, 94) !important;
+                        }
+                        .border-purple-500 {
+                            border-color: rgb(168, 85, 247) !important;
+                        }
+                        .border-red-500 {
+                            border-color: rgb(239, 68, 68) !important;
+                        }
+                        .gradient-text {
+                            background: linear-gradient(135deg, rgb(59, 130, 246), rgb(147, 51, 234)) !important;
+                            -webkit-background-clip: text !important;
+                            -webkit-text-fill-color: transparent !important;
+                            background-clip: text !important;
+                        }
+                    `;
+                    clonedDoc.head.appendChild(stylesheet);
+                }
             });
 
             const imgData = canvas.toDataURL('image/png');
