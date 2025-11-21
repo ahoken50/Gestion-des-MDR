@@ -179,7 +179,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                 styles: { fontSize: 10, cellPadding: 3 }
             });
 
-            yPos = (pdf as any).lastAutoTable.finalY + 12;
+            yPos = (pdf as any).lastAutoTable?.finalY + 12;
 
             // === TABLEAU: Types de Contenants ===
             pdf.setFontSize(14);
@@ -196,7 +196,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                 styles: { fontSize: 10, cellPadding: 3 }
             });
 
-            yPos = (pdf as any).lastAutoTable.finalY + 12;
+            yPos = (pdf as any).lastAutoTable?.finalY + 12;
             if (yPos > pageHeight - 60) { pdf.addPage(); yPos = margin; }
 
             // === TABLEAU: Coûts par Lieu ===
