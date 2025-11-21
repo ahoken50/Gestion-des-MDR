@@ -1,7 +1,7 @@
 import React from 'react';
 import { TruckIcon } from './icons';
 
-export type View = 'inventory' | 'new_request' | 'history';
+export type View = 'inventory' | 'new_request' | 'history' | 'dashboard';
 
 interface HeaderProps {
     currentView: View;
@@ -19,7 +19,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange }) => {
                 <div className="flex items-center justify-between h-20">
                     <div className="flex items-center gap-3 group cursor-pointer">
                         <div className="bg-gradient-to-br from-blue-400 to-indigo-500 p-2.5 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                            <TruckIcon className="w-8 h-8 text-white"/>
+                            <TruckIcon className="w-8 h-8 text-white" />
                         </div>
                         <div>
                             <span className="font-bold text-2xl bg-gradient-to-r from-blue-200 to-indigo-200 bg-clip-text text-transparent">
@@ -29,38 +29,8 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange }) => {
                         </div>
                     </div>
                     <div className="flex items-center space-x-2 md:space-x-3">
-                        <button 
+                        <button
                             onClick={() => onViewChange('inventory')}
                             className={`${navItemClasses} ${currentView === 'inventory' ? activeClasses : inactiveClasses}`}
-                        >
-                            <span className="flex items-center gap-2">
-                                <span>📦</span>
-                                <span className="hidden sm:inline">Inventaire</span>
-                            </span>
-                        </button>
-                        <button
-                            onClick={() => onViewChange('new_request')}
-                            className={`${navItemClasses} ${currentView === 'new_request' ? activeClasses : inactiveClasses}`}
-                        >
-                            <span className="flex items-center gap-2">
-                                <span>➕</span>
-                                <span className="hidden sm:inline">Nouvelle Demande</span>
-                            </span>
-                        </button>
-                        <button
-                            onClick={() => onViewChange('history')}
-                            className={`${navItemClasses} ${currentView === 'history' ? activeClasses : inactiveClasses}`}
-                        >
-                            <span className="flex items-center gap-2">
-                                <span>📋</span>
-                                <span className="hidden sm:inline">Historique</span>
-                            </span>
-                        </button>
-                    </div>
-                </div>
-            </nav>
-        </header>
-    );
-};
 
-export default Header;
+                            export default Header;

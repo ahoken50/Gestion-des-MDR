@@ -3,9 +3,10 @@ import type { PickupRequest } from '../types';
 import { FirebasePickupRequest } from '../services/firebaseService';
 import { generatePdf } from '../services/pdfService';
 import { PDFService, createPickupRequestPDF, groupItemsByLocation } from '../services/pdfServiceMulti';
-import { FileTextIcon, XMarkIcon } from './icons';
+import { FileTextIcon, XMarkIcon, ArrowDownTrayIcon } from './icons';
 import RequestDetail from './RequestDetail';
 import type { SelectedItem } from '../types-pdf';
+import { LOCATIONS } from '../constants';
 
 interface RequestHistoryProps {
     requests: (PickupRequest | FirebasePickupRequest)[];
@@ -24,9 +25,44 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed' | 'cancelled'>('all');
     const [selectedRequest, setSelectedRequest] = useState<PickupRequest | FirebasePickupRequest | null>(null);
 
+    // Advanced Filters
+    const [startDate, setStartDate] = useState<string>('');
+    const [endDate, setEndDate] = useState<string>('');
+    const [locationFilter, setLocationFilter] = useState<string>('');
+    const [searchQuery, setSearchQuery] = useState<string>('');
+
     const filteredRequests = requests.filter(request => {
-        if (filter === 'all') return true;
-        return request.status === filter;
+        // Status Filter
+        if (filter !== 'all' && request.status !== filter) return false;
+
+        // Date Range Filter
+        const requestDate = new Date(request.date);
+        if (startDate) {
+            const start = new Date(startDate);
+            if (requestDate < start) return false;
+        }
+        if (endDate) {
+            const end = new Date(endDate);
+            // Set end date to end of day
+            end.setHours(23, 59, 59, 999);
+            if (requestDate > end) return false;
+        }
+
+        // Location Filter
+        if (locationFilter && !request.location.includes(locationFilter)) return false;
+
+        // Search Filter (Container name or ID)
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            const matchesId = 'requestNumber' in request
+                ? request.requestNumber.toString().includes(query)
+                : request.id.toLowerCase().includes(query);
+            const matchesItems = request.items.some(item => item.name.toLowerCase().includes(query));
+
+            if (!matchesId && !matchesItems) return false;
+        }
+
+        return true;
     });
 
     const getStatusBadge = (status: string) => {
@@ -111,24 +147,108 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
         }
     };
 
+    const handleExportCSV = () => {
+        if (filteredRequests.length === 0) {
+            alert("Aucune donnée à exporter");
+            return;
+        }
+
+        const headers = ['Numéro', 'Date', 'Statut', 'Lieu', 'Contenants', 'Quantité Totale'];
+        const rows = filteredRequests.map(req => {
+            const number = 'requestNumber' in req ? req.requestNumber : req.id.substring(0, 8);
+            const date = new Date(req.date).toLocaleDateString('fr-CA');
+            const status = getStatusLabel(req.status);
+            const location = req.location.replace(/,/g, ' -'); // Replace commas to avoid CSV issues
+            const items = req.items.map(i => `${i.quantity}x ${i.name}`).join('; ');
+            const totalQty = req.items.reduce((sum, i) => sum + i.quantity, 0);
+
+            return [number, date, status, location, items, totalQty].join(',');
+        });
+
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `export_demandes_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="card p-6 slide-up">
             <div className="flex justify-between items-center mb-6 card-header p-4 -m-6 mb-6">
                 <h2 className="text-2xl font-bold gradient-text">📋 Historique des demandes</h2>
-                <div className="flex items-center space-x-2">
-                    <label htmlFor="statusFilter" className="text-sm font-medium text-gray-700">Filtrer:</label>
-                    <select
-                        id="statusFilter"
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value as any)}
-                        className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-1.5"
-                    >
-                        <option value="all">Toutes</option>
-                        <option value="pending">En attente</option>
-                        <option value="in_progress">En cours</option>
-                        <option value="completed">Complétées</option>
-                        <option value="cancelled">Annulées</option>
-                    </select>
+                <div className="flex flex-col gap-4 w-full md:w-auto">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-col">
+                            <label htmlFor="startDate" className="text-xs font-medium text-gray-500">Du</label>
+                            <input
+                                type="date"
+                                id="startDate"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1"
+                            />
+                        </div>
+                        <div className="flex flex-col">
+                            <label htmlFor="endDate" className="text-xs font-medium text-gray-500">Au</label>
+                            <input
+                                type="date"
+                                id="endDate"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1"
+                            />
+                        </div>
+                        <div className="flex flex-col">
+                            <label htmlFor="locationFilter" className="text-xs font-medium text-gray-500">Lieu</label>
+                            <select
+                                id="locationFilter"
+                                value={locationFilter}
+                                onChange={(e) => setLocationFilter(e.target.value)}
+                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1 w-32"
+                            >
+                                <option value="">Tous</option>
+                                {LOCATIONS.map(loc => (
+                                    <option key={loc} value={loc}>{loc}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex flex-col">
+                            <label htmlFor="statusFilter" className="text-xs font-medium text-gray-500">Statut</label>
+                            <select
+                                id="statusFilter"
+                                value={filter}
+                                onChange={(e) => setFilter(e.target.value as any)}
+                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1"
+                            >
+                                <option value="all">Tous</option>
+                                <option value="pending">En attente</option>
+                                <option value="in_progress">En cours</option>
+                                <option value="completed">Complétées</option>
+                                <option value="cancelled">Annulées</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="text"
+                            placeholder="Rechercher (ID ou contenant)..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1.5 flex-grow"
+                        />
+                        <button
+                            onClick={handleExportCSV}
+                            className="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition-colors flex items-center gap-1 text-sm"
+                            title="Exporter en CSV"
+                        >
+                            <ArrowDownTrayIcon className="w-4 h-4" />
+                            <span className="hidden sm:inline">CSV</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -170,10 +290,12 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
-                                            <div className="font-medium">{request.items.length} contenant(s)</div>
+                                            <div className="font-medium">
+                                                {request.items.reduce((sum, item) => sum + item.quantity, 0)} contenant(s)
+                                            </div>
                                             <div className="text-xs text-gray-400 mt-1">
                                                 {request.items.slice(0, 2).map(i => i.name).join(', ')}
-                                                {request.items.length > 2 && ` +${request.items.length - 2}`}
+                                                {request.items.length > 2 && ` +${request.items.length - 2} autre(s)`}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">

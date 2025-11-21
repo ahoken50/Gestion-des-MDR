@@ -3,6 +3,7 @@ import Header, { type View } from './components/Header';
 import InventoryManager from './components/InventoryManager';
 import UnifiedRequestForm from './components/UnifiedRequestForm';
 import RequestHistory from './components/RequestHistory';
+import Dashboard from './components/Dashboard';
 import { INITIAL_INVENTORY } from './constants';
 import { firebaseService, type FirebasePickupRequest } from './services/firebaseService';
 import type { InventoryItem, PickupRequest, RequestedItem } from './types';
@@ -318,6 +319,9 @@ const App: React.FC = () => {
                         onRequestUpdated={handleRequestUpdated}
                         inventory={inventory}
                     />
+                )}
+                {currentView === 'dashboard' && (
+                    <Dashboard requests={allRequests} inventory={inventory} />
                 )}
             </main>
         </div>
