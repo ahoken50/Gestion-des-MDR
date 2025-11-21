@@ -16,7 +16,7 @@ import {
 } from 'recharts';
 import type { PickupRequest, InventoryItem } from '../types';
 import { FirebasePickupRequest } from '../services/firebaseService';
-import html2canvas from 'html2canvas';
+import 'jspdf-autotable';
 import jsPDF from 'jspdf';
 import { ArrowDownTrayIcon } from './icons';
 
@@ -28,7 +28,7 @@ interface DashboardProps {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
-    const dashboardRef = useRef<HTMLDivElement>(null);
+
 
     // KPI Calculations
     const kpis = useMemo(() => {
@@ -107,79 +107,123 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             .slice(0, 5);
     }, [requests]);
 
-    const handleDownloadPDF = async () => {
-        if (!dashboardRef.current) return;
-
+    const handleDownloadPDF = () => {
         try {
-            const canvas = await html2canvas(dashboardRef.current, {
-                scale: 2, // Better resolution
-                useCORS: true,
-                logging: false,
-                backgroundColor: '#f3f4f6', // Match app background
-                onclone: (clonedDoc) => {
-                    // AGGRESSIVE FIX: Replace ALL oklch colors in computed styles
-                    // This walks through every element and replaces oklch() with rgb()
-                    const allElements = clonedDoc.querySelectorAll('*');
-                    allElements.forEach((element: Element) => {
-                        const htmlElement = element as HTMLElement;
-                        const computedStyle = window.getComputedStyle(element);
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pageWidth = pdf.internal.pageSize.width;
+            const pageHeight = pdf.internal.pageSize.height;
+            const margin = 20;
+            let yPos = margin;
 
-                        // Properties that might contain oklch colors
-                        const colorProps = [
-                            'color', 'backgroundColor', 'borderColor',
-                            'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
-                            'outlineColor', 'textDecorationColor', 'caretColor'
-                        ];
+            // === PAGE DE GARDE ===
+            pdf.setFillColor(37, 99, 235);
+            pdf.rect(0, 0, pageWidth, 60, 'F');
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(28);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Rapport de Gestion', pageWidth / 2, 30, { align: 'center' });
+            pdf.setFontSize(14);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('Système de Cueillette de Contenants', pageWidth / 2, 45, { align: 'center' });
+            const today = new Date().toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' });
+            pdf.setTextColor(100, 100, 100);
+            pdf.setFontSize(11);
+            pdf.text(`Généré le ${today}`, pageWidth / 2, 55, { align: 'center' });
 
-                        colorProps.forEach(prop => {
-                            const value = computedStyle.getPropertyValue(prop);
-                            if (value && value.includes('oklch')) {
-                                // Convert oklch to a simple gray fallback
-                                htmlElement.style.setProperty(prop, 'rgb(107, 114, 128)', 'important');
-                            }
-                        });
-                    });
+            yPos = 80;
 
-                    // Also add CSS rules as backup
-                    const stylesheet = clonedDoc.createElement('style');
-                    stylesheet.textContent = `
-                        * {
-                            color: rgb(31, 41, 55) !important;
-                        }
-                        .bg-white { background-color: rgb(255, 255, 255) !important; }
-                        .bg-gray-50 { background-color: rgb(249, 250, 251) !important; }
-                        .bg-blue-600 { background-color: rgb(37, 99, 235) !important; }
-                        .text-white { color: rgb(255, 255, 255) !important; }
-                        .text-gray-500 { color: rgb(107, 114, 128) !important; }
-                        .text-gray-700 { color: rgb(55, 65, 81) !important; }
-                        .text-gray-800 { color: rgb(31, 41, 55) !important; }
-                        .border-blue-500 { border-color: rgb(59, 130, 246) !important; }
-                        .border-yellow-500 { border-color: rgb(234, 179, 8) !important; }
-                        .border-green-500 { border-color: rgb(34, 197, 94) !important; }
-                        .border-purple-500 { border-color: rgb(168, 85, 247) !important; }
-                        .border-red-500 { border-color: rgb(239, 68, 68) !important; }
-                        .gradient-text {
-                            background: linear-gradient(135deg, rgb(59, 130, 246), rgb(147, 51, 234)) !important;
-                            -webkit-background-clip: text !important;
-                            -webkit-text-fill-color: transparent !important;
-                        }
-                    `;
-                    clonedDoc.head.appendChild(stylesheet);
-                }
+            // === SECTION KPIs ===
+            pdf.setTextColor(31, 41, 55);
+            pdf.setFontSize(16);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('📊 Indicateurs Clés', margin, yPos);
+            yPos += 10;
+
+            const kpiBoxes = [
+                { label: 'Total Demandes', value: kpis.totalRequests.toString(), color: [59, 130, 246] },
+                { label: 'En Attente', value: kpis.pendingRequests.toString(), color: [234, 179, 8] },
+                { label: 'Complétées', value: kpis.completedRequests.toString(), color: [34, 197, 94] },
+                { label: 'Contenants', value: kpis.totalContainers.toString(), color: [168, 85, 247] },
+                { label: 'Coût Total', value: `${kpis.totalCost.toFixed(2)} $`, color: [239, 68, 68] }
+            ];
+
+            const boxWidth = (pageWidth - 2 * margin - 16) / 5;
+            kpiBoxes.forEach((kpi, index) => {
+                const x = margin + index * (boxWidth + 4);
+                pdf.setFillColor(kpi.color[0], kpi.color[1], kpi.color[2]);
+                pdf.rect(x, yPos, boxWidth, 25, 'F');
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(kpi.label.toUpperCase(), x + boxWidth / 2, yPos + 8, { align: 'center' });
+                pdf.setFontSize(14);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(kpi.value, x + boxWidth / 2, yPos + 18, { align: 'center' });
             });
 
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({
-                orientation: 'landscape',
-                unit: 'mm',
-                format: 'a4'
+            yPos += 35;
+
+            // === TABLEAU: Contenants par Lieu ===
+            pdf.setTextColor(31, 41, 55);
+            pdf.setFontSize(14);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('📍 Contenants par Lieu (Top 5)', margin, yPos);
+            yPos += 2;
+            (pdf as any).autoTable({
+                startY: yPos,
+                head: [['Lieu', 'Quantité']],
+                body: locationData.map(item => [item.name, item.value.toString()]),
+                theme: 'grid',
+                headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+                margin: { left: margin, right: margin },
+                styles: { fontSize: 10, cellPadding: 3 }
             });
 
-            const imgWidth = 297;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            yPos = (pdf as any).lastAutoTable.finalY + 12;
 
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-            pdf.save(`dashboard_${new Date().toISOString().split('T')[0]}.pdf`);
+            // === TABLEAU: Types de Contenants ===
+            pdf.setFontSize(14);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('📦 Types de Contenants (Top 5)', margin, yPos);
+            yPos += 2;
+            (pdf as any).autoTable({
+                startY: yPos,
+                head: [['Type', 'Quantité']],
+                body: typeData.map(item => [item.name, item.value.toString()]),
+                theme: 'grid',
+                headStyles: { fillColor: [34, 197, 94], textColor: 255, fontStyle: 'bold' },
+                margin: { left: margin, right: margin },
+                styles: { fontSize: 10, cellPadding: 3 }
+            });
+
+            yPos = (pdf as any).lastAutoTable.finalY + 12;
+            if (yPos > pageHeight - 60) { pdf.addPage(); yPos = margin; }
+
+            // === TABLEAU: Coûts par Lieu ===
+            pdf.setFontSize(14);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('💰 Coûts par Lieu (Top 5)', margin, yPos);
+            yPos += 2;
+            (pdf as any).autoTable({
+                startY: yPos,
+                head: [['Lieu', 'Coût Total']],
+                body: costByLocationData.map(item => [item.name, `${item.value.toFixed(2)} $`]),
+                theme: 'grid',
+                headStyles: { fillColor: [239, 68, 68], textColor: 255, fontStyle: 'bold' },
+                margin: { left: margin, right: margin },
+                styles: { fontSize: 10, cellPadding: 3 }
+            });
+
+            // === PIED DE PAGE ===
+            const totalPages = (pdf as any).internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                pdf.setPage(i);
+                pdf.setFontSize(9);
+                pdf.setTextColor(150, 150, 150);
+                pdf.text(`Page ${i} sur ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+            }
+
+            pdf.save(`rapport_gestion_${new Date().toISOString().split('T')[0]}.pdf`);
         } catch (error) {
             console.error("Error generating PDF:", error);
             alert("Erreur lors de la génération du PDF");
@@ -187,7 +231,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
     };
 
     return (
-        <div ref={dashboardRef} className="space-y-8 slide-up p-4 bg-gray-50 min-h-screen">
+        <div className="space-y-8 slide-up p-4 bg-gray-50 min-h-screen">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold gradient-text">Tableau de bord</h2>
                 <button
