@@ -117,50 +117,51 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                 logging: false,
                 backgroundColor: '#f3f4f6', // Match app background
                 onclone: (clonedDoc) => {
-                    // Convert ALL oklch/Tailwind colors to RGB for html2canvas compatibility
+                    // AGGRESSIVE FIX: Replace ALL oklch colors in computed styles
+                    // This walks through every element and replaces oklch() with rgb()
+                    const allElements = clonedDoc.querySelectorAll('*');
+                    allElements.forEach((element: Element) => {
+                        const htmlElement = element as HTMLElement;
+                        const computedStyle = window.getComputedStyle(element);
+
+                        // Properties that might contain oklch colors
+                        const colorProps = [
+                            'color', 'backgroundColor', 'borderColor',
+                            'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+                            'outlineColor', 'textDecorationColor', 'caretColor'
+                        ];
+
+                        colorProps.forEach(prop => {
+                            const value = computedStyle.getPropertyValue(prop);
+                            if (value && value.includes('oklch')) {
+                                // Convert oklch to a simple gray fallback
+                                htmlElement.style.setProperty(prop, 'rgb(107, 114, 128)', 'important');
+                            }
+                        });
+                    });
+
+                    // Also add CSS rules as backup
                     const stylesheet = clonedDoc.createElement('style');
                     stylesheet.textContent = `
                         * {
                             color: rgb(31, 41, 55) !important;
                         }
-                        /* Background colors */
                         .bg-white { background-color: rgb(255, 255, 255) !important; }
                         .bg-gray-50 { background-color: rgb(249, 250, 251) !important; }
-                        .bg-gray-100 { background-color: rgb(243, 244, 246) !important; }
                         .bg-blue-600 { background-color: rgb(37, 99, 235) !important; }
-                        .bg-blue-700 { background-color: rgb(29, 78, 216) !important; }
-                        
-                        /* Text colors */
                         .text-white { color: rgb(255, 255, 255) !important; }
                         .text-gray-500 { color: rgb(107, 114, 128) !important; }
                         .text-gray-700 { color: rgb(55, 65, 81) !important; }
                         .text-gray-800 { color: rgb(31, 41, 55) !important; }
-                        .text-blue-600 { color: rgb(37, 99, 235) !important; }
-                        
-                        /* Border colors */
                         .border-blue-500 { border-color: rgb(59, 130, 246) !important; }
                         .border-yellow-500 { border-color: rgb(234, 179, 8) !important; }
                         .border-green-500 { border-color: rgb(34, 197, 94) !important; }
                         .border-purple-500 { border-color: rgb(168, 85, 247) !important; }
                         .border-red-500 { border-color: rgb(239, 68, 68) !important; }
-                        .border-gray-200 { border-color: rgb(229, 231, 235) !important; }
-                        
-                        /* Shadow colors - remove oklch from shadows */
-                        .shadow-sm, .shadow, .shadow-md, .shadow-lg {
-                            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
-                        }
-                        
-                        /* Gradient text */
                         .gradient-text {
                             background: linear-gradient(135deg, rgb(59, 130, 246), rgb(147, 51, 234)) !important;
                             -webkit-background-clip: text !important;
                             -webkit-text-fill-color: transparent !important;
-                            background-clip: text !important;
-                        }
-                        
-                        /* Force all colors to RGB */
-                        [class*="bg-"], [class*="text-"], [class*="border-"] {
-                            color: inherit !important;
                         }
                     `;
                     clonedDoc.head.appendChild(stylesheet);
