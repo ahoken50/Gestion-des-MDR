@@ -32,5 +32,44 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange }) => {
                         <button
                             onClick={() => onViewChange('inventory')}
                             className={`${navItemClasses} ${currentView === 'inventory' ? activeClasses : inactiveClasses}`}
+                        >
+                            <span className="flex items-center gap-2">
+                                <span>📦</span>
+                                <span className="hidden sm:inline">Inventaire</span>
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => onViewChange('new_request')}
+                            className={`${navItemClasses} ${currentView === 'new_request' ? activeClasses : inactiveClasses}`}
+                        >
+                            <span className="flex items-center gap-2">
+                                <span>➕</span>
+                                <span className="hidden sm:inline">Nouvelle Demande</span>
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => onViewChange('history')}
+                            className={`${navItemClasses} ${currentView === 'history' ? activeClasses : inactiveClasses}`}
+                        >
+                            <span className="flex items-center gap-2">
+                                <span>📋</span>
+                                <span className="hidden sm:inline">Historique</span>
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => onViewChange('dashboard')}
+                            className={`${navItemClasses} ${currentView === 'dashboard' ? activeClasses : inactiveClasses}`}
+                        >
+                            <span className="flex items-center gap-2">
+                                <span>📊</span>
+                                <span className="hidden sm:inline">Tableau de bord</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+        </header>
+    );
+};
 
-                            export default Header;
+export default Header;
