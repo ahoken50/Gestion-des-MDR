@@ -16,8 +16,8 @@ import {
 } from 'recharts';
 import type { PickupRequest, InventoryItem } from '../types';
 import { FirebasePickupRequest } from '../services/firebaseService';
-import 'jspdf-autotable';
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { ArrowDownTrayIcon } from './icons';
 
 interface DashboardProps {
