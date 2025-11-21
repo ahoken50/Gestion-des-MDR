@@ -139,7 +139,8 @@ export class PDFService {
       this.doc.setFontSize(12);
       this.doc.setFont('helvetica', 'bold');
       this.doc.text(`LIEU DE RAMASSAGE ${index + 1}: ${location}`, 16, y);
-      y += 10;
+      this.doc.text(`LIEU DE RAMASSAGE ${index + 1}: ${location}`, 16, y);
+      y += 14; // Increased spacing to prevent overlap with next section
 
       const addressInfo = LOCATION_ADDRESSES[location];
       if (addressInfo) {
@@ -147,7 +148,7 @@ export class PDFService {
         this.doc.setFontSize(10);
         this.doc.setFont('helvetica', 'normal');
         this.doc.text(`Adresse de ramassage: ${addressInfo.fullAddress}`, 16, y);
-        y += 7;
+        y += 8;
       }
 
       if (comments && comments.trim()) {

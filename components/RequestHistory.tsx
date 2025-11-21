@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { PickupRequest } from '../types';
 import { FirebasePickupRequest } from '../services/firebaseService';
 import { generatePdf } from '../services/pdfService';
-import { PDFService, createPickupRequestPDF } from '../services/pdfServiceMulti';
+import { PDFService, createPickupRequestPDF, groupItemsByLocation } from '../services/pdfServiceMulti';
 import { FileTextIcon, XMarkIcon } from './icons';
 import RequestDetail from './RequestDetail';
 import type { SelectedItem } from '../types-pdf';
@@ -83,7 +83,18 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                 bcNumber: request.bcNumber
             };
 
-            const pdfRequest = createPickupRequestPDF(selectedItems, contactInfo);
+            // Reconstruct grouped items with comments
+            const groupedItems = groupItemsByLocation(selectedItems);
+            const groupedItemsWithComments: Record<string, { items: any[], comments?: string }> = {};
+
+            Object.entries(groupedItems).forEach(([loc, data]) => {
+                groupedItemsWithComments[loc] = {
+                    items: data.items,
+                    comments: request.locationComments?.[loc]
+                };
+            });
+
+            const pdfRequest = createPickupRequestPDF(selectedItems, contactInfo, groupedItemsWithComments);
             const pdfService = new PDFService();
             pdfService.generatePickupRequestPDF(pdfRequest);
             const requestNumber = 'requestNumber' in request ? request.requestNumber : request.id.substring(0, 8);
