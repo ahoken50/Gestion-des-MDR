@@ -64,7 +64,7 @@ export class PDFService {
     this.doc.setFontSize(13);
     this.doc.setFont('helvetica', 'bold');
     this.doc.setTextColor(30, 58, 138);
-    this.doc.text('📋 Informations de la demande', 16, y + 5);
+    this.doc.text('INFORMATIONS DE LA DEMANDE', 16, y + 5);
     y += 14;
 
     this.doc.setFontSize(11);
@@ -93,7 +93,7 @@ export class PDFService {
       y += 3;
       this.doc.setFont('helvetica', 'bold');
       this.doc.setTextColor(30, 58, 138);
-      this.doc.text('📝 Notes générales:', 16, y);
+      this.doc.text('NOTES GENERALES:', 16, y);
       y += 6;
       this.doc.setFont('helvetica', 'normal');
       this.doc.setTextColor(0, 0, 0);
@@ -127,7 +127,7 @@ export class PDFService {
       this.doc.setTextColor(30, 58, 138);
       this.doc.setFontSize(12);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text(`📍 Lieu de ramassage ${index + 1}: ${location}`, 16, y);
+      this.doc.text(`LIEU DE RAMASSAGE ${index + 1}: ${location}`, 16, y);
       y += 10;
 
       const addressInfo = LOCATION_ADDRESSES[location];
@@ -195,7 +195,7 @@ export class PDFService {
     this.doc.setFontSize(12);
     this.doc.setFont('helvetica', 'bold');
     this.doc.setTextColor(30, 58, 138);
-    this.doc.text('📊 Résumé de la demande', 16, y);
+    this.doc.text('RESUME DE LA DEMANDE', 16, y);
 
     this.doc.setFontSize(11);
     this.doc.setFont('helvetica', 'normal');
