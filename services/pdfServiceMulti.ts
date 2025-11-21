@@ -24,43 +24,53 @@ export class PDFService {
   }
 
   private addHeader(title: string): void {
-    // En-tête avec Logo et Titre
-    this.doc.setFillColor(255, 255, 255);
-    this.doc.rect(0, 0, 210, 40, 'F'); // Fond blanc pour l'en-tête
+    // En-tête avec Logo et Titre - Présentation améliorée
+    this.doc.setFillColor(245, 247, 250); // Fond gris très clair
+    this.doc.rect(0, 0, 210, 45, 'F');
 
     // Ajouter le logo
     try {
-      this.doc.addImage(logoValdor, 'PNG', 14, 5, 40, 25); // Ajuster dimensions et position
+      this.doc.addImage(logoValdor, 'PNG', 14, 8, 45, 28);
     } catch (e) {
       console.error("Erreur lors de l'ajout du logo", e);
       // Fallback texte si le logo échoue
-      this.doc.setFontSize(10);
-      this.doc.text("VILLE DE VAL-D'OR", 14, 20);
+      this.doc.setFontSize(12);
+      this.doc.setTextColor(30, 58, 138);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text("VILLE DE VAL-D'OR", 14, 22);
     }
 
+    // Titre principal avec meilleure visibilité
     this.doc.setTextColor(30, 58, 138); // Bleu foncé
-    this.doc.setFontSize(18);
+    this.doc.setFontSize(20);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(title, 200, 20, { align: 'right' });
+    this.doc.text(title, 200, 25, { align: 'right' });
 
-    // Ligne de séparation
+    // Ligne de séparation plus épaisse
     this.doc.setDrawColor(30, 58, 138);
-    this.doc.setLineWidth(0.5);
-    this.doc.line(14, 35, 196, 35);
+    this.doc.setLineWidth(1);
+    this.doc.line(14, 40, 196, 40);
 
     this.doc.setFont('helvetica', 'normal');
   }
 
   private addContactInfo(request: PickupRequestPDF): void {
-    let y = 45;
-    this.doc.setFontSize(12);
-    this.doc.setFont('helvetica', 'bold');
-    this.doc.setTextColor(0, 0, 0);
-    this.doc.text('Informations de la demande', 14, y);
-    y += 8;
+    let y = 52;
 
-    this.doc.setFontSize(10);
+    // Section avec fond coloré
+    this.doc.setFillColor(240, 245, 255); // Bleu très clair
+    this.doc.rect(14, y - 2, 182, 10, 'F');
+
+    this.doc.setFontSize(13);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(30, 58, 138);
+    this.doc.text('📋 Informations de la demande', 16, y + 5);
+    y += 14;
+
+    this.doc.setFontSize(11);
     this.doc.setFont('helvetica', 'normal');
+    this.doc.setTextColor(0, 0, 0);
+
     const info = [
       { label: 'Numéro BC', value: request.bcNumber },
       { label: 'Demandeur', value: request.contactName },
@@ -71,19 +81,24 @@ export class PDFService {
 
     info.forEach(item => {
       if (item.value) {
-        this.doc.text(`${item.label}: ${item.value}`, 14, y);
-        y += 5;
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.text(`${item.label}:`, 16, y);
+        this.doc.setFont('helvetica', 'normal');
+        this.doc.text(`${item.value}`, 50, y);
+        y += 6;
       }
     });
 
     if (request.notes && request.notes.trim()) {
       y += 3;
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text('Notes générales:', 14, y);
-      y += 5;
+      this.doc.setTextColor(30, 58, 138);
+      this.doc.text('📝 Notes générales:', 16, y);
+      y += 6;
       this.doc.setFont('helvetica', 'normal');
+      this.doc.setTextColor(0, 0, 0);
       const splitNotes = this.doc.splitTextToSize(request.notes, 182);
-      this.doc.text(splitNotes, 14, y);
+      this.doc.text(splitNotes, 16, y);
     }
   }
 
@@ -102,22 +117,26 @@ export class PDFService {
       }
 
       y += 10;
-      // Titre du lieu (sans emoji pour éviter les problèmes d'encodage)
-      this.doc.setFillColor(240, 240, 240);
-      this.doc.rect(14, y - 6, 182, 8, 'F');
-      this.doc.setTextColor(0, 0, 0);
-      this.doc.setFontSize(11);
+      // Titre du lieu avec meilleure présentation
+      this.doc.setFillColor(230, 240, 255); // Bleu clair
+      this.doc.rect(14, y - 6, 182, 9, 'F');
+      this.doc.setDrawColor(30, 58, 138);
+      this.doc.setLineWidth(0.3);
+      this.doc.rect(14, y - 6, 182, 9, 'FD');
+
+      this.doc.setTextColor(30, 58, 138);
+      this.doc.setFontSize(12);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text(`Lieu ${index + 1}: ${location}`, 16, y);
-      y += 8;
+      this.doc.text(`📍 Lieu de ramassage ${index + 1}: ${location}`, 16, y);
+      y += 10;
 
       const addressInfo = LOCATION_ADDRESSES[location];
       if (addressInfo) {
-        this.doc.setTextColor(80, 80, 80);
-        this.doc.setFontSize(9);
+        this.doc.setTextColor(60, 60, 60);
+        this.doc.setFontSize(10);
         this.doc.setFont('helvetica', 'normal');
-        this.doc.text(`Adresse: ${addressInfo.fullAddress}`, 16, y);
-        y += 6;
+        this.doc.text(`Adresse de ramassage: ${addressInfo.fullAddress}`, 16, y);
+        y += 7;
       }
 
       if (comments && comments.trim()) {
@@ -131,17 +150,23 @@ export class PDFService {
       const tableData: string[][] = items.map(item => [item.name, item.quantity.toString()]);
 
       autoTable(this.doc, {
-        head: [['Contenant', 'Quantité']],
+        head: [['Type de contenant', 'Quantité']],
         body: tableData,
         startY: y,
         theme: 'grid',
-        styles: { fontSize: 10, cellPadding: 3, textColor: [0, 0, 0] },
-        headStyles: { fillColor: [220, 220, 220], textColor: 0, fontStyle: 'bold' },
+        styles: { fontSize: 10, cellPadding: 4, textColor: [0, 0, 0] },
+        headStyles: {
+          fillColor: [30, 58, 138],
+          textColor: 255,
+          fontStyle: 'bold',
+          fontSize: 11
+        },
         columnStyles: {
           0: { cellWidth: 142 },
           1: { halign: 'center', cellWidth: 40 }
         },
-        margin: { left: 14, right: 14 }
+        margin: { left: 14, right: 14 },
+        alternateRowStyles: { fillColor: [248, 250, 252] }
       });
 
       y = (this.doc as any).lastAutoTable?.finalY;
@@ -151,22 +176,32 @@ export class PDFService {
   }
 
   private addSummary(request: PickupRequestPDF, lastY: number): void {
-    let y = lastY + 15;
+    let y = lastY + 18;
     if (y > 260) {
       this.doc.addPage();
       y = 20;
     }
 
-    this.doc.setDrawColor(200, 200, 200);
+    // Ligne de séparation
+    this.doc.setDrawColor(30, 58, 138);
+    this.doc.setLineWidth(0.5);
     this.doc.line(14, y, 196, y);
-    y += 10;
+    y += 12;
+
+    // Résumé avec fond coloré
+    this.doc.setFillColor(240, 245, 255);
+    this.doc.rect(14, y - 6, 182, 16, 'F');
+
+    this.doc.setFontSize(12);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(30, 58, 138);
+    this.doc.text('📊 Résumé de la demande', 16, y);
 
     this.doc.setFontSize(11);
-    this.doc.setFont('helvetica', 'bold');
-    this.doc.text('Résumé', 14, y);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(`Total de contenants: ${request.totalItems}`, 14, y + 7);
-    this.doc.text(`Nombre de lieux: ${request.totalLocations}`, 80, y + 7);
+    this.doc.setTextColor(0, 0, 0);
+    this.doc.text(`Total de contenants: ${request.totalItems}`, 16, y + 8);
+    this.doc.text(`Nombre de lieux: ${request.totalLocations}`, 100, y + 8);
   }
 
   private addFooter(): void {

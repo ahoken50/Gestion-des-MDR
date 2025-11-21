@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import type { PickupRequest } from '../types';
 import { FirebasePickupRequest } from '../services/firebaseService';
 import { generatePdf } from '../services/pdfService';
-import { FileTextIcon } from './icons';
+import { PDFService, createPickupRequestPDF } from '../services/pdfServiceMulti';
+import { FileTextIcon, XMarkIcon } from './icons';
 import RequestDetail from './RequestDetail';
+import type { SelectedItem } from '../types-pdf';
 
 interface RequestHistoryProps {
     requests: (PickupRequest | FirebasePickupRequest)[];
@@ -63,6 +65,41 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
         setSelectedRequest(null);
     };
 
+    const handleRegeneratePDF = (request: PickupRequest | FirebasePickupRequest) => {
+        // Check if it's a multi-location request
+        if (request.locationComments || (request.items.length > 0 && request.items.some(item => item.location))) {
+            // Multi-location PDF
+            const selectedItems: SelectedItem[] = request.items.map(item => ({
+                id: item.id || `temp-${Date.now()}-${Math.random()}`,
+                name: item.name,
+                quantity: item.quantity,
+                location: item.location || request.location
+            }));
+
+            const contactInfo = {
+                name: request.contactName,
+                phone: request.contactPhone,
+                notes: request.notes,
+                bcNumber: request.bcNumber
+            };
+
+            const pdfRequest = createPickupRequestPDF(selectedItems, contactInfo);
+            const pdfService = new PDFService();
+            pdfService.generatePickupRequestPDF(pdfRequest);
+            const requestNumber = 'requestNumber' in request ? request.requestNumber : request.id.substring(0, 8);
+            pdfService.save(`demande_ramassage_${requestNumber}.pdf`);
+        } else {
+            // Simple single-location PDF
+            generatePdf(request as PickupRequest);
+        }
+    };
+
+    const handleCancelRequest = (requestId: string) => {
+        if (confirm('Voulez-vous vraiment annuler cette demande?')) {
+            onUpdateRequestStatus(requestId, 'cancelled');
+        }
+    };
+
     return (
         <div className="card p-6 slide-up">
             <div className="flex justify-between items-center mb-6 card-header p-4 -m-6 mb-6">
@@ -91,7 +128,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                             <tr>
                                 <th scope="col" className="table-header-cell">Numéro</th>
                                 <th scope="col" className="table-header-cell">Date</th>
-                                <th scope="col" className="table-header-cell">Lieu</th>
+                                <th scope="col" className="table-header-cell">Lieu(x)</th>
                                 <th scope="col" className="table-header-cell">Contenants</th>
                                 <th scope="col" className="table-header-cell">Statut</th>
                                 <th scope="col" className="table-header-cell text-right">Actions</th>
@@ -115,13 +152,17 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {new Date(request.date).toLocaleDateString('fr-CA')}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <td className="px-6 py-4 text-sm text-gray-500">
                                             {request.location.length > 30 ? request.location.substring(0, 30) + '...' : request.location}
+                                            {request.locationComments && Object.keys(request.locationComments).length > 1 && (
+                                                <span className="ml-1 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">+{Object.keys(request.locationComments).length - 1}</span>
+                                            )}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {request.items.length} contenant(s)
-                                            <div className="text-xs text-gray-400 truncate max-w-[200px]">
-                                                {request.items.map(i => i.name).join(', ')}
+                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                            <div className="font-medium">{request.items.length} contenant(s)</div>
+                                            <div className="text-xs text-gray-400 mt-1">
+                                                {request.items.slice(0, 2).map(i => i.name).join(', ')}
+                                                {request.items.length > 2 && ` +${request.items.length - 2}`}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -140,18 +181,28 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => handleViewDetails(request)}
-                                                    className="text-blue-600 hover:text-blue-800 transition-colors"
+                                                    className="text-blue-600 hover:text-blue-800 transition-colors px-2 py-1 rounded hover:bg-blue-50"
                                                     title="Voir les détails"
                                                 >
                                                     Détails
                                                 </button>
                                                 <button
-                                                    onClick={() => generatePdf(request as PickupRequest)}
-                                                    className="text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1"
-                                                    title="Générer PDF"
+                                                    onClick={() => handleRegeneratePDF(request)}
+                                                    className="text-green-600 hover:text-green-800 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-green-50"
+                                                    title="Régénérer PDF"
                                                 >
                                                     <FileTextIcon className="w-4 h-4" />
+                                                    <span className="text-xs">PDF</span>
                                                 </button>
+                                                {request.status !== 'cancelled' && (
+                                                    <button
+                                                        onClick={() => handleCancelRequest(request.id)}
+                                                        className="text-red-600 hover:text-red-800 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50"
+                                                        title="Annuler la demande"
+                                                    >
+                                                        <XMarkIcon className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

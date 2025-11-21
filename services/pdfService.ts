@@ -6,7 +6,7 @@ declare const jsPDF: any;
 export const generatePdf = (request: PickupRequest) => {
   // Use the global jsPDF constructor provided by the script tag
   const doc = new jsPDF();
-  
+
   const primaryColor = [30, 58, 138]; // Bleu foncé (dark blue)
   const secondaryColor = [219, 234, 254]; // Bleu très clair (very light blue)
   let y = 15;
@@ -50,20 +50,20 @@ export const generatePdf = (request: PickupRequest) => {
   doc.text('DÉTAILS DES ARTICLES', margin + 2, y + 6);
   y += 10;
 
-  const tableColumn = ["Contenant", "Quantité"];
+  const tableColumn = ["Type de contenant", "Quantité"];
   const tableRows: (string | number)[][] = [];
 
   request.items.forEach(item => {
     tableRows.push([item.name, item.quantity]);
   });
-  
+
   // Utilisation de autoTable pour le tableau des articles
   (doc as any).autoTable({
     startY: y,
     head: [tableColumn],
     body: tableRows,
     theme: 'striped',
-    headStyles: { 
+    headStyles: {
       fillColor: primaryColor,
       textColor: [255, 255, 255],
       fontSize: 12

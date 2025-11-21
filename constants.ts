@@ -11,27 +11,27 @@ export const LOCATIONS = [
 export const LOCATION_ADDRESSES: Record<string, { street: string; city: string; postalCode: string; fullAddress: string }> = {
   "2200 Jean-Jacques Cossette": {
     street: "2200 Jean-Jacques Cossette",
-    city: "Saguenay, QC",
-    postalCode: "G7S 3H1",
-    fullAddress: "2200 Jean-Jacques Cossette, Saguenay, QC G7S 3H1"
+    city: "Val-d'Or, QC",
+    postalCode: "J9P 0B9",
+    fullAddress: "2200 Jean-Jacques Cossette, Val-d'Or, QC J9P 0B9"
   },
   "1200 6e rue": {
     street: "1200 6e rue",
-    city: "Saguenay, QC",
-    postalCode: "G7B 2Z7",
-    fullAddress: "1200 6e rue, Saguenay, QC G7B 2Z7"
+    city: "Val-d'Or, QC",
+    postalCode: "J9P 3Y1",
+    fullAddress: "1200 6e rue, Val-d'Or, QC J9P 3Y1"
   },
   "1199 rue de l'Escale": {
     street: "1199 rue de l'Escale",
-    city: "Saguenay, QC",
-    postalCode: "G7H 7Y1",
-    fullAddress: "1199 rue de l'Escale, Saguenay, QC G7H 7Y1"
+    city: "Val-d'Or, QC",
+    postalCode: "J9P 7A9",
+    fullAddress: "1199 rue de l'Escale, Val-d'Or, QC J9P 7A9"
   },
   "Forêt Récréative": {
     street: "Forêt Récréative",
-    city: "Saguenay, QC",
+    city: "Val-d'Or, QC",
     postalCode: "",
-    fullAddress: "Forêt Récréative, Saguenay, QC"
+    fullAddress: "Forêt Récréative, Val-d'Or, QC"
   }
 };
 
