@@ -17,7 +17,7 @@ import {
 import type { PickupRequest, InventoryItem } from '../types';
 import { FirebasePickupRequest } from '../services/firebaseService';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { ArrowDownTrayIcon } from './icons';
 
 interface DashboardProps {
@@ -169,7 +169,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             pdf.setFont('helvetica', 'bold');
             pdf.text('📍 Contenants par Lieu (Top 5)', margin, yPos);
             yPos += 2;
-            (pdf as any).autoTable({
+            autoTable(pdf, {
                 startY: yPos,
                 head: [['Lieu', 'Quantité']],
                 body: locationData.map(item => [item.name, item.value.toString()]),
@@ -186,7 +186,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             pdf.setFont('helvetica', 'bold');
             pdf.text('📦 Types de Contenants (Top 5)', margin, yPos);
             yPos += 2;
-            (pdf as any).autoTable({
+            autoTable(pdf, {
                 startY: yPos,
                 head: [['Type', 'Quantité']],
                 body: typeData.map(item => [item.name, item.value.toString()]),
@@ -204,7 +204,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             pdf.setFont('helvetica', 'bold');
             pdf.text('💰 Coûts par Lieu (Top 5)', margin, yPos);
             yPos += 2;
-            (pdf as any).autoTable({
+            autoTable(pdf, {
                 startY: yPos,
                 head: [['Lieu', 'Coût Total']],
                 body: costByLocationData.map(item => [item.name, `${item.value.toFixed(2)} $`]),
