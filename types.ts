@@ -23,4 +23,5 @@ export interface PickupRequest {
   contactPhone: string;
   notes?: string;
   locationComments?: Record<string, string>;
+  cost?: number;
 }

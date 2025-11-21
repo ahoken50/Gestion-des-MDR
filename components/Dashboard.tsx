@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import {
     BarChart,
     Bar,
@@ -16,6 +16,9 @@ import {
 } from 'recharts';
 import type { PickupRequest, InventoryItem } from '../types';
 import { FirebasePickupRequest } from '../services/firebaseService';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { ArrowDownTrayIcon } from './icons';
 
 interface DashboardProps {
     requests: (PickupRequest | FirebasePickupRequest)[];
@@ -25,6 +28,8 @@ interface DashboardProps {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
+    const dashboardRef = useRef<HTMLDivElement>(null);
+
     // KPI Calculations
     const kpis = useMemo(() => {
         const totalRequests = requests.length;
@@ -35,7 +40,9 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             return sum + req.items.reduce((itemSum, item) => itemSum + item.quantity, 0);
         }, 0);
 
-        return { totalRequests, pendingRequests, completedRequests, totalContainers };
+        const totalCost = requests.reduce((sum, req) => sum + (req.cost || 0), 0);
+
+        return { totalRequests, pendingRequests, completedRequests, totalContainers, totalCost };
     }, [requests]);
 
     // Chart Data Preparation
@@ -85,12 +92,65 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
         return Object.entries(dateCounts).map(([date, count]) => ({ date, count }));
     }, [requests]);
 
+    const costByLocationData = useMemo(() => {
+        const locationCosts: Record<string, number> = {};
+        requests.forEach(req => {
+            if (req.cost) {
+                const loc = req.location.split(',')[0].trim();
+                locationCosts[loc] = (locationCosts[loc] || 0) + req.cost;
+            }
+        });
+
+        return Object.entries(locationCosts)
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5);
+    }, [requests]);
+
+    const handleDownloadPDF = async () => {
+        if (!dashboardRef.current) return;
+
+        try {
+            const canvas = await html2canvas(dashboardRef.current, {
+                scale: 2, // Better resolution
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#f3f4f6' // Match app background
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const imgWidth = 297;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            pdf.save(`dashboard_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            alert("Erreur lors de la génération du PDF");
+        }
+    };
+
     return (
-        <div className="space-y-8 slide-up">
-            <h2 className="text-2xl font-bold gradient-text mb-6">Tableau de bord</h2>
+        <div ref={dashboardRef} className="space-y-8 slide-up p-4 bg-gray-50 min-h-screen">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold gradient-text">Tableau de bord</h2>
+                <button
+                    onClick={handleDownloadPDF}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
+                >
+                    <ArrowDownTrayIcon className="w-5 h-5" />
+                    Exporter PDF
+                </button>
+            </div>
 
             {/* KPIs */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
                     <h3 className="text-gray-500 text-sm font-medium uppercase">Total Demandes</h3>
                     <p className="text-3xl font-bold text-gray-800">{kpis.totalRequests}</p>
@@ -104,8 +164,12 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                     <p className="text-3xl font-bold text-gray-800">{kpis.completedRequests}</p>
                 </div>
                 <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500">
-                    <h3 className="text-gray-500 text-sm font-medium uppercase">Contenants Collectés</h3>
+                    <h3 className="text-gray-500 text-sm font-medium uppercase">Contenants</h3>
                     <p className="text-3xl font-bold text-gray-800">{kpis.totalContainers}</p>
+                </div>
+                <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
+                    <h3 className="text-gray-500 text-sm font-medium uppercase">Coût Total</h3>
+                    <p className="text-3xl font-bold text-gray-800">{kpis.totalCost.toFixed(2)} $</p>
                 </div>
             </div>
 
@@ -157,19 +221,39 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             </div>
 
             {/* Charts Row 2 */}
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">Tendance de Collecte</h3>
-                <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={timelineData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Line type="monotone" dataKey="count" name="Contenants" stroke="#82ca9d" strokeWidth={2} activeDot={{ r: 8 }} />
-                        </LineChart>
-                    </ResponsiveContainer>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Line Chart: Timeline */}
+                <div className="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-4">Tendance de Collecte</h3>
+                    <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={timelineData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="date" />
+                                <YAxis />
+                                <Tooltip />
+                                <Legend />
+                                <Line type="monotone" dataKey="count" name="Contenants" stroke="#82ca9d" strokeWidth={2} activeDot={{ r: 8 }} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Bar Chart: Costs by Location */}
+                <div className="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-4">Coûts par Lieu (Top 5)</h3>
+                    <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={costByLocationData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis type="number" />
+                                <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
+                                <Tooltip formatter={(value) => `${Number(value).toFixed(2)} $`} />
+                                <Legend />
+                                <Bar dataKey="value" name="Coût ($)" fill="#ff8042" radius={[0, 4, 4, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
         </div>

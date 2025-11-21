@@ -7,6 +7,7 @@ import { FileTextIcon, XMarkIcon, ArrowDownTrayIcon } from './icons';
 import RequestDetail from './RequestDetail';
 import type { SelectedItem } from '../types-pdf';
 import { LOCATIONS } from '../constants';
+import * as XLSX from 'xlsx';
 
 interface RequestHistoryProps {
     requests: (PickupRequest | FirebasePickupRequest)[];
@@ -15,7 +16,6 @@ interface RequestHistoryProps {
     inventory: Array<{ id: string; name: string; quantity: number; location: string }>;
 }
 
-// FIX: Provide implementation for RequestHistory component.
 const RequestHistory: React.FC<RequestHistoryProps> = ({
     requests,
     onUpdateRequestStatus,
@@ -147,33 +147,74 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
         }
     };
 
-    const handleExportCSV = () => {
+    const handleUpdateCost = (request: PickupRequest | FirebasePickupRequest) => {
+        const currentCost = request.cost || 0;
+        const newCostStr = prompt("Entrez le coût de la facture ($):", currentCost > 0 ? currentCost.toString() : '');
+
+        if (newCostStr !== null) {
+            const newCost = parseFloat(newCostStr.replace(',', '.'));
+            if (!isNaN(newCost) && newCost >= 0) {
+                // Create updated request object
+                const updatedRequest = { ...request, cost: newCost };
+                // Call parent update handler
+                if (onRequestUpdated) {
+                    onRequestUpdated(updatedRequest);
+                }
+            } else if (newCostStr.trim() === '') {
+                // Allow clearing the cost
+                const updatedRequest = { ...request, cost: undefined };
+                if (onRequestUpdated) {
+                    onRequestUpdated(updatedRequest);
+                }
+            } else {
+                alert("Montant invalide.");
+            }
+        }
+    };
+
+    const handleExportExcel = () => {
         if (filteredRequests.length === 0) {
             alert("Aucune donnée à exporter");
             return;
         }
 
-        const headers = ['Numéro', 'Date', 'Statut', 'Lieu', 'Contenants', 'Quantité Totale'];
-        const rows = filteredRequests.map(req => {
+        const data = filteredRequests.map(req => {
             const number = 'requestNumber' in req ? req.requestNumber : req.id.substring(0, 8);
             const date = new Date(req.date).toLocaleDateString('fr-CA');
             const status = getStatusLabel(req.status);
-            const location = req.location.replace(/,/g, ' -'); // Replace commas to avoid CSV issues
+            const location = req.location;
             const items = req.items.map(i => `${i.quantity}x ${i.name}`).join('; ');
             const totalQty = req.items.reduce((sum, i) => sum + i.quantity, 0);
+            const cost = req.cost ? req.cost : 0;
 
-            return [number, date, status, location, items, totalQty].join(',');
+            return {
+                'Numéro': number,
+                'Date': date,
+                'Statut': status,
+                'Lieu': location,
+                'Contenants': items,
+                'Quantité Totale': totalQty,
+                'Coût ($)': cost
+            };
         });
 
-        const csvContent = [headers.join(','), ...rows].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `export_demandes_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Historique");
+
+        // Adjust column widths
+        const wscols = [
+            { wch: 10 }, // Numéro
+            { wch: 12 }, // Date
+            { wch: 15 }, // Statut
+            { wch: 30 }, // Lieu
+            { wch: 50 }, // Contenants
+            { wch: 15 }, // Qté Totale
+            { wch: 10 }, // Coût
+        ];
+        worksheet['!cols'] = wscols;
+
+        XLSX.writeFile(workbook, `export_demandes_${new Date().toISOString().split('T')[0]}.xlsx`);
     };
 
     return (
@@ -241,12 +282,12 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                             className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1.5 flex-grow"
                         />
                         <button
-                            onClick={handleExportCSV}
+                            onClick={handleExportExcel}
                             className="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition-colors flex items-center gap-1 text-sm"
-                            title="Exporter en CSV"
+                            title="Exporter en Excel"
                         >
                             <ArrowDownTrayIcon className="w-4 h-4" />
-                            <span className="hidden sm:inline">CSV</span>
+                            <span className="hidden sm:inline">Excel</span>
                         </button>
                     </div>
                 </div>
@@ -261,6 +302,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                 <th scope="col" className="table-header-cell">Date</th>
                                 <th scope="col" className="table-header-cell">Lieu(x)</th>
                                 <th scope="col" className="table-header-cell">Contenants</th>
+                                <th scope="col" className="table-header-cell">Coût</th>
                                 <th scope="col" className="table-header-cell">Statut</th>
                                 <th scope="col" className="table-header-cell text-right">Actions</th>
                             </tr>
@@ -298,6 +340,19 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                                 {request.items.length > 2 && ` +${request.items.length - 2} autre(s)`}
                                             </div>
                                         </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {request.status === 'completed' ? (
+                                                <button
+                                                    onClick={() => handleUpdateCost(request)}
+                                                    className={`font-medium hover:underline ${request.cost ? 'text-gray-900' : 'text-blue-600 italic'}`}
+                                                    title="Cliquez pour modifier le coût"
+                                                >
+                                                    {request.cost ? `${request.cost.toFixed(2)} $` : 'Ajouter coût'}
+                                                </button>
+                                            ) : (
+                                                <span className="text-gray-400">-</span>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <select
                                                 value={request.status}
@@ -307,7 +362,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                                 <option value="pending">En attente</option>
                                                 <option value="in_progress">En cours</option>
                                                 <option value="completed">Complétée</option>
-                                                <option value="cancelled">Annulée</option>
+                                                <option value="cancelled">Annulées</option>
                                             </select>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
