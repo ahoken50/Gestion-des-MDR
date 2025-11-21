@@ -36,6 +36,7 @@ export interface FirebasePickupRequest {
   images?: string[]; // URLs des images
   locationComments?: Record<string, string>; // Commentaires par lieu
   cost?: number; // Coût de la demande
+  invoiceUrl?: string; // URL de la facture (PDF ou image)
   createdAt: any; // Timestamp Firebase
   updatedAt: any; // Timestamp Firebase
 }
@@ -157,6 +158,18 @@ class FirebaseService {
     return downloadURL;
   }
 
+  // Ajouter une facture à une demande
+  async addInvoiceToRequest(requestId: string, file: File): Promise<string> {
+    const storageRef = ref(storage, `invoices/${requestId}/${Date.now()}_${file.name}`);
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+
+    // Mettre à jour l'URL de la facture dans la demande
+    await this.updatePickupRequest(requestId, { invoiceUrl: downloadURL });
+
+    return downloadURL;
+  }
+
   // Mettre à jour les courriels de suivi
   async updateRequestEmails(requestId: string, emails: string[]): Promise<void> {
     await this.updatePickupRequest(requestId, { emails });
@@ -203,7 +216,6 @@ class FirebaseService {
       });
 
       await this.updateInventory(mergedInventory);
-      return mergedInventory;
     } catch (error) {
       console.error('Error syncing inventory:', error);
       throw error;

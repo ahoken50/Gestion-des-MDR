@@ -11,11 +11,11 @@ interface RequestDetailProps {
   inventory: Array<{ id: string; name: string; quantity: number; location: string }>;
 }
 
-const RequestDetail: React.FC<RequestDetailProps> = ({ 
-  request, 
-  onUpdate, 
-  onCancel, 
-  inventory 
+const RequestDetail: React.FC<RequestDetailProps> = ({
+  request,
+  onUpdate,
+  onCancel,
+  inventory
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedRequest, setEditedRequest] = useState(request);
@@ -27,7 +27,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
 
   // Obtenir les items disponibles selon le lieu
   const availableItems = isEditing ? (() => {
-    const inventoryForLocation = inventory.filter(item => 
+    const inventoryForLocation = inventory.filter(item =>
       item.location === editedRequest.location && item.quantity > 0
     );
     const specialItemsForLocation = SPECIAL_ITEMS_BY_LOCATION[editedRequest.location] || [];
@@ -43,7 +43,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
 
   const handleItemChange = (index: number, field: 'name' | 'quantity', value: string | number) => {
     if (!isEditing) return;
-    
+
     const newItems = [...editedRequest.items];
     if (field === 'name' && typeof value === 'string') {
       if (newItems.some((item, i) => i !== index && item.name === value)) {
@@ -52,7 +52,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
       }
       newItems[index].name = value;
     } else if (field === 'quantity' && typeof value === 'number') {
-      const inventoryItem = inventory.find(i => 
+      const inventoryItem = inventory.find(i =>
         i.name === newItems[index].name && i.location === editedRequest.location
       );
       const maxQuantity = inventoryItem ? inventoryItem.quantity : Infinity;
@@ -63,7 +63,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
 
   const handleAddItem = () => {
     if (!isEditing || availableItems.length === 0) return;
-    
+
     const firstItemName = availableItems[0];
     if (!editedRequest.items.some(item => item.name === firstItemName)) {
       setEditedRequest({
@@ -379,8 +379,8 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {images.map((imageUrl, index) => (
                     <div key={index} className="relative group">
-                      <img 
-                        src={imageUrl} 
+                      <img
+                        src={imageUrl}
                         alt={`Pièce jointe ${index + 1}`}
                         className="w-full h-32 object-cover rounded-lg border border-gray-200"
                       />
@@ -392,9 +392,9 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                           <XMarkIcon className="w-4 h-4" />
                         </button>
                       )}
-                      <a 
-                        href={imageUrl} 
-                        target="_blank" 
+                      <a
+                        href={imageUrl}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="absolute bottom-1 right-1 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                       >
@@ -442,18 +442,119 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
               </label>
               <select
                 value={editedRequest.status}
-                onChange={(e) => setEditedRequest({ 
-                  ...editedRequest, 
-                  status: e.target.value as 'pending' | 'completed' 
+                onChange={(e) => setEditedRequest({
+                  ...editedRequest,
+                  status: e.target.value as 'pending' | 'in_progress' | 'completed' | 'cancelled'
                 })}
                 disabled={!isEditing}
                 className="w-full rounded-md border-gray-300 shadow-sm p-2 disabled:bg-gray-100"
               >
                 <option value="pending">En attente</option>
+                <option value="in_progress">En cours</option>
                 <option value="completed">Complétée</option>
+                <option value="cancelled">Annulée</option>
               </select>
             </div>
           )}
+
+          {/* Facturation */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-lg font-medium text-gray-800 mb-3">💰 Facturation</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Montant de la facture ($)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={editedRequest.cost || ''}
+                  onChange={(e) => setEditedRequest({ ...editedRequest, cost: parseFloat(e.target.value) || undefined })}
+                  disabled={!isEditing}
+                  placeholder="0.00"
+                  className="w-full rounded-md border-gray-300 shadow-sm p-2 disabled:bg-gray-100"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Facture (PDF ou Image)
+                </label>
+                {editedRequest.invoiceUrl ? (
+                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md border border-gray-200">
+                    <a
+                      href={editedRequest.invoiceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 text-blue-600 hover:underline truncate text-sm"
+                    >
+                      Voir la facture
+                    </a>
+                    {isEditing && (
+                      <button
+                        onClick={() => setEditedRequest({ ...editedRequest, invoiceUrl: undefined })}
+                        className="text-red-600 hover:text-red-800 p-1"
+                        title="Supprimer la facture"
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  isEditing ? (
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept=".pdf,image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+
+                          if (file.size > 10 * 1024 * 1024) {
+                            alert("Le fichier est trop volumineux (max 10MB)");
+                            return;
+                          }
+
+                          setIsUploading(true);
+                          try {
+                            if (isFirebase && 'id' in request) {
+                              const url = await firebaseService.addInvoiceToRequest(request.id!, file);
+                              setEditedRequest(prev => ({ ...prev, invoiceUrl: url }));
+                            } else {
+                              // Local mode fallback (base64)
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                if (ev.target?.result) {
+                                  setEditedRequest(prev => ({ ...prev, invoiceUrl: ev.target!.result as string }));
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          } catch (error) {
+                            console.error('Error uploading invoice:', error);
+                            alert("Erreur lors du téléchargement de la facture");
+                          } finally {
+                            setIsUploading(false);
+                          }
+                        }}
+                        disabled={isUploading}
+                        className="block w-full text-sm text-gray-500
+                          file:mr-4 file:py-2 file:px-4
+                          file:rounded-md file:border-0
+                          file:text-sm file:font-semibold
+                          file:bg-blue-50 file:text-blue-700
+                          hover:file:bg-blue-100
+                          disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      {isUploading && <span className="text-xs text-gray-500 mt-1">Téléchargement...</span>}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 italic text-sm">Aucune facture jointe</p>
+                  )
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

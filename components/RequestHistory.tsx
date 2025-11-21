@@ -3,7 +3,7 @@ import type { PickupRequest } from '../types';
 import { FirebasePickupRequest } from '../services/firebaseService';
 import { generatePdf } from '../services/pdfService';
 import { PDFService, createPickupRequestPDF, groupItemsByLocation } from '../services/pdfServiceMulti';
-import { FileTextIcon, XMarkIcon, ArrowDownTrayIcon } from './icons';
+import { FileTextIcon, XMarkIcon, ArrowDownTrayIcon, PaperClipIcon } from './icons';
 import RequestDetail from './RequestDetail';
 import type { SelectedItem } from '../types-pdf';
 import { LOCATIONS } from '../constants';
@@ -351,6 +351,17 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                                 </button>
                                             ) : (
                                                 <span className="text-gray-400">-</span>
+                                            )}
+                                            {request.invoiceUrl && (
+                                                <a
+                                                    href={request.invoiceUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="ml-2 inline-block text-blue-500 hover:text-blue-700"
+                                                    title="Voir la facture"
+                                                >
+                                                    <PaperClipIcon className="w-4 h-4" />
+                                                </a>
                                             )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
