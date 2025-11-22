@@ -136,7 +136,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             pdf.setTextColor(31, 41, 55);
             pdf.setFontSize(16);
             pdf.setFont('helvetica', 'bold');
-            pdf.text('📊 Indicateurs Clés', margin, yPos);
+            pdf.text('INDICATEURS CLES DE PERFORMANCE', margin, yPos);
             yPos += 10;
 
             const kpiBoxes = [
@@ -167,7 +167,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             pdf.setTextColor(31, 41, 55);
             pdf.setFontSize(14);
             pdf.setFont('helvetica', 'bold');
-            pdf.text('📍 Contenants par Lieu (Top 5)', margin, yPos);
+            pdf.text('REPARTITION PAR LIEU DE RAMASSAGE', margin, yPos);
             yPos += 2;
             autoTable(pdf, {
                 startY: yPos,
@@ -184,7 +184,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             // === TABLEAU: Types de Contenants ===
             pdf.setFontSize(14);
             pdf.setFont('helvetica', 'bold');
-            pdf.text('📦 Types de Contenants (Top 5)', margin, yPos);
+            pdf.text('TYPES DE CONTENANTS COLLECTES', margin, yPos);
             yPos += 2;
             autoTable(pdf, {
                 startY: yPos,
@@ -199,10 +199,10 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             yPos = (pdf as any).lastAutoTable?.finalY + 12;
             if (yPos > pageHeight - 60) { pdf.addPage(); yPos = margin; }
 
-            // === TABLEAU: Coûts par Lieu ===
+            // === TABLEAU: Analyse des Coûts ===
             pdf.setFontSize(14);
             pdf.setFont('helvetica', 'bold');
-            pdf.text('💰 Coûts par Lieu (Top 5)', margin, yPos);
+            pdf.text('ANALYSE DES COUTS PAR LIEU', margin, yPos);
             yPos += 2;
             autoTable(pdf, {
                 startY: yPos,
@@ -212,6 +212,77 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                 headStyles: { fillColor: [239, 68, 68], textColor: 255, fontStyle: 'bold' },
                 margin: { left: margin, right: margin },
                 styles: { fontSize: 10, cellPadding: 3 }
+            });
+
+            yPos = (pdf as any).lastAutoTable?.finalY + 15;
+
+            // === SECTION RESUME ET ANALYSE ===
+            if (yPos > pageHeight - 80) { pdf.addPage(); yPos = margin; }
+
+            pdf.setFillColor(245, 247, 250);
+            pdf.rect(margin, yPos, pageWidth - 2 * margin, 8, 'F');
+            pdf.setTextColor(31, 41, 55);
+            pdf.setFontSize(14);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('RESUME EXECUTIF', margin + 2, yPos + 5);
+            yPos += 14;
+
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(60, 60, 60);
+
+            const avgCostPerRequest = kpis.totalRequests > 0 ? (kpis.totalCost / kpis.totalRequests).toFixed(2) : '0.00';
+            const avgContainersPerRequest = kpis.totalRequests > 0 ? (kpis.totalContainers / kpis.totalRequests).toFixed(1) : '0';
+            const completionRate = kpis.totalRequests > 0 ? ((kpis.completedRequests / kpis.totalRequests) * 100).toFixed(1) : '0';
+
+            const summaryData = [
+                ['Taux de completion', `${completionRate}%`],
+                ['Cout moyen par demande', `${avgCostPerRequest} $`],
+                ['Contenants moyens par demande', avgContainersPerRequest],
+                ['Total lieux actifs', locationData.length.toString()],
+                ['Periode du rapport', new Date().toLocaleDateString('fr-CA')]
+            ];
+
+            autoTable(pdf, {
+                startY: yPos,
+                body: summaryData,
+                theme: 'plain',
+                styles: { fontSize: 10, cellPadding: 3, textColor: [60, 60, 60] },
+                columnStyles: {
+                    0: { fontStyle: 'bold', cellWidth: 90 },
+                    1: { halign: 'right', cellWidth: 80 }
+                },
+                margin: { left: margin, right: margin }
+            });
+
+            yPos = (pdf as any).lastAutoTable?.finalY + 10;
+
+            // Recommendations section
+            if (yPos > pageHeight - 60) { pdf.addPage(); yPos = margin; }
+
+            pdf.setFillColor(240, 245, 255);
+            pdf.rect(margin, yPos, pageWidth - 2 * margin, 8, 'F');
+            pdf.setFontSize(11);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(30, 58, 138);
+            pdf.text('OBSERVATIONS', margin + 2, yPos + 5);
+            yPos += 12;
+
+            pdf.setFontSize(9);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(60, 60, 60);
+
+            const observations = [
+                `- ${kpis.pendingRequests} demande(s) en attente necessitent un suivi`,
+                `- Le cout total des operations s'eleve a ${kpis.totalCost.toFixed(2)} $`,
+                `- ${kpis.totalContainers} contenants ont ete traites au total`,
+            ];
+
+            observations.forEach(obs => {
+                if (yPos > pageHeight - 20) { pdf.addPage(); yPos = margin; }
+                const lines = pdf.splitTextToSize(obs, pageWidth - 2 * margin - 4);
+                pdf.text(lines, margin + 2, yPos);
+                yPos += lines.length * 5;
             });
 
             // === PIED DE PAGE ===
