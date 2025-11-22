@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo } from 'react';
 import {
     BarChart,
     Bar,
@@ -116,18 +116,21 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             let yPos = margin;
 
             // === PAGE DE GARDE ===
+            const currentYear = new Date().getFullYear();
             pdf.setFillColor(37, 99, 235);
             pdf.rect(0, 0, pageWidth, 60, 'F');
             pdf.setTextColor(255, 255, 255);
             pdf.setFontSize(28);
             pdf.setFont('helvetica', 'bold');
-            pdf.text('Rapport de Gestion', pageWidth / 2, 30, { align: 'center' });
-            pdf.setFontSize(14);
+            pdf.text('Rapport Annuel de Gestion', pageWidth / 2, 25, { align: 'center' });
+            pdf.setFontSize(16);
+            pdf.text(`${currentYear}`, pageWidth / 2, 37, { align: 'center' });
+            pdf.setFontSize(12);
             pdf.setFont('helvetica', 'normal');
-            pdf.text('Système de Cueillette de Contenants', pageWidth / 2, 45, { align: 'center' });
+            pdf.text('Système de Cueillette de Contenants', pageWidth / 2, 47, { align: 'center' });
             const today = new Date().toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' });
-            pdf.setTextColor(100, 100, 100);
-            pdf.setFontSize(11);
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(9);
             pdf.text(`Généré le ${today}`, pageWidth / 2, 55, { align: 'center' });
 
             yPos = 80;
@@ -163,7 +166,78 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
 
             yPos += 35;
 
+            // === GRAPHIQUE: Contenants par Établissement ===
+            pdf.setTextColor(31, 41, 55);
+            pdf.setFontSize(14);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('CONTENANTS RAMASSES PAR ETABLISSEMENT', margin, yPos);
+            yPos += 8;
+
+            // Draw visual bar chart for containers
+            const maxContainers = Math.max(...locationData.map(item => item.value));
+            const barMaxWidth = pageWidth - 2 * margin - 60;
+
+            locationData.slice(0, 5).forEach((item, index) => {
+                const barWidth = (item.value / maxContainers) * barMaxWidth;
+                const barHeight = 8;
+                const barY = yPos + (index * 12);
+
+                // Location label
+                pdf.setFontSize(9);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(60, 60, 60);
+                const labelText = item.name.length > 25 ? item.name.substring(0, 22) + '...' : item.name;
+                pdf.text(labelText, margin, barY + 6);
+
+                // Bar
+                pdf.setFillColor(59, 130, 246);
+                pdf.rect(margin + 65, barY, barWidth, barHeight, 'F');
+
+                // Value
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(59, 130, 246);
+                pdf.text(item.value.toString(), margin + 65 + barWidth + 3, barY + 6);
+            });
+
+            yPos += (locationData.slice(0, 5).length * 12) + 15;
+
+            // === GRAPHIQUE: Coûts par Établissement ===
+            if (yPos > pageHeight - 80) { pdf.addPage(); yPos = margin; }
+
+            pdf.setTextColor(31, 41, 55);
+            pdf.setFontSize(14);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('COUTS PAR ETABLISSEMENT', margin, yPos);
+            yPos += 8;
+
+            const maxCost = Math.max(...costByLocationData.map(item => item.value));
+
+            costByLocationData.slice(0, 5).forEach((item, index) => {
+                const barWidth = (item.value / maxCost) * barMaxWidth;
+                const barHeight = 8;
+                const barY = yPos + (index * 12);
+
+                // Location label
+                pdf.setFontSize(9);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(60, 60, 60);
+                const labelText = item.name.length > 25 ? item.name.substring(0, 22) + '...' : item.name;
+                pdf.text(labelText, margin, barY + 6);
+
+                // Bar
+                pdf.setFillColor(239, 68, 68);
+                pdf.rect(margin + 65, barY, barWidth, barHeight, 'F');
+
+                // Value
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(239, 68, 68);
+                pdf.text(`${item.value.toFixed(2)} $`, margin + 65 + barWidth + 3, barY + 6);
+            });
+
+            yPos += (costByLocationData.slice(0, 5).length * 12) + 15;
+
             // === TABLEAU: Contenants par Lieu ===
+            if (yPos > pageHeight - 60) { pdf.addPage(); yPos = margin; }
             pdf.setTextColor(31, 41, 55);
             pdf.setFontSize(14);
             pdf.setFont('helvetica', 'bold');
@@ -217,15 +291,15 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             yPos = (pdf as any).lastAutoTable?.finalY + 15;
 
             // === SECTION RESUME ET ANALYSE ===
-            if (yPos > pageHeight - 80) { pdf.addPage(); yPos = margin; }
+            if (yPos > pageHeight - 100) { pdf.addPage(); yPos = margin; }
 
             pdf.setFillColor(245, 247, 250);
-            pdf.rect(margin, yPos, pageWidth - 2 * margin, 8, 'F');
+            pdf.rect(margin, yPos, pageWidth - 2 * margin, 10, 'F');
             pdf.setTextColor(31, 41, 55);
-            pdf.setFontSize(14);
+            pdf.setFontSize(16);
             pdf.setFont('helvetica', 'bold');
-            pdf.text('RESUME EXECUTIF', margin + 2, yPos + 5);
-            yPos += 14;
+            pdf.text('RESUME EXECUTIF', margin + 2, yPos + 6);
+            yPos += 16;
 
             pdf.setFontSize(10);
             pdf.setFont('helvetica', 'normal');
@@ -235,54 +309,98 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             const avgContainersPerRequest = kpis.totalRequests > 0 ? (kpis.totalContainers / kpis.totalRequests).toFixed(1) : '0';
             const completionRate = kpis.totalRequests > 0 ? ((kpis.completedRequests / kpis.totalRequests) * 100).toFixed(1) : '0';
 
+            // Period information
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(`Periode couverte: Annee ${currentYear}`, margin + 2, yPos);
+            yPos += 8;
+
             const summaryData = [
                 ['Taux de completion', `${completionRate}%`],
                 ['Cout moyen par demande', `${avgCostPerRequest} $`],
                 ['Contenants moyens par demande', avgContainersPerRequest],
-                ['Total lieux actifs', locationData.length.toString()],
-                ['Periode du rapport', new Date().toLocaleDateString('fr-CA')]
+                ['Nombre d\'etablissements actifs', locationData.length.toString()],
+                ['Cout total annuel', `${kpis.totalCost.toFixed(2)} $`],
+                ['Volume total traite', `${kpis.totalContainers} contenants`]
             ];
 
             autoTable(pdf, {
                 startY: yPos,
                 body: summaryData,
-                theme: 'plain',
-                styles: { fontSize: 10, cellPadding: 3, textColor: [60, 60, 60] },
+                theme: 'striped',
+                styles: { fontSize: 10, cellPadding: 4, textColor: [60, 60, 60] },
                 columnStyles: {
-                    0: { fontStyle: 'bold', cellWidth: 90 },
+                    0: { fontStyle: 'bold', cellWidth: 90, fillColor: [250, 250, 250] },
                     1: { halign: 'right', cellWidth: 80 }
                 },
-                margin: { left: margin, right: margin }
+                margin: { left: margin, right: margin },
+                headStyles: { fillColor: [37, 99, 235] }
             });
 
-            yPos = (pdf as any).lastAutoTable?.finalY + 10;
+            yPos = (pdf as any).lastAutoTable?.finalY + 12;
 
-            // Recommendations section
+            // === FAITS SAILLANTS ===
             if (yPos > pageHeight - 60) { pdf.addPage(); yPos = margin; }
 
             pdf.setFillColor(240, 245, 255);
-            pdf.rect(margin, yPos, pageWidth - 2 * margin, 8, 'F');
-            pdf.setFontSize(11);
+            pdf.rect(margin, yPos, pageWidth - 2 * margin, 9, 'F');
+            pdf.setFontSize(12);
             pdf.setFont('helvetica', 'bold');
             pdf.setTextColor(30, 58, 138);
-            pdf.text('OBSERVATIONS', margin + 2, yPos + 5);
-            yPos += 12;
+            pdf.text('FAITS SAILLANTS', margin + 2, yPos + 6);
+            yPos += 14;
+
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(60, 60, 60);
+
+            const highlights = [
+                `${kpis.totalRequests} demandes de ramassage traitees durant l'annee ${currentYear}`,
+                `${kpis.totalContainers} contenants collectes au total`,
+                `Cout total des operations: ${kpis.totalCost.toFixed(2)} $`,
+                `${locationData.length} etablissements ont beneficie du service`,
+                `Taux de completion des demandes: ${completionRate}%`,
+            ];
+
+            highlights.forEach((highlight, index) => {
+                if (yPos > pageHeight - 20) { pdf.addPage(); yPos = margin; }
+                pdf.setFillColor(59, 130, 246);
+                pdf.circle(margin + 4, yPos - 1, 1.5, 'F');
+                const lines = pdf.splitTextToSize(highlight, pageWidth - 2 * margin - 10);
+                pdf.text(lines, margin + 8, yPos);
+                yPos += Math.max(lines.length * 5, 6);
+            });
+
+            yPos += 6;
+
+            // === RECOMMANDATIONS ===
+            if (yPos > pageHeight - 50) { pdf.addPage(); yPos = margin; }
+
+            pdf.setFillColor(254, 243, 199);
+            pdf.rect(margin, yPos, pageWidth - 2 * margin, 9, 'F');
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(146, 64, 14);
+            pdf.text('RECOMMANDATIONS', margin + 2, yPos + 6);
+            yPos += 14;
 
             pdf.setFontSize(9);
             pdf.setFont('helvetica', 'normal');
             pdf.setTextColor(60, 60, 60);
 
-            const observations = [
-                `- ${kpis.pendingRequests} demande(s) en attente necessitent un suivi`,
-                `- Le cout total des operations s'eleve a ${kpis.totalCost.toFixed(2)} $`,
-                `- ${kpis.totalContainers} contenants ont ete traites au total`,
+            const recommendations = [
+                `Assurer le suivi des ${kpis.pendingRequests} demande(s) en attente pour maintenir un taux de completion optimal`,
+                `Optimiser la planification des collectes pour les etablissements a fort volume`,
+                `Evaluer les opportunites de reduction des couts sans compromettre la qualite du service`,
             ];
 
-            observations.forEach(obs => {
+            recommendations.forEach((rec, index) => {
                 if (yPos > pageHeight - 20) { pdf.addPage(); yPos = margin; }
-                const lines = pdf.splitTextToSize(obs, pageWidth - 2 * margin - 4);
-                pdf.text(lines, margin + 2, yPos);
-                yPos += lines.length * 5;
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(`${index + 1}.`, margin + 2, yPos);
+                pdf.setFont('helvetica', 'normal');
+                const lines = pdf.splitTextToSize(rec, pageWidth - 2 * margin - 8);
+                pdf.text(lines, margin + 8, yPos);
+                yPos += lines.length * 5 + 3;
             });
 
             // === PIED DE PAGE ===
@@ -291,10 +409,10 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                 pdf.setPage(i);
                 pdf.setFontSize(9);
                 pdf.setTextColor(150, 150, 150);
-                pdf.text(`Page ${i} sur ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                pdf.text(`Rapport annuel ${currentYear} - Page ${i} sur ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
             }
 
-            pdf.save(`rapport_gestion_${new Date().toISOString().split('T')[0]}.pdf`);
+            pdf.save(`rapport_annuel_${currentYear}.pdf`);
         } catch (error) {
             console.error("Error generating PDF:", error);
             alert("Erreur lors de la génération du PDF");
