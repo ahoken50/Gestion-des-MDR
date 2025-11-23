@@ -119,10 +119,10 @@ export class PDFService {
       y += 5;
     });
 
-    // QR Code - Positioned with more spacing from text
+    // QR Code - Positioned below details to avoid overlap
     const qrCodeUrl = await this.getQRCode(request.id);
     if (qrCodeUrl) {
-      this.doc.addImage(qrCodeUrl, 'PNG', 175, 50, 25, 25);
+      this.doc.addImage(qrCodeUrl, 'PNG', 170, 78, 25, 25);
     }
 
     // Notes Section
