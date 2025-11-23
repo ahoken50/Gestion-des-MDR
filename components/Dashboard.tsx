@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     BarChart,
     Bar,
@@ -19,6 +19,7 @@ import { FirebasePickupRequest } from '../services/firebaseService';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ArrowDownTrayIcon } from './icons';
+import { useToast } from './ui/Toast';
 
 interface DashboardProps {
     requests: (PickupRequest | FirebasePickupRequest)[];
@@ -28,27 +29,40 @@ interface DashboardProps {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
+    const { error: toastError, success: toastSuccess } = useToast();
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
+    // Filter requests by selected year
+    const filteredRequests = useMemo(() => {
+        return requests.filter(req => new Date(req.date).getFullYear() === selectedYear);
+    }, [requests, selectedYear]);
+
+    // Get available years from requests
+    const availableYears = useMemo(() => {
+        const years = new Set(requests.map(req => new Date(req.date).getFullYear()));
+        years.add(new Date().getFullYear()); // Always include current year
+        return Array.from(years).sort((a, b) => b - a);
+    }, [requests]);
 
     // KPI Calculations
     const kpis = useMemo(() => {
-        const totalRequests = requests.length;
-        const pendingRequests = requests.filter(r => r.status === 'pending').length;
-        const completedRequests = requests.filter(r => r.status === 'completed').length;
+        const totalRequests = filteredRequests.length;
+        const pendingRequests = filteredRequests.filter(r => r.status === 'pending').length;
+        const completedRequests = filteredRequests.filter(r => r.status === 'completed').length;
 
-        const totalContainers = requests.reduce((sum, req) => {
+        const totalContainers = filteredRequests.reduce((sum, req) => {
             return sum + req.items.reduce((itemSum, item) => itemSum + item.quantity, 0);
         }, 0);
 
-        const totalCost = requests.reduce((sum, req) => sum + (req.cost || 0), 0);
+        const totalCost = filteredRequests.reduce((sum, req) => sum + (req.cost || 0), 0);
 
         return { totalRequests, pendingRequests, completedRequests, totalContainers, totalCost };
-    }, [requests]);
+    }, [filteredRequests]);
 
     // Chart Data Preparation
     const locationData = useMemo(() => {
         const locationCounts: Record<string, number> = {};
-        requests.forEach(req => {
+        filteredRequests.forEach(req => {
             req.items.forEach(item => {
                 const loc = item.location || req.location;
                 // Clean up location name if it's a combined string
@@ -61,11 +75,11 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value) // Sort by highest count
             .slice(0, 5); // Top 5 locations
-    }, [requests]);
+    }, [filteredRequests]);
 
     const typeData = useMemo(() => {
         const typeCounts: Record<string, number> = {};
-        requests.forEach(req => {
+        filteredRequests.forEach(req => {
             req.items.forEach(item => {
                 typeCounts[item.name] = (typeCounts[item.name] || 0) + item.quantity;
             });
@@ -75,12 +89,12 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value)
             .slice(0, 5); // Top 5 types
-    }, [requests]);
+    }, [filteredRequests]);
 
     const timelineData = useMemo(() => {
         const dateCounts: Record<string, number> = {};
         // Sort requests by date first
-        const sortedRequests = [...requests].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const sortedRequests = [...filteredRequests].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         sortedRequests.forEach(req => {
             const date = new Date(req.date).toLocaleDateString('fr-CA');
@@ -90,11 +104,11 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
 
         // Take last 7 active days or just map all
         return Object.entries(dateCounts).map(([date, count]) => ({ date, count }));
-    }, [requests]);
+    }, [filteredRequests]);
 
     const costByLocationData = useMemo(() => {
         const locationCosts: Record<string, number> = {};
-        requests.forEach(req => {
+        filteredRequests.forEach(req => {
             if (req.cost) {
                 const loc = req.location.split(',')[0].trim();
                 locationCosts[loc] = (locationCosts[loc] || 0) + req.cost;
@@ -105,7 +119,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value)
             .slice(0, 5);
-    }, [requests]);
+    }, [filteredRequests]);
 
     const handleDownloadPDF = () => {
         try {
@@ -116,7 +130,6 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             let yPos = margin;
 
             // === PAGE DE GARDE ===
-            const currentYear = new Date().getFullYear();
             pdf.setFillColor(37, 99, 235);
             pdf.rect(0, 0, pageWidth, 60, 'F');
             pdf.setTextColor(255, 255, 255);
@@ -124,7 +137,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             pdf.setFont('helvetica', 'bold');
             pdf.text('Rapport Annuel de Gestion', pageWidth / 2, 25, { align: 'center' });
             pdf.setFontSize(16);
-            pdf.text(`${currentYear}`, pageWidth / 2, 37, { align: 'center' });
+            pdf.text(`${selectedYear}`, pageWidth / 2, 37, { align: 'center' });
             pdf.setFontSize(12);
             pdf.setFont('helvetica', 'normal');
             pdf.text('Système de Cueillette de Contenants', pageWidth / 2, 47, { align: 'center' });
@@ -174,7 +187,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             yPos += 8;
 
             // Draw visual bar chart for containers
-            const maxContainers = Math.max(...locationData.map(item => item.value));
+            const maxContainers = Math.max(...locationData.map(item => item.value), 1); // Avoid division by zero
             const barMaxWidth = pageWidth - 2 * margin - 60;
 
             locationData.slice(0, 5).forEach((item, index) => {
@@ -210,7 +223,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             pdf.text('COUTS PAR ETABLISSEMENT', margin, yPos);
             yPos += 8;
 
-            const maxCost = Math.max(...costByLocationData.map(item => item.value));
+            const maxCost = Math.max(...costByLocationData.map(item => item.value), 1);
 
             costByLocationData.slice(0, 5).forEach((item, index) => {
                 const barWidth = (item.value / maxCost) * barMaxWidth;
@@ -311,7 +324,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
 
             // Period information
             pdf.setFont('helvetica', 'bold');
-            pdf.text(`Periode couverte: Annee ${currentYear}`, margin + 2, yPos);
+            pdf.text(`Periode couverte: Annee ${selectedYear}`, margin + 2, yPos);
             yPos += 8;
 
             const summaryData = [
@@ -354,7 +367,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             pdf.setTextColor(60, 60, 60);
 
             const highlights = [
-                `${kpis.totalRequests} demandes de ramassage traitees durant l'annee ${currentYear}`,
+                `${kpis.totalRequests} demandes de ramassage traitees durant l'annee ${selectedYear}`,
                 `${kpis.totalContainers} contenants collectes au total`,
                 `Cout total des operations: ${kpis.totalCost.toFixed(2)} $`,
                 `${locationData.length} etablissements ont beneficie du service`,
@@ -409,27 +422,44 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                 pdf.setPage(i);
                 pdf.setFontSize(9);
                 pdf.setTextColor(150, 150, 150);
-                pdf.text(`Rapport annuel ${currentYear} - Page ${i} sur ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                pdf.text(`Rapport annuel ${selectedYear} - Page ${i} sur ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
             }
 
-            pdf.save(`rapport_annuel_${currentYear}.pdf`);
+            pdf.save(`rapport_annuel_${selectedYear}.pdf`);
+            toastSuccess('Rapport PDF généré avec succès !');
         } catch (error) {
             console.error("Error generating PDF:", error);
-            alert("Erreur lors de la génération du PDF");
+            toastError("Erreur lors de la génération du PDF");
         }
     };
 
     return (
         <div className="space-y-8 slide-up p-4 bg-gray-50 min-h-screen">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                 <h2 className="text-2xl font-bold gradient-text">Tableau de bord</h2>
-                <button
-                    onClick={handleDownloadPDF}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
-                >
-                    <ArrowDownTrayIcon className="w-5 h-5" />
-                    Exporter PDF
-                </button>
+
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-md shadow-sm border">
+                        <span className="text-sm font-medium text-gray-600">Année:</span>
+                        <select
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                            className="border-none bg-transparent font-bold text-blue-600 focus:ring-0 cursor-pointer"
+                        >
+                            {availableYears.map(year => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <button
+                        onClick={handleDownloadPDF}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
+                    >
+                        <ArrowDownTrayIcon className="w-5 h-5" />
+                        Exporter PDF
+                    </button>
+                </div>
             </div>
 
             {/* KPIs */}

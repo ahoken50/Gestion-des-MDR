@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, query, orderBy, limit, serverTimestamp, setDoc, runTransaction } from 'firebase/firestore';
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, query, orderBy, limit, serverTimestamp, setDoc, runTransaction, writeBatch } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // Configuration Firebase (utilisera les variables d'environnement)
@@ -187,14 +187,26 @@ class FirebaseService {
 
   async updateInventory(items: InventoryItem[]): Promise<void> {
     try {
-      // Update items one by one instead of using batch
-      for (const item of items) {
-        const docRef = doc(db, 'inventory', item.id);
-        await setDoc(docRef, {
-          ...item,
-          updatedAt: serverTimestamp()
-        });
+      // Firestore batch has a limit of 500 operations
+      const batchSize = 500;
+      const chunks = [];
+
+      for (let i = 0; i < items.length; i += batchSize) {
+        chunks.push(items.slice(i, i + batchSize));
       }
+
+      for (const chunk of chunks) {
+        const batch = writeBatch(db);
+        chunk.forEach(item => {
+          const docRef = doc(db, 'inventory', item.id);
+          batch.set(docRef, {
+            ...item,
+            updatedAt: serverTimestamp()
+          });
+        });
+        await batch.commit();
+      }
+      console.log(`Inventory updated successfully (${items.length} items)`);
     } catch (error) {
       console.error('Error updating inventory:', error);
       throw error;
