@@ -1,10 +1,12 @@
 import React from 'react';
-import Header from './components/Header';
+import Layout from './components/Layout';
 import InventoryManager from './components/InventoryManager';
 import UnifiedRequestForm from './components/UnifiedRequestForm';
 import RequestHistory from './components/RequestHistory';
 import Dashboard from './components/Dashboard';
 import { useAppData } from './hooks/useAppData';
+
+import { ThemeProvider } from './components/ThemeContext';
 
 const App: React.FC = () => {
     const {
@@ -20,9 +22,8 @@ const App: React.FC = () => {
     } = useAppData();
 
     return (
-        <div className="min-h-screen font-sans bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-            <Header currentView={currentView} onViewChange={setCurrentView} />
-            <main className="container mx-auto p-4 sm:p-6 lg:p-8 fade-in">
+        <ThemeProvider>
+            <Layout currentView={currentView} onViewChange={setCurrentView}>
                 {currentView === 'inventory' && (
                     <InventoryManager inventory={inventory} onUpdateInventory={setInventory} />
                 )}
@@ -44,8 +45,8 @@ const App: React.FC = () => {
                 {currentView === 'dashboard' && (
                     <Dashboard requests={allRequests} inventory={inventory} />
                 )}
-            </main>
-        </div>
+            </Layout>
+        </ThemeProvider>
     );
 };
 

@@ -5,6 +5,7 @@ import type { InventoryItem } from '../../types';
 import type { SelectedItem, PickupRequestPDF } from '../../types-pdf';
 import { PDFService, createPickupRequestPDF } from '../../services/pdfServiceMulti';
 import { useToast } from '../ui/Toast';
+import { contactService } from '../../services/contactService';
 
 interface MultiRequestFormProps {
     inventory: InventoryItem[];
@@ -159,6 +160,9 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
             if (onPDFGenerated) {
                 onPDFGenerated(request);
             }
+
+            // Save contact for autocomplete
+            contactService.addContact(contactInfo.name, contactInfo.phone);
 
             setSelectedItems([]);
             setLocationComments({});

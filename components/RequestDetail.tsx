@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { PickupRequest } from '../types';
 import { LOCATIONS, SPECIAL_ITEMS_BY_LOCATION } from '../constants';
 import { TrashIcon, PlusIcon, SaveIcon, XMarkIcon } from './icons';
@@ -25,14 +25,21 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [isFirebase, setIsFirebase] = useState('id' in request && 'requestNumber' in request);
 
-  // Obtenir les items disponibles selon le lieu
-  const availableItems = isEditing ? (() => {
+  // Obtenir les items disponibles selon le lieu - FIX: use useMemo to recalculate when location changes
+  const availableItems = useMemo(() => {
+    if (!isEditing) return [];
+    
     const inventoryForLocation = inventory.filter(item =>
       item.location === editedRequest.location && item.quantity > 0
     );
     const specialItemsForLocation = SPECIAL_ITEMS_BY_LOCATION[editedRequest.location] || [];
-    return [...inventoryForLocation.map(i => i.name), ...specialItemsForLocation];
-  })() : [];
+    
+    // Combine and avoid duplicates
+    const inventoryNames = inventoryForLocation.map(i => i.name);
+    const uniqueSpecialItems = specialItemsForLocation.filter(name => !inventoryNames.includes(name));
+    
+    return [...inventoryNames, ...uniqueSpecialItems];
+  }, [isEditing, editedRequest.location, inventory]);
 
   useEffect(() => {
     setEditedRequest(request);

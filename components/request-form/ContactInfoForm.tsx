@@ -1,4 +1,6 @@
 import React from 'react';
+import ContactAutocomplete from '../ContactAutocomplete';
+import { contactService } from '../../services/contactService';
 
 interface ContactInfoFormProps {
     bcNumber: string;
@@ -45,13 +47,15 @@ const ContactInfoForm: React.FC<ContactInfoFormProps> = ({
                     <label htmlFor="contactName" className="block text-sm font-medium text-gray-700">
                         Nom du contact *
                     </label>
-                    <input
-                        type="text"
-                        id="contactName"
+                    <ContactAutocomplete
                         value={contactName}
-                        onChange={e => setContactName(e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2"
-                        required
+                        onChange={setContactName}
+                        onSelect={(name, phone) => {
+                            setContactName(name);
+                            setContactPhone(phone);
+                        }}
+                        placeholder="Nom du contact"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                     />
                 </div>
                 <div>

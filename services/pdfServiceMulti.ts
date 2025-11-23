@@ -23,98 +23,133 @@ export class PDFService {
     });
   }
 
-  private addHeader(title: string): void {
-    // En-tête avec Logo et Titre - Présentation améliorée
-    this.doc.setFillColor(245, 247, 250); // Fond gris très clair
-    this.doc.rect(0, 0, 210, 45, 'F');
-
-    // Ajouter le logo
+  private async getQRCode(text: string): Promise<string> {
     try {
-      this.doc.addImage(logoValdor, 'PNG', 14, 8, 45, 28);
+      const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(text)}`);
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
     } catch (e) {
-      console.error("Erreur lors de l'ajout du logo", e);
-      // Fallback texte si le logo échoue
-      this.doc.setFontSize(12);
-      this.doc.setTextColor(30, 58, 138);
-      this.doc.setFont('helvetica', 'bold');
-      this.doc.text("VILLE DE VAL-D'OR", 14, 22);
+      console.error("Failed to generate QR code", e);
+      return '';
     }
-
-    // Titre principal avec meilleure visibilité
-    this.doc.setTextColor(30, 58, 138); // Bleu foncé
-    this.doc.setFontSize(20);
-    this.doc.setFont('helvetica', 'bold');
-    this.doc.text(title, 200, 25, { align: 'right' });
-
-    // Ligne de séparation plus épaisse
-    this.doc.setDrawColor(30, 58, 138);
-    this.doc.setLineWidth(1);
-    this.doc.line(14, 40, 196, 40);
-
-    this.doc.setFont('helvetica', 'normal');
   }
 
-  private addContactInfo(request: PickupRequestPDF): void {
-    let y = 52;
+  private addHeader(title: string): void {
+    // Professional Header Background
+    this.doc.setFillColor(30, 58, 138); // Navy Blue
+    this.doc.rect(0, 0, 210, 40, 'F');
 
-    // Section avec fond coloré et bordure
-    this.doc.setFillColor(240, 245, 255);
-    this.doc.setDrawColor(30, 58, 138);
-    this.doc.setLineWidth(0.5);
-    this.doc.rect(14, y - 2, 182, 12, 'FD');
+    // Logo Area (Placeholder or Actual)
+    try {
+      this.doc.addImage(logoValdor, 'PNG', 14, 5, 45, 28);
+    } catch (e) {
+      // Fallback if logo fails
+      this.doc.setFontSize(16);
+      this.doc.setTextColor(255, 255, 255);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text("VILLE DE VAL-D'OR", 14, 20);
+      this.doc.setFontSize(10);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.text("Service de l'Environnement", 14, 26);
+    }
 
-    this.doc.setFontSize(12);
+    // Title and Badge
+    this.doc.setTextColor(255, 255, 255);
+    this.doc.setFontSize(24);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.setTextColor(30, 58, 138);
-    this.doc.text('INFORMATIONS DE LA DEMANDE', 105, y + 6, { align: 'center' });
-    y += 18;
+    this.doc.text(title, 200, 20, { align: 'right' });
 
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.setTextColor(40, 40, 40);
+    this.doc.text("DOCUMENT OFFICIEL", 200, 28, { align: 'right' });
+  }
 
-    const info = [
-      { label: 'Numero BC', value: request.bcNumber },
-      { label: 'Demandeur', value: request.contactName },
-      { label: 'Telephone', value: request.contactPhone },
-      { label: 'Date', value: new Date(request.date).toLocaleDateString('fr-CA') },
-      { label: 'ID', value: request.id },
-    ];
+  private async addContactInfo(request: PickupRequestPDF): Promise<void> {
+    let y = 50;
 
-    info.forEach(item => {
-      if (item.value) {
-        this.doc.setFont('helvetica', 'bold');
-        this.doc.text(`${item.label}:`, 18, y);
-        this.doc.setFont('helvetica', 'normal');
-        this.doc.text(`${item.value}`, 55, y);
-        y += 7;
-      }
-    });
+    // Two-column layout for "Bill To" (Requester) and "Ship To" (Pickup Info)
 
-    if (request.notes && request.notes.trim()) {
-      y += 8;
-      this.doc.setFillColor(250, 250, 250);
-      this.doc.rect(14, y - 4, 182, 8, 'F');
-      this.doc.setFont('helvetica', 'bold');
-      this.doc.setTextColor(30, 58, 138);
-      this.doc.text('NOTES GENERALES:', 18, y);
-      y += 8;
-      this.doc.setFont('helvetica', 'normal');
-      this.doc.setTextColor(40, 40, 40);
-      const splitNotes = this.doc.splitTextToSize(request.notes, 178);
-      this.doc.text(splitNotes, 18, y);
-      y += (splitNotes.length * 5) + 5;
-    } else {
-      y += 5;
+    // Left Column: Requester Info
+    this.doc.setFontSize(10);
+    this.doc.setTextColor(100, 100, 100);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text("DEMANDEUR (CONTACT)", 14, y);
+
+    y += 6;
+    this.doc.setFontSize(11);
+    this.doc.setTextColor(0, 0, 0);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text(request.contactName, 14, y);
+    y += 5;
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.text(request.contactPhone, 14, y);
+    y += 5;
+    if (request.bcNumber) {
+      this.doc.text(`BC #: ${request.bcNumber}`, 14, y);
     }
 
-    // Store the final Y position for the next section
-    (this.doc as any).contactInfoFinalY = y;
+    // Right Column: Request Details & QR Code
+    y = 50;
+    this.doc.setFontSize(10);
+    this.doc.setTextColor(100, 100, 100);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text("DETAILS DE LA DEMANDE", 120, y);
+
+    y += 6;
+    this.doc.setTextColor(0, 0, 0);
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'normal');
+
+    const details = [
+      { label: "Date:", value: new Date(request.date).toLocaleDateString('fr-CA') },
+      { label: "ID:", value: request.id },
+      { label: "Lieux:", value: request.totalLocations.toString() },
+      { label: "Total Items:", value: request.totalItems.toString() }
+    ];
+
+    details.forEach(detail => {
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text(detail.label, 120, y);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.text(detail.value, 150, y);
+      y += 5;
+    });
+
+    // QR Code
+    const qrCodeUrl = await this.getQRCode(request.id);
+    if (qrCodeUrl) {
+      this.doc.addImage(qrCodeUrl, 'PNG', 170, 45, 25, 25);
+    }
+
+    // Notes Section
+    if (request.notes && request.notes.trim()) {
+      y = 85;
+      this.doc.setFillColor(245, 247, 250);
+      this.doc.setDrawColor(200, 200, 200);
+      this.doc.roundedRect(14, y, 182, 15, 2, 2, 'FD');
+
+      this.doc.setFontSize(9);
+      this.doc.setTextColor(100, 100, 100);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text("NOTES SPECIALES:", 18, y + 5);
+
+      this.doc.setFontSize(10);
+      this.doc.setTextColor(0, 0, 0);
+      this.doc.setFont('helvetica', 'italic');
+      this.doc.text(request.notes, 18, y + 10);
+
+      (this.doc as any).contactInfoFinalY = y + 20;
+    } else {
+      (this.doc as any).contactInfoFinalY = 80;
+    }
   }
 
   private addItemsTable(groupedItems: GroupedItemsByLocation): number {
     let y = (this.doc as any).contactInfoFinalY || 110;
-    y += 10; // Extra spacing before first location
 
     Object.entries(groupedItems).forEach(([location, locationData], index) => {
       const items = Array.isArray(locationData) ? locationData : locationData.items;
@@ -122,63 +157,69 @@ export class PDFService {
 
       if (items.length === 0) return;
 
-      if (y > 250) {
+      if (y > 240) {
         this.doc.addPage();
         y = 20;
       }
 
       y += 10;
-      // Titre du lieu avec meilleure présentation
-      this.doc.setFillColor(230, 240, 255); // Bleu clair
-      this.doc.rect(14, y - 6, 182, 9, 'F');
-      this.doc.setDrawColor(30, 58, 138);
-      this.doc.setLineWidth(0.3);
-      this.doc.rect(14, y - 6, 182, 9, 'FD');
+
+      // Location Header
+      this.doc.setFillColor(230, 240, 255);
+      this.doc.rect(14, y - 6, 182, 10, 'F');
 
       this.doc.setTextColor(30, 58, 138);
-      this.doc.setFontSize(12);
+      this.doc.setFontSize(11);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text(`LIEU DE RAMASSAGE ${index + 1}: ${location}`, 16, y);
-      this.doc.text(`LIEU DE RAMASSAGE ${index + 1}: ${location}`, 16, y);
-      y += 14; // Increased spacing to prevent overlap with next section
+      this.doc.text(`LIEU ${index + 1}: ${location.toUpperCase()}`, 18, y);
 
       const addressInfo = LOCATION_ADDRESSES[location];
       if (addressInfo) {
-        this.doc.setTextColor(60, 60, 60);
-        this.doc.setFontSize(10);
+        this.doc.setFontSize(9);
         this.doc.setFont('helvetica', 'normal');
-        this.doc.text(`Adresse de ramassage: ${addressInfo.fullAddress}`, 16, y);
-        y += 8;
+        this.doc.setTextColor(100, 100, 100);
+        this.doc.text(addressInfo.fullAddress, 18, y + 5);
+        y += 5;
       }
 
-      if (comments && comments.trim()) {
+      if (comments) {
+        y += 5;
         this.doc.setFontSize(9);
-        this.doc.setFont('helvetica', 'italic');
-        this.doc.setTextColor(100, 100, 100);
-        this.doc.text(`Instructions: ${comments}`, 16, y);
-        y += 6;
+        this.doc.setTextColor(220, 38, 38); // Red for attention
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.text(`NOTE: ${comments}`, 18, y);
       }
+
+      y += 4;
 
       const tableData: string[][] = items.map(item => [item.name, item.quantity.toString()]);
 
       autoTable(this.doc, {
-        head: [['Type de contenant', 'Quantité']],
+        head: [['DESCRIPTION DU CONTENANT', 'QUANTITÉ']],
         body: tableData,
         startY: y,
         theme: 'grid',
-        styles: { fontSize: 10, cellPadding: 4, textColor: [0, 0, 0] },
+        styles: {
+          fontSize: 10,
+          cellPadding: 5,
+          textColor: [40, 40, 40],
+          lineColor: [230, 230, 230],
+          lineWidth: 0.1
+        },
         headStyles: {
-          fillColor: [30, 58, 138],
-          textColor: 255,
+          fillColor: [255, 255, 255],
+          textColor: [30, 58, 138],
           fontStyle: 'bold',
-          fontSize: 11
+          lineWidth: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: [30, 58, 138]
         },
         columnStyles: {
-          0: { cellWidth: 142 },
-          1: { halign: 'center', cellWidth: 40 }
+          0: { cellWidth: 150 },
+          1: { halign: 'center', cellWidth: 32, fontStyle: 'bold' }
         },
         margin: { left: 14, right: 14 },
-        alternateRowStyles: { fillColor: [248, 250, 252] }
+        alternateRowStyles: { fillColor: [250, 250, 250] }
       });
 
       y = (this.doc as any).lastAutoTable?.finalY;
@@ -188,32 +229,24 @@ export class PDFService {
   }
 
   private addSummary(request: PickupRequestPDF, lastY: number): void {
-    let y = lastY + 18;
-    if (y > 260) {
+    let y = lastY + 10;
+
+    // Keep summary on same page if possible, else new page
+    if (y > 250) {
       this.doc.addPage();
       y = 20;
     }
 
-    // Ligne de séparation
     this.doc.setDrawColor(30, 58, 138);
     this.doc.setLineWidth(0.5);
-    this.doc.line(14, y, 196, y);
-    y += 12;
-
-    // Résumé avec fond coloré
-    this.doc.setFillColor(240, 245, 255);
-    this.doc.rect(14, y - 6, 182, 16, 'F');
+    this.doc.line(120, y, 196, y);
+    y += 8;
 
     this.doc.setFontSize(12);
     this.doc.setFont('helvetica', 'bold');
     this.doc.setTextColor(30, 58, 138);
-    this.doc.text('RESUME DE LA DEMANDE', 16, y);
-
-    this.doc.setFontSize(11);
-    this.doc.setFont('helvetica', 'normal');
-    this.doc.setTextColor(0, 0, 0);
-    this.doc.text(`Total de contenants: ${request.totalItems}`, 16, y + 8);
-    this.doc.text(`Nombre de lieux: ${request.totalLocations}`, 100, y + 8);
+    this.doc.text('TOTAL CONTENANTS:', 120, y);
+    this.doc.text(request.totalItems.toString(), 196, y, { align: 'right' });
   }
 
   private addFooter(): void {
@@ -221,16 +254,25 @@ export class PDFService {
     for (let i = 1; i <= pageCount; i++) {
       (this.doc as any).setPage(i);
       const pageHeight = this.doc.internal.pageSize.height;
+
+      // Footer Line
+      this.doc.setDrawColor(200, 200, 200);
+      this.doc.setLineWidth(0.1);
+      this.doc.line(14, pageHeight - 15, 196, pageHeight - 15);
+
+      // Footer Text
       this.doc.setFontSize(8);
-      this.doc.setTextColor(128, 128, 128);
-      this.doc.text(`Généré le ${new Date().toLocaleString('fr-CA')}`, 14, pageHeight - 10);
-      this.doc.text(`Page ${i} / ${pageCount}`, 196, pageHeight - 10, { align: 'right' });
+      this.doc.setTextColor(150, 150, 150);
+      this.doc.text("Ville de Val-d'Or - Service de l'Environnement", 14, pageHeight - 10);
+      this.doc.text(`Généré le ${new Date().toLocaleString('fr-CA')}`, 14, pageHeight - 6);
+
+      this.doc.text(`Page ${i} de ${pageCount}`, 196, pageHeight - 10, { align: 'right' });
     }
   }
 
-  generatePickupRequestPDF(request: PickupRequestPDF): void {
+  async generatePickupRequestPDF(request: PickupRequestPDF): Promise<void> {
     this.addHeader('DEMANDE DE RAMASSAGE');
-    this.addContactInfo(request);
+    await this.addContactInfo(request);
     const lastTableY = this.addItemsTable(request.groupedItems);
     this.addSummary(request, lastTableY);
     this.addFooter();

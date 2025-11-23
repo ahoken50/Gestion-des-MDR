@@ -101,43 +101,17 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
         setSelectedRequest(null);
     };
 
-    const handleRegeneratePDF = (request: PickupRequest | FirebasePickupRequest) => {
-        // Check if it's a multi-location request
-        if (request.locationComments || (request.items.length > 0 && request.items.some(item => item.location))) {
-            // Multi-location PDF
-            const selectedItems: SelectedItem[] = request.items.map(item => ({
-                id: item.id || `temp-${Date.now()}-${Math.random()}`,
-                name: item.name,
-                quantity: item.quantity,
-                location: item.location || request.location
-            }));
+    const handleRegeneratePDF = async (request: PickupRequest | FirebasePickupRequest) => {
+        const isMultiLocation = 'groupedItems' in request || ('items' in request && request.items.length > 0 && request.items[0].location);
 
-            const contactInfo = {
-                name: request.contactName,
-                phone: request.contactPhone,
-                notes: request.notes,
-                bcNumber: request.bcNumber
-            };
-
-            // Reconstruct grouped items with comments
-            const groupedItems = groupItemsByLocation(selectedItems);
-            const groupedItemsWithComments: Record<string, { items: any[], comments?: string }> = {};
-
-            Object.entries(groupedItems).forEach(([loc, data]) => {
-                groupedItemsWithComments[loc] = {
-                    items: data.items,
-                    comments: request.locationComments?.[loc]
-                };
-            });
-
-            const pdfRequest = createPickupRequestPDF(selectedItems, contactInfo, groupedItemsWithComments);
+        if (isMultiLocation && 'groupedItems' in request) {
             const pdfService = new PDFService();
-            pdfService.generatePickupRequestPDF(pdfRequest);
-            const requestNumber = 'requestNumber' in request ? request.requestNumber : request.id.substring(0, 8);
+            await pdfService.generatePickupRequestPDF(request as any);
+
+            const requestNumber = (request as FirebasePickupRequest).requestNumber || request.id.substring(0, 8);
             pdfService.save(`demande_ramassage_${requestNumber}.pdf`);
         } else {
-            // Simple single-location PDF
-            generatePdf(request as PickupRequest);
+            await generatePdf(request as PickupRequest);
         }
     };
 
