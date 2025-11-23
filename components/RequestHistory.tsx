@@ -68,15 +68,15 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'pending':
-                return 'bg-yellow-100 text-yellow-800';
+                return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200 dark:ring-yellow-900';
             case 'in_progress':
-                return 'bg-blue-100 text-blue-800';
+                return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 dark:ring-blue-900';
             case 'completed':
-                return 'bg-green-100 text-green-800';
+                return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200 dark:ring-green-900';
             case 'cancelled':
-                return 'bg-red-100 text-red-800';
+                return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200 dark:ring-red-900';
             default:
-                return 'bg-gray-100 text-gray-800';
+                return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
         }
     };
 
@@ -102,7 +102,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     };
 
     const handleRegeneratePDF = async (request: PickupRequest | FirebasePickupRequest) => {
-        const isMultiLocation = 'groupedItems' in request || ('items' in request && request.items.length > 0 && request.items[0].location);
+        const isMultiLocation = 'groupedItems' in request || ('items' in request && request.items.length > 0 && 'location' in request.items[0]);
 
         if (isMultiLocation && 'groupedItems' in request) {
             const pdfService = new PDFService();

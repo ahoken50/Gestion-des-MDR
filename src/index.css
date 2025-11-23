@@ -24,6 +24,13 @@ code {
   transition: box-shadow 0.3s ease;
 }
 
+:is(.dark .card) {
+  background-color: #1f2937;
+  /* gray-800 */
+  border-color: #374151;
+  /* gray-700 */
+}
+
 .card:hover {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
@@ -32,6 +39,13 @@ code {
   border-bottom: 1px solid #e5e7eb;
   background: linear-gradient(to right, #eff6ff, #eef2ff);
   border-radius: 0.75rem 0.75rem 0 0;
+}
+
+:is(.dark .card-header) {
+  border-bottom-color: #374151;
+  /* gray-700 */
+  background: linear-gradient(to right, #1f2937, #111827);
+  /* gray-800 to gray-900 */
 }
 
 /* Button styles */
