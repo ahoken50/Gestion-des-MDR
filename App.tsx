@@ -4,6 +4,7 @@ import InventoryManager from './components/InventoryManager';
 import UnifiedRequestForm from './components/UnifiedRequestForm';
 import RequestHistory from './components/RequestHistory';
 import Dashboard from './components/Dashboard';
+import AIInsights from './components/AIInsights';
 import { useAppData } from './hooks/useAppData';
 
 import { ThemeProvider } from './components/ThemeContext';
@@ -42,12 +43,15 @@ const App: React.FC = () => {
                         inventory={inventory}
                     />
                 )}
-                {(currentView === 'home' || currentView === 'ai') && (
+                {currentView === 'home' && (
                     <UnifiedRequestForm
                         inventory={inventory}
                         onSubmit={handleAddRequest}
                         onPDFGenerated={handlePDFGenerated}
                     />
+                )}
+                {currentView === 'ai' && (
+                    <AIInsights />
                 )}
                 {currentView === 'dashboard' && (
                     <Dashboard requests={allRequests} inventory={inventory} />

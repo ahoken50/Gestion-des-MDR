@@ -87,31 +87,31 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
     };
 
     return (
-        <form onSubmit={handleSubmit} className="card p-6 space-y-6 slide-up">
-            <div className="card-header p-4 -m-6 mb-6">
+        <form onSubmit={handleSubmit} className="card p-6 space-y-6 slide-up dark:bg-gray-800 dark:border-gray-700">
+            <div className="card-header p-4 -m-6 mb-6 dark:border-gray-700">
                 <h3 className="text-xl font-bold gradient-text">📦 Détails de la demande</h3>
-                <p className="text-sm text-gray-600 mt-1">Sélectionnez le lieu et les contenants à ramasser</p>
+                <p className="text-sm text-gray-600 mt-1 dark:text-gray-400">Sélectionnez le lieu et les contenants à ramasser</p>
             </div>
 
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                <label htmlFor="location" className="block text-sm font-semibold text-blue-900 mb-2">📍 Lieu de cueillette</label>
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded dark:bg-blue-900/20 dark:border-blue-500">
+                <label htmlFor="location" className="block text-sm font-semibold text-blue-900 mb-2 dark:text-blue-100">📍 Lieu de cueillette</label>
                 <select
                     id="location"
                     value={location}
                     onChange={e => setLocation(e.target.value)}
-                    className="block w-full rounded-lg border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base p-3 bg-white font-medium"
+                    className="block w-full rounded-lg border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base p-3 bg-white font-medium dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
                     {LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
                 </select>
             </div>
 
-            <div className="border-t pt-6">
+            <div className="border-t pt-6 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-800">📦 Contenants à ramasser</h3>
-                        <p className="text-sm text-gray-600">Ajoutez les contenants de l'inventaire ou créez-en manuellement</p>
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">📦 Contenants à ramasser</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Ajoutez les contenants de l'inventaire ou créez-en manuellement</p>
                     </div>
-                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold dark:bg-blue-900 dark:text-blue-100">
                         {requestedItems.length} contenant{requestedItems.length !== 1 ? 's' : ''}
                     </span>
                 </div>
@@ -120,11 +120,11 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
                     const maxQuantity = inventoryItem ? inventoryItem.quantity : undefined;
 
                     return (
-                        <div key={index} className="flex items-center gap-4 mb-2 p-2 bg-gray-50 rounded-md">
+                        <div key={index} className="flex items-center gap-4 mb-2 p-2 bg-gray-50 rounded-md dark:bg-gray-700/50">
                             <select
                                 value={item.name}
                                 onChange={e => handleItemChange(index, 'name', e.target.value)}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 flex-grow"
+                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 flex-grow dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             >
                                 {availableItems.map(name => <option key={name} value={name}>{name}</option>)}
                             </select>
@@ -134,21 +134,21 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
                                 onChange={e => handleItemChange(index, 'quantity', parseInt(e.target.value, 10) || 1)}
                                 min="1"
                                 max={maxQuantity}
-                                className="w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2"
+                                className="w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                 required
                             />
-                            {inventoryItem && <span className="text-sm text-gray-500">(Max: {maxQuantity})</span>}
-                            <button type="button" onClick={() => handleRemoveItem(index)} className="text-red-600 hover:text-red-800 transition-colors">
+                            {inventoryItem && <span className="text-sm text-gray-500 dark:text-gray-400">(Max: {maxQuantity})</span>}
+                            <button type="button" onClick={() => handleRemoveItem(index)} className="text-red-600 hover:text-red-800 transition-colors dark:text-red-400 dark:hover:text-red-300">
                                 <TrashIcon className="w-5 h-5" />
                             </button>
                         </div>
                     );
                 })}
                 <div className="mt-2 flex gap-2">
-                    <button type="button" onClick={handleAddItem} className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 flex items-center justify-center gap-2 text-sm">
+                    <button type="button" onClick={handleAddItem} className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 flex items-center justify-center gap-2 text-sm dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
                         <PlusIcon className="w-4 h-4" /> Ajouter de l'inventaire
                     </button>
-                    <button type="button" onClick={handleAddCustomItem} className="flex-1 bg-blue-100 text-blue-800 py-2 px-4 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 flex items-center justify-center gap-2 text-sm font-medium">
+                    <button type="button" onClick={handleAddCustomItem} className="flex-1 bg-blue-100 text-blue-800 py-2 px-4 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 flex items-center justify-center gap-2 text-sm font-medium dark:bg-blue-900 dark:text-blue-100 dark:hover:bg-blue-800">
                         ✏️ Ajouter manuellement
                     </button>
                 </div>

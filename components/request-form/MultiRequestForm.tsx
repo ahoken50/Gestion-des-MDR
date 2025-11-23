@@ -177,28 +177,28 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
 
     return (
         <div className="space-y-6">
-            <div className="card p-6 slide-up">
-                <div className="card-header p-4 -m-6 mb-6">
+            <div className="card p-6 slide-up dark:bg-gray-800 dark:border-gray-700">
+                <div className="card-header p-4 -m-6 mb-6 dark:border-gray-700">
                     <h3 className="text-xl font-bold gradient-text">📦 Sélectionner les contenants à ramasser</h3>
-                    <p className="text-sm text-gray-600 mt-1">Choisissez les contenants de différents lieux et ajoutez des commentaires spécifiques</p>
+                    <p className="text-sm text-gray-600 mt-1 dark:text-gray-400">Choisissez les contenants de différents lieux et ajoutez des commentaires spécifiques</p>
                 </div>
 
                 <div className="mb-6">
                     <button
                         type="button"
                         onClick={handleAddCustomMultiItem}
-                        className="w-full bg-blue-100 text-blue-800 py-3 px-4 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 flex items-center justify-center gap-2 font-medium transition-all hover:scale-105"
+                        className="w-full bg-blue-100 text-blue-800 py-3 px-4 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 flex items-center justify-center gap-2 font-medium transition-all hover:scale-105 dark:bg-blue-900 dark:text-blue-100 dark:hover:bg-blue-800"
                     >
                         ✏️ Ajouter un contenant manuellement
                     </button>
-                    <p className="text-xs text-gray-500 mt-2 text-center">
+                    <p className="text-xs text-gray-500 mt-2 text-center dark:text-gray-400">
                         Pour ajouter un contenant qui n'est pas dans l'inventaire (ex: Baril de colasse vide)
                     </p>
                 </div>
 
                 {inventoryByLocation.map(({ location: loc, items }) => (
                     <div key={loc} className="mb-6">
-                        <h4 className="text-md font-semibold text-gray-700 mb-3">
+                        <h4 className="text-md font-semibold text-gray-700 mb-3 dark:text-gray-300">
                             {loc}
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -211,12 +211,12 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
                                 return (
                                     <div
                                         key={item.id}
-                                        className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                                        className="border rounded-lg p-4 hover:shadow-md transition-shadow dark:border-gray-700 dark:bg-gray-700/30"
                                     >
-                                        <div className="font-medium text-gray-900 mb-2">
+                                        <div className="font-medium text-gray-900 mb-2 dark:text-white">
                                             {item.name}
                                         </div>
-                                        <div className="text-sm text-gray-500 mb-3">
+                                        <div className="text-sm text-gray-500 mb-3 dark:text-gray-400">
                                             Disponible: {item.quantity}
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -234,9 +234,9 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
                                                         handleRemoveMultiItem(item.id);
                                                     }
                                                 }}
-                                                className="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-1"
+                                                className="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                             />
-                                            <span className="text-sm text-gray-500">
+                                            <span className="text-sm text-gray-500 dark:text-gray-400">
                                                 / {item.quantity}
                                             </span>
                                         </div>
@@ -244,7 +244,7 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
                                 );
                             })}
                             {items.length === 0 && (
-                                <p className="text-gray-500 italic col-span-full">
+                                <p className="text-gray-500 italic col-span-full dark:text-gray-400">
                                     Aucun contenant disponible dans l'inventaire pour ce lieu.
                                 </p>
                             )}
@@ -254,26 +254,26 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
             </div>
 
             {selectedItems.length > 0 && (
-                <div className="card p-6 slide-up border-2 border-blue-200">
-                    <div className="card-header p-4 -m-6 mb-6 bg-gradient-to-r from-blue-100 to-indigo-100">
+                <div className="card p-6 slide-up border-2 border-blue-200 dark:bg-gray-800 dark:border-blue-900">
+                    <div className="card-header p-4 -m-6 mb-6 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900">
                         <h3 className="text-xl font-bold gradient-text">✅ Récapitulatif de la sélection</h3>
-                        <p className="text-sm text-gray-600 mt-1">Vérifiez votre sélection avant de générer le PDF</p>
+                        <p className="text-sm text-gray-600 mt-1 dark:text-gray-300">Vérifiez votre sélection avant de générer le PDF</p>
                     </div>
 
                     <div className="mb-4">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium text-gray-700">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Total des contenants:
                             </span>
-                            <span className="text-lg font-bold text-blue-600">
+                            <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
                                 {selectedItems.reduce((sum, item) => sum + item.quantity, 0)}
                             </span>
                         </div>
                         <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-700">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Nombre de lieux:
                             </span>
-                            <span className="text-lg font-bold text-blue-600">
+                            <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
                                 {Object.keys(selectedByLocation).length}
                             </span>
                         </div>
@@ -282,16 +282,16 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
                     <div className="space-y-4">
                         {Object.entries(selectedByLocation).map(([loc, items]) => (
                             <div key={loc} className="border-l-4 border-blue-500 pl-4">
-                                <h5 className="font-semibold text-gray-800 mb-2">{loc}</h5>
+                                <h5 className="font-semibold text-gray-800 mb-2 dark:text-white">{loc}</h5>
                                 <div className="space-y-2 mb-3">
                                     {items.map(item => (
                                         <div key={item.id} className="flex justify-between items-center text-sm">
-                                            <span className="text-gray-700">{item.name}</span>
+                                            <span className="text-gray-700 dark:text-gray-300">{item.name}</span>
                                             <div className="flex items-center gap-3">
-                                                <span className="font-medium">Quantité: {item.quantity}</span>
+                                                <span className="font-medium dark:text-gray-200">Quantité: {item.quantity}</span>
                                                 <button
                                                     onClick={() => handleRemoveMultiItem(item.id)}
-                                                    className="text-red-600 hover:text-red-800 transition-colors"
+                                                    className="text-red-600 hover:text-red-800 transition-colors dark:text-red-400 dark:hover:text-red-300"
                                                 >
                                                     <TrashIcon className="w-4 h-4" />
                                                 </button>
@@ -300,7 +300,7 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
                                     ))}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                                         Commentaires pour {loc} (optionnel)
                                     </label>
                                     <textarea
@@ -310,7 +310,7 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
                                             [loc]: e.target.value
                                         }))}
                                         rows={2}
-                                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2"
+                                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                         placeholder="Instructions spécifiques pour ce lieu..."
                                     />
                                 </div>

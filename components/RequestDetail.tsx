@@ -15,38 +15,31 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
   request,
   onUpdate,
   onCancel,
-  inventory
+  inventory,
 }) => {
+  const isFirebase = 'requestNumber' in request;
+
   const [isEditing, setIsEditing] = useState(false);
-  const [editedRequest, setEditedRequest] = useState(request);
+  const [editedRequest, setEditedRequest] = useState<PickupRequest | FirebasePickupRequest>(request);
   const [emails, setEmails] = useState<string[]>(request.emails || []);
   const [newEmail, setNewEmail] = useState('');
   const [images, setImages] = useState<string[]>(request.images || []);
   const [isUploading, setIsUploading] = useState(false);
-  const [isFirebase, setIsFirebase] = useState('id' in request && 'requestNumber' in request);
-
-  // Obtenir les items disponibles selon le lieu - FIX: use useMemo to recalculate when location changes
-  const availableItems = useMemo(() => {
-    if (!isEditing) return [];
-    
-    const inventoryForLocation = inventory.filter(item =>
-      item.location === editedRequest.location && item.quantity > 0
-    );
-    const specialItemsForLocation = SPECIAL_ITEMS_BY_LOCATION[editedRequest.location] || [];
-    
-    // Combine and avoid duplicates
-    const inventoryNames = inventoryForLocation.map(i => i.name);
-    const uniqueSpecialItems = specialItemsForLocation.filter(name => !inventoryNames.includes(name));
-    
-    return [...inventoryNames, ...uniqueSpecialItems];
-  }, [isEditing, editedRequest.location, inventory]);
 
   useEffect(() => {
     setEditedRequest(request);
     setEmails(request.emails || []);
     setImages(request.images || []);
-    setIsFirebase('id' in request && 'requestNumber' in request);
   }, [request]);
+
+  const availableItems = useMemo(() => {
+    const specialItems = SPECIAL_ITEMS_BY_LOCATION[editedRequest.location] || [];
+    const inventoryItems = inventory
+      .filter(item => item.location === editedRequest.location)
+      .map(item => item.name);
+    const allItems = Array.from(new Set([...specialItems, ...inventoryItems]));
+    return allItems.sort();
+  }, [editedRequest.location, inventory]);
 
   const handleItemChange = (index: number, field: 'name' | 'quantity', value: string | number) => {
     if (!isEditing) return;
@@ -163,16 +156,16 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border dark:border-gray-700">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-6 flex justify-between items-center z-10">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
               {isFirebase ? `Demande #${(request as FirebasePickupRequest).requestNumber}` : `Demande ${request.id}`}
             </h2>
             {request.bcNumber && (
-              <p className="text-sm text-gray-600">BC: {request.bcNumber}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">BC: {request.bcNumber}</p>
             )}
           </div>
           <div className="flex gap-2">
@@ -220,7 +213,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
           {/* Informations principales */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Numéro de BC
               </label>
               <input
@@ -228,18 +221,18 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                 value={editedRequest.bcNumber || ''}
                 onChange={(e) => setEditedRequest({ ...editedRequest, bcNumber: e.target.value })}
                 disabled={!isEditing}
-                className="w-full rounded-md border-gray-300 shadow-sm p-2 disabled:bg-gray-100"
+                className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 disabled:bg-gray-100 dark:disabled:bg-gray-900"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Lieu de collecte
               </label>
               <select
                 value={editedRequest.location}
                 onChange={(e) => setEditedRequest({ ...editedRequest, location: e.target.value })}
                 disabled={!isEditing}
-                className="w-full rounded-md border-gray-300 shadow-sm p-2 disabled:bg-gray-100"
+                className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 disabled:bg-gray-100 dark:disabled:bg-gray-900"
               >
                 {LOCATIONS.map(loc => (
                   <option key={loc} value={loc}>{loc}</option>
@@ -247,7 +240,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Nom du contact
               </label>
               <input
@@ -255,11 +248,11 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                 value={editedRequest.contactName}
                 onChange={(e) => setEditedRequest({ ...editedRequest, contactName: e.target.value })}
                 disabled={!isEditing}
-                className="w-full rounded-md border-gray-300 shadow-sm p-2 disabled:bg-gray-100"
+                className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 disabled:bg-gray-100 dark:disabled:bg-gray-900"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Téléphone
               </label>
               <input
@@ -267,7 +260,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                 value={editedRequest.contactPhone}
                 onChange={(e) => setEditedRequest({ ...editedRequest, contactPhone: e.target.value })}
                 disabled={!isEditing}
-                className="w-full rounded-md border-gray-300 shadow-sm p-2 disabled:bg-gray-100"
+                className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 disabled:bg-gray-100 dark:disabled:bg-gray-900"
               />
             </div>
           </div>
@@ -275,11 +268,11 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
           {/* Contenants */}
           <div>
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-medium text-gray-800">Contenants à ramasser</h3>
+              <h3 className="text-lg font-medium text-gray-800 dark:text-white">Contenants à ramasser</h3>
               {isEditing && (
                 <button
                   onClick={handleAddItem}
-                  className="bg-gray-200 text-gray-800 py-1 px-3 rounded-md hover:bg-gray-300 flex items-center gap-1 text-sm"
+                  className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white py-1 px-3 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-1 text-sm"
                 >
                   <PlusIcon className="w-3 h-3" />
                   Ajouter
@@ -288,13 +281,13 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
             </div>
             <div className="space-y-2">
               {editedRequest.items.map((item, index) => (
-                <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-md">
+                <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md border dark:border-gray-700">
                   {isEditing ? (
                     <>
                       <select
                         value={item.name}
                         onChange={(e) => handleItemChange(index, 'name', e.target.value)}
-                        className="flex-1 rounded-md border-gray-300 shadow-sm p-2"
+                        className="flex-1 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2"
                       >
                         {availableItems.map(name => (
                           <option key={name} value={name}>{name}</option>
@@ -305,19 +298,19 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                         value={item.quantity}
                         onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value, 10) || 1)}
                         min="1"
-                        className="w-20 rounded-md border-gray-300 shadow-sm p-2"
+                        className="w-20 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2"
                       />
                       <button
                         onClick={() => handleRemoveItem(index)}
-                        className="text-red-600 hover:text-red-800"
+                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                       >
                         <TrashIcon className="w-4 h-4" />
                       </button>
                     </>
                   ) : (
                     <>
-                      <span className="flex-1">{item.name}</span>
-                      <span className="font-medium">Quantité: {item.quantity}</span>
+                      <span className="flex-1 dark:text-gray-200">{item.name}</span>
+                      <span className="font-medium dark:text-white">Quantité: {item.quantity}</span>
                     </>
                   )}
                 </div>
@@ -327,7 +320,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Notes
             </label>
             <textarea
@@ -335,22 +328,22 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
               onChange={(e) => setEditedRequest({ ...editedRequest, notes: e.target.value })}
               disabled={!isEditing}
               rows={3}
-              className="w-full rounded-md border-gray-300 shadow-sm p-2 disabled:bg-gray-100"
+              className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 disabled:bg-gray-100 dark:disabled:bg-gray-900"
             />
           </div>
 
           {/* Courriels de suivi (Firebase uniquement) */}
           {isFirebase && (
             <div>
-              <h3 className="text-lg font-medium text-gray-800 mb-3">Courriels de suivi</h3>
+              <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">Courriels de suivi</h3>
               <div className="space-y-2">
                 {emails.map((email, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
-                    <span className="flex-1">{email}</span>
+                  <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-md border dark:border-gray-700">
+                    <span className="flex-1 dark:text-gray-200">{email}</span>
                     {isEditing && (
                       <button
                         onClick={() => handleRemoveEmail(email)}
-                        className="text-red-600 hover:text-red-800"
+                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                       >
                         <XMarkIcon className="w-4 h-4" />
                       </button>
@@ -364,7 +357,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                       value={newEmail}
                       onChange={(e) => setNewEmail(e.target.value)}
                       placeholder="Ajouter un courriel"
-                      className="flex-1 rounded-md border-gray-300 shadow-sm p-2"
+                      className="flex-1 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2"
                     />
                     <button
                       onClick={handleAddEmail}
@@ -380,7 +373,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
 
           {/* Images / Pièces jointes */}
           <div>
-            <h3 className="text-lg font-medium text-gray-800 mb-3">📎 Pièces jointes (Images)</h3>
+            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">📎 Pièces jointes (Images)</h3>
             <div className="space-y-3">
               {images.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -389,7 +382,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                       <img
                         src={imageUrl}
                         alt={`Pièce jointe ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                        className="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
                       />
                       {isEditing && (
                         <button
@@ -421,22 +414,23 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                       multiple
                       onChange={handleImageUpload}
                       disabled={isUploading}
-                      className="block w-full text-sm text-gray-500
-                        file:mr-4 file:py-2 file:px-4
-                        file:rounded-md file:border-0
-                        file:text-sm file:font-semibold
-                        file:bg-blue-50 file:text-blue-700
-                        hover:file:bg-blue-100
-                        disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="block w-full text-sm text-gray-500 dark:text-gray-400
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-md file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    dark:file:bg-blue-900 dark:file:text-blue-200
+                    hover:file:bg-blue-100 dark:hover:file:bg-blue-800
+                    disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </label>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {isUploading ? '⏳ Téléchargement en cours...' : 'Max 10MB par image. Formats: JPG, PNG, GIF, WEBP'}
                   </p>
                 </div>
               )}
               {images.length === 0 && !isEditing && (
-                <p className="text-gray-500 italic text-sm">Aucune pièce jointe</p>
+                <p className="text-gray-500 italic text-sm dark:text-gray-400">Aucune pièce jointe</p>
               )}
             </div>
           </div>
@@ -444,7 +438,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
           {/* Status */}
           {isFirebase && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Statut
               </label>
               <select
@@ -454,7 +448,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                   status: e.target.value as 'pending' | 'in_progress' | 'completed' | 'cancelled'
                 })}
                 disabled={!isEditing}
-                className="w-full rounded-md border-gray-300 shadow-sm p-2 disabled:bg-gray-100"
+                className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 disabled:bg-gray-100 dark:disabled:bg-gray-900"
               >
                 <option value="pending">En attente</option>
                 <option value="in_progress">En cours</option>
@@ -465,11 +459,11 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
           )}
 
           {/* Facturation */}
-          <div className="border-t pt-4 mt-4">
-            <h3 className="text-lg font-medium text-gray-800 mb-3">💰 Facturation</h3>
+          <div className="border-t dark:border-gray-700 pt-4 mt-4">
+            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">💰 Facturation</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Montant de la facture ($)
                 </label>
                 <input
@@ -480,27 +474,27 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                   onChange={(e) => setEditedRequest({ ...editedRequest, cost: parseFloat(e.target.value) || undefined })}
                   disabled={!isEditing}
                   placeholder="0.00"
-                  className="w-full rounded-md border-gray-300 shadow-sm p-2 disabled:bg-gray-100"
+                  className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 disabled:bg-gray-100 dark:disabled:bg-gray-900"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Facture (PDF ou Image)
                 </label>
                 {editedRequest.invoiceUrl ? (
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md border border-gray-200">
+                  <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-md border border-gray-200 dark:border-gray-700">
                     <a
                       href={editedRequest.invoiceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 text-blue-600 hover:underline truncate text-sm"
+                      className="flex-1 text-blue-600 hover:underline truncate text-sm dark:text-blue-400"
                     >
                       Voir la facture
                     </a>
                     {isEditing && (
                       <button
                         onClick={() => setEditedRequest({ ...editedRequest, invoiceUrl: undefined })}
-                        className="text-red-600 hover:text-red-800 p-1"
+                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 p-1"
                         title="Supprimer la facture"
                       >
                         <XMarkIcon className="w-4 h-4" />
@@ -545,18 +539,19 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                           }
                         }}
                         disabled={isUploading}
-                        className="block w-full text-sm text-gray-500
+                        className="block w-full text-sm text-gray-500 dark:text-gray-400
                           file:mr-4 file:py-2 file:px-4
                           file:rounded-md file:border-0
                           file:text-sm file:font-semibold
                           file:bg-blue-50 file:text-blue-700
-                          hover:file:bg-blue-100
+                          dark:file:bg-blue-900 dark:file:text-blue-200
+                          hover:file:bg-blue-100 dark:hover:file:bg-blue-800
                           disabled:opacity-50 disabled:cursor-not-allowed"
                       />
-                      {isUploading && <span className="text-xs text-gray-500 mt-1">Téléchargement...</span>}
+                      {isUploading && <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">Téléchargement...</span>}
                     </div>
                   ) : (
-                    <p className="text-gray-500 italic text-sm">Aucune facture jointe</p>
+                    <p className="text-gray-500 italic text-sm dark:text-gray-400">Aucune facture jointe</p>
                   )
                 )}
               </div>

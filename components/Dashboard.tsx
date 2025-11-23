@@ -40,9 +40,9 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
     // Filter requests by selected year and period
     const filteredRequests = useMemo(() => {
         let filtered = requests.filter(req => new Date(req.date).getFullYear() === selectedYear);
-        
+
         const now = new Date();
-        
+
         switch (selectedPeriod) {
             case 'month':
                 const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -80,7 +80,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                 // Already filtered by year
                 break;
         }
-        
+
         return filtered;
     }, [requests, selectedYear, selectedPeriod, customDateRange]);
 
@@ -187,11 +187,11 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             pdf.text(`${selectedYear}`, pageWidth / 2, 37, { align: 'center' });
             pdf.setFontSize(12);
             pdf.setFont('helvetica', 'normal');
-            pdf.text('SystÃ¨me de Cueillette de Contenants', pageWidth / 2, 47, { align: 'center' });
+            pdf.text('Système de Cueillette de Contenants', pageWidth / 2, 47, { align: 'center' });
             const today = new Date().toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' });
             pdf.setTextColor(255, 255, 255);
             pdf.setFontSize(9);
-            pdf.text(`GÃ©nÃ©rÃ© le ${today}`, pageWidth / 2, 55, { align: 'center' });
+            pdf.text(`Généré le ${today}`, pageWidth / 2, 55, { align: 'center' });
 
             yPos = 80;
 
@@ -205,9 +205,9 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             const kpiBoxes = [
                 { label: 'Total Demandes', value: kpis.totalRequests.toString(), color: [59, 130, 246] },
                 { label: 'En Attente', value: kpis.pendingRequests.toString(), color: [234, 179, 8] },
-                { label: 'ComplÃ©tÃ©es', value: kpis.completedRequests.toString(), color: [34, 197, 94] },
+                { label: 'Complétées', value: kpis.completedRequests.toString(), color: [34, 197, 94] },
                 { label: 'Contenants', value: kpis.totalContainers.toString(), color: [168, 85, 247] },
-                { label: 'CoÃ»t Total', value: `${kpis.totalCost.toFixed(2)} $`, color: [239, 68, 68] }
+                { label: 'Coût Total', value: `${kpis.totalCost.toFixed(2)} $`, color: [239, 68, 68] }
             ];
 
             const boxWidth = (pageWidth - 2 * margin - 16) / 5;
@@ -226,7 +226,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
 
             yPos += 35;
 
-            // === GRAPHIQUE: Contenants par Ã‰tablissement ===
+            // === GRAPHIQUE: Contenants par Établissement ===
             pdf.setTextColor(31, 41, 55);
             pdf.setFontSize(14);
             pdf.setFont('helvetica', 'bold');
@@ -261,7 +261,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
 
             yPos += (locationData.slice(0, 5).length * 12) + 15;
 
-            // === GRAPHIQUE: CoÃ»ts par Ã‰tablissement ===
+            // === GRAPHIQUE: Coûts par Établissement ===
             if (yPos > pageHeight - 80) { pdf.addPage(); yPos = margin; }
 
             pdf.setTextColor(31, 41, 55);
@@ -305,7 +305,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             yPos += 2;
             autoTable(pdf, {
                 startY: yPos,
-                head: [['Lieu', 'QuantitÃ©']],
+                head: [['Lieu', 'Quantité']],
                 body: locationData.map(item => [item.name, item.value.toString()]),
                 theme: 'grid',
                 headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
@@ -322,7 +322,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             yPos += 2;
             autoTable(pdf, {
                 startY: yPos,
-                head: [['Type', 'QuantitÃ©']],
+                head: [['Type', 'Quantité']],
                 body: typeData.map(item => [item.name, item.value.toString()]),
                 theme: 'grid',
                 headStyles: { fillColor: [34, 197, 94], textColor: 255, fontStyle: 'bold' },
@@ -333,14 +333,14 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             yPos = (pdf as any).lastAutoTable?.finalY + 12;
             if (yPos > pageHeight - 60) { pdf.addPage(); yPos = margin; }
 
-            // === TABLEAU: Analyse des CoÃ»ts ===
+            // === TABLEAU: Analyse des Coûts ===
             pdf.setFontSize(14);
             pdf.setFont('helvetica', 'bold');
             pdf.text('ANALYSE DES COUTS PAR LIEU', margin, yPos);
             yPos += 2;
             autoTable(pdf, {
                 startY: yPos,
-                head: [['Lieu', 'CoÃ»t Total']],
+                head: [['Lieu', 'Coût Total']],
                 body: costByLocationData.map(item => [item.name, `${item.value.toFixed(2)} $`]),
                 theme: 'grid',
                 headStyles: { fillColor: [239, 68, 68], textColor: 255, fontStyle: 'bold' },
@@ -371,16 +371,16 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
 
             // Period information
             pdf.setFont('helvetica', 'bold');
-            pdf.text(`Periode couverte: Annee ${selectedYear}`, margin + 2, yPos);
+            pdf.text(`Période couverte: Année ${selectedYear}`, margin + 2, yPos);
             yPos += 8;
 
             const summaryData = [
-                ['Taux de completion', `${completionRate}%`],
-                ['Cout moyen par demande', `${avgCostPerRequest} $`],
+                ['Taux de complétion', `${completionRate}%`],
+                ['Coût moyen par demande', `${avgCostPerRequest} $`],
                 ['Contenants moyens par demande', avgContainersPerRequest],
-                ['Nombre d\'etablissements actifs', locationData.length.toString()],
-                ['Cout total annuel', `${kpis.totalCost.toFixed(2)} $`],
-                ['Volume total traite', `${kpis.totalContainers} contenants`]
+                ['Nombre d\'établissements actifs', locationData.length.toString()],
+                ['Coût total annuel', `${kpis.totalCost.toFixed(2)} $`],
+                ['Volume total traité', `${kpis.totalContainers} contenants`]
             ];
 
             autoTable(pdf, {
@@ -414,11 +414,11 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             pdf.setTextColor(60, 60, 60);
 
             const highlights = [
-                `${kpis.totalRequests} demandes de ramassage traitees durant l'annee ${selectedYear}`,
-                `${kpis.totalContainers} contenants collectes au total`,
-                `Cout total des operations: ${kpis.totalCost.toFixed(2)} $`,
-                `${locationData.length} etablissements ont beneficie du service`,
-                `Taux de completion des demandes: ${completionRate}%`,
+                `${kpis.totalRequests} demandes de ramassage traitées durant l'année ${selectedYear}`,
+                `${kpis.totalContainers} contenants collectés au total`,
+                `Coût total des opérations: ${kpis.totalCost.toFixed(2)} $`,
+                `${locationData.length} établissements ont bénéficié du service`,
+                `Taux de complétion des demandes: ${completionRate}%`,
             ];
 
             highlights.forEach((highlight, index) => {
@@ -448,9 +448,9 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             pdf.setTextColor(60, 60, 60);
 
             const recommendations = [
-                `Assurer le suivi des ${kpis.pendingRequests} demande(s) en attente pour maintenir un taux de completion optimal`,
-                `Optimiser la planification des collectes pour les etablissements a fort volume`,
-                `Evaluer les opportunites de reduction des couts sans compromettre la qualite du service`,
+                `Assurer le suivi des ${kpis.pendingRequests} demande(s) en attente pour maintenir un taux de complétion optimal`,
+                `Optimiser la planification des collectes pour les établissements à fort volume`,
+                `Évaluer les opportunités de réduction des coûts sans compromettre la qualité du service`,
             ];
 
             recommendations.forEach((rec, index) => {
@@ -473,10 +473,10 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             }
 
             pdf.save(`rapport_annuel_${selectedYear}.pdf`);
-            toastSuccess('Rapport PDF gÃ©nÃ©rÃ© avec succÃ¨s !');
+            toastSuccess('Rapport PDF généré avec succès !');
         } catch (error) {
             console.error("Error generating PDF:", error);
-            toastError("Erreur lors de la gÃ©nÃ©ration du PDF");
+            toastError("Erreur lors de la génération du PDF");
         }
     };
 
@@ -487,7 +487,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
 
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-2 rounded-md shadow-sm border dark:border-gray-700">
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">AnnÃ©e:</span>
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Année:</span>
                         <select
                             value={selectedYear}
                             onChange={(e) => setSelectedYear(parseInt(e.target.value))}
@@ -511,23 +511,23 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
 
             {/* Advanced Filters */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">ðŸ“… Filtres AvancÃ©s</h2>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">ðŸ“… Filtres Avancés</h2>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     {/* Period Selector */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            PÃ©riode
+                            Période
                         </label>
                         <select
                             value={selectedPeriod}
                             onChange={(e) => setSelectedPeriod(e.target.value)}
                             className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 focus:border-blue-500 focus:ring-blue-500"
                         >
-                            <option value="all">Toute l'annÃ©e</option>
+                            <option value="all">Toute l'année</option>
                             <option value="month">Ce mois</option>
                             <option value="quarter">Ce trimestre</option>
                             <option value="last30">30 derniers jours</option>
-                            <option value="custom">PÃ©riode personnalisÃ©e</option>
+                            <option value="custom">Période personnalisée</option>
                         </select>
                     </div>
 
@@ -545,7 +545,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                             }}
                             className="w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                         >
-                            â†º RÃ©initialiser
+                            â†º Réinitialiser
                         </button>
                     </div>
                 </div>
@@ -555,7 +555,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                     <div className="grid grid-cols-2 gap-4 mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-md">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Date de dÃ©but
+                                Date de début
                             </label>
                             <input
                                 type="date"
@@ -588,7 +588,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                     <p className="text-3xl font-bold text-gray-800 dark:text-white">{kpis.pendingRequests}</p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-green-500">
-                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">ComplÃ©tÃ©es</h3>
+                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">Complétées</h3>
                     <p className="text-3xl font-bold text-gray-800 dark:text-white">{kpis.completedRequests}</p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-purple-500">
@@ -596,7 +596,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                     <p className="text-3xl font-bold text-gray-800 dark:text-white">{kpis.totalContainers}</p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-red-500">
-                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">CoÃ»t Total</h3>
+                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">Coût Total</h3>
                     <p className="text-3xl font-bold text-gray-800 dark:text-white">{kpis.totalCost.toFixed(2)} $</p>
                 </div>
             </div>
@@ -614,7 +614,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                                 <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
                                 <Tooltip />
                                 <Legend />
-                                <Bar dataKey="value" name="QuantitÃ©" fill="#8884d8" radius={[0, 4, 4, 0]} />
+                                <Bar dataKey="value" name="Quantité" fill="#8884d8" radius={[0, 4, 4, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -669,7 +669,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
 
                 {/* Bar Chart: Costs by Location */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
-                    <h3 className="text-lg font-semibold text-gray-700 dark:text-white mb-4">CoÃ»ts par Lieu (Top 5)</h3>
+                    <h3 className="text-lg font-semibold text-gray-700 dark:text-white mb-4">Coûts par Lieu (Top 5)</h3>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={costByLocationData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
@@ -678,7 +678,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                                 <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
                                 <Tooltip formatter={(value) => `${Number(value).toFixed(2)} $`} />
                                 <Legend />
-                                <Bar dataKey="value" name="CoÃ»t ($)" fill="#ff8042" radius={[0, 4, 4, 0]} />
+                                <Bar dataKey="value" name="Coût ($)" fill="#ff8042" radius={[0, 4, 4, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

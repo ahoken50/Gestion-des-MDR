@@ -192,38 +192,38 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     };
 
     return (
-        <div className="card p-6 slide-up">
-            <div className="flex justify-between items-center mb-6 card-header p-4 -m-6 mb-6">
+        <div className="card p-6 slide-up dark:bg-gray-800 dark:border-gray-700">
+            <div className="flex justify-between items-center mb-6 card-header p-4 -m-6 mb-6 dark:border-gray-700">
                 <h2 className="text-2xl font-bold gradient-text">📋 Historique des demandes</h2>
                 <div className="flex flex-col gap-4 w-full md:w-auto">
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="flex flex-col">
-                            <label htmlFor="startDate" className="text-xs font-medium text-gray-500">Du</label>
+                            <label htmlFor="startDate" className="text-xs font-medium text-gray-500 dark:text-gray-400">Du</label>
                             <input
                                 type="date"
                                 id="startDate"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1"
+                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             />
                         </div>
                         <div className="flex flex-col">
-                            <label htmlFor="endDate" className="text-xs font-medium text-gray-500">Au</label>
+                            <label htmlFor="endDate" className="text-xs font-medium text-gray-500 dark:text-gray-400">Au</label>
                             <input
                                 type="date"
                                 id="endDate"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1"
+                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             />
                         </div>
                         <div className="flex flex-col">
-                            <label htmlFor="locationFilter" className="text-xs font-medium text-gray-500">Lieu</label>
+                            <label htmlFor="locationFilter" className="text-xs font-medium text-gray-500 dark:text-gray-400">Lieu</label>
                             <select
                                 id="locationFilter"
                                 value={locationFilter}
                                 onChange={(e) => setLocationFilter(e.target.value)}
-                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1 w-32"
+                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1 w-32 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             >
                                 <option value="">Tous</option>
                                 {LOCATIONS.map(loc => (
@@ -232,12 +232,12 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                             </select>
                         </div>
                         <div className="flex flex-col">
-                            <label htmlFor="statusFilter" className="text-xs font-medium text-gray-500">Statut</label>
+                            <label htmlFor="statusFilter" className="text-xs font-medium text-gray-500 dark:text-gray-400">Statut</label>
                             <select
                                 id="statusFilter"
                                 value={filter}
                                 onChange={(e) => setFilter(e.target.value as any)}
-                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1"
+                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             >
                                 <option value="all">Tous</option>
                                 <option value="pending">En attente</option>
@@ -253,7 +253,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                             placeholder="Rechercher (ID ou contenant)..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1.5 flex-grow"
+                            className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1.5 flex-grow dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         />
                         <button
                             onClick={handleExportExcel}
@@ -269,19 +269,19 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
 
             {filteredRequests.length > 0 ? (
                 <div className="table-container">
-                    <table className="table">
-                        <thead className="table-header">
+                    <table className="table w-full">
+                        <thead className="table-header bg-gray-50 dark:bg-gray-700">
                             <tr>
-                                <th scope="col" className="table-header-cell">Numéro</th>
-                                <th scope="col" className="table-header-cell">Date</th>
-                                <th scope="col" className="table-header-cell">Lieu(x)</th>
-                                <th scope="col" className="table-header-cell">Contenants</th>
-                                <th scope="col" className="table-header-cell">Coût</th>
-                                <th scope="col" className="table-header-cell">Statut</th>
-                                <th scope="col" className="table-header-cell text-right">Actions</th>
+                                <th scope="col" className="table-header-cell dark:text-gray-200">Numéro</th>
+                                <th scope="col" className="table-header-cell dark:text-gray-200">Date</th>
+                                <th scope="col" className="table-header-cell dark:text-gray-200">Lieu(x)</th>
+                                <th scope="col" className="table-header-cell dark:text-gray-200">Contenants</th>
+                                <th scope="col" className="table-header-cell dark:text-gray-200">Coût</th>
+                                <th scope="col" className="table-header-cell dark:text-gray-200">Statut</th>
+                                <th scope="col" className="table-header-cell text-right dark:text-gray-200">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
                             {filteredRequests.map(request => {
                                 const isFirebaseRequest = 'requestNumber' in request;
                                 const displayNumber = isFirebaseRequest
@@ -289,24 +289,24 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                     : request.id.substring(0, 8);
 
                                 return (
-                                    <tr key={request.id} className="table-row">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    <tr key={request.id} className="table-row hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                             {displayNumber}
                                             {request.bcNumber && (
-                                                <span className="ml-2 text-xs text-gray-500">({request.bcNumber})</span>
+                                                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">({request.bcNumber})</span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                                             {new Date(request.date).toLocaleDateString('fr-CA')}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                                             {request.location.length > 30 ? request.location.substring(0, 30) + '...' : request.location}
                                             {request.locationComments && Object.keys(request.locationComments).length > 1 && (
-                                                <span className="ml-1 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">+{Object.keys(request.locationComments).length - 1}</span>
+                                                <span className="ml-1 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded dark:bg-blue-900 dark:text-blue-200">+{Object.keys(request.locationComments).length - 1}</span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
-                                            <div className="font-medium">
+                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                            <div className="font-medium dark:text-gray-300">
                                                 {request.items.reduce((sum, item) => sum + item.quantity, 0)} contenant(s)
                                             </div>
                                             <div className="text-xs text-gray-400 mt-1">
@@ -314,10 +314,10 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                                 {request.items.length > 2 && ` +${request.items.length - 2} autre(s)`}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                             <button
                                                 onClick={() => handleUpdateCost(request)}
-                                                className={`font-medium hover:underline ${request.cost ? 'text-gray-900' : 'text-blue-600 italic'}`}
+                                                className={`font-medium hover:underline ${request.cost ? 'text-gray-900 dark:text-white' : 'text-blue-600 dark:text-blue-400 italic'}`}
                                                 title="Cliquez pour modifier le coût"
                                             >
                                                 {request.cost ? `${request.cost.toFixed(2)} $` : 'Ajouter coût'}
@@ -327,7 +327,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                                     href={request.invoiceUrl}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="ml-2 inline-block text-blue-500 hover:text-blue-700"
+                                                    className="ml-2 inline-block text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                                                     title="Voir la facture"
                                                 >
                                                     <PaperClipIcon className="w-4 h-4" />
@@ -350,14 +350,14 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => handleViewDetails(request)}
-                                                    className="text-blue-600 hover:text-blue-800 transition-colors px-2 py-1 rounded hover:bg-blue-50"
+                                                    className="text-blue-600 hover:text-blue-800 transition-colors px-2 py-1 rounded hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-gray-700"
                                                     title="Voir les détails"
                                                 >
                                                     Détails
                                                 </button>
                                                 <button
                                                     onClick={() => handleRegeneratePDF(request)}
-                                                    className="text-green-600 hover:text-green-800 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-green-50"
+                                                    className="text-green-600 hover:text-green-800 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-gray-700"
                                                     title="Régénérer PDF"
                                                 >
                                                     <FileTextIcon className="w-4 h-4" />
@@ -366,7 +366,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                                 {request.status !== 'cancelled' && (
                                                     <button
                                                         onClick={() => handleCancelRequest(request.id)}
-                                                        className="text-red-600 hover:text-red-800 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50"
+                                                        className="text-red-600 hover:text-red-800 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-gray-700"
                                                         title="Annuler la demande"
                                                     >
                                                         <XMarkIcon className="w-4 h-4" />
@@ -381,7 +381,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                     </table>
                 </div>
             ) : (
-                <p className="text-gray-500 italic mt-4">Aucune demande trouvée pour ce filtre.</p>
+                <p className="text-gray-500 italic mt-4 dark:text-gray-400">Aucune demande trouvée pour ce filtre.</p>
             )}
 
             {selectedRequest && (
