@@ -119,10 +119,10 @@ export class PDFService {
       y += 5;
     });
 
-    // QR Code
+    // QR Code - Positioned with more spacing from text
     const qrCodeUrl = await this.getQRCode(request.id);
     if (qrCodeUrl) {
-      this.doc.addImage(qrCodeUrl, 'PNG', 170, 45, 25, 25);
+      this.doc.addImage(qrCodeUrl, 'PNG', 175, 50, 25, 25);
     }
 
     // Notes Section
@@ -175,6 +175,7 @@ export class PDFService {
 
       const addressInfo = LOCATION_ADDRESSES[location];
       if (addressInfo) {
+        y += 3; // Add spacing before address
         this.doc.setFontSize(9);
         this.doc.setFont('helvetica', 'normal');
         this.doc.setTextColor(100, 100, 100);
