@@ -156,7 +156,14 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
     const costByLocationData = useMemo(() => {
         const locationCosts: Record<string, number> = {};
         filteredRequests.forEach(req => {
-            if (req.cost) {
+            if (req.locationCosts) {
+                // Use detailed location costs if available
+                Object.entries(req.locationCosts).forEach(([loc, cost]) => {
+                    const cleanLoc = loc.split(',')[0].trim();
+                    locationCosts[cleanLoc] = (locationCosts[cleanLoc] || 0) + cost;
+                });
+            } else if (req.cost) {
+                // Fallback to total cost attributed to primary location
                 const loc = req.location.split(',')[0].trim();
                 locationCosts[loc] = (locationCosts[loc] || 0) + req.cost;
             }

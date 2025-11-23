@@ -154,7 +154,7 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
             }, groupedItemsWithComments);
 
             const pdfService = new PDFService();
-            pdfService.generatePickupRequestPDF(request);
+            await pdfService.generatePickupRequestPDF(request);
             pdfService.save(`demande_ramassage_${request.id}.pdf`);
 
             if (onPDFGenerated) {

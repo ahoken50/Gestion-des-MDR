@@ -8,6 +8,7 @@ import RequestDetail from './RequestDetail';
 import type { SelectedItem } from '../types-pdf';
 import { LOCATIONS } from '../constants';
 import * as XLSX from 'xlsx';
+import CostDistributionModal from './CostDistributionModal';
 
 interface RequestHistoryProps {
     requests: (PickupRequest | FirebasePickupRequest)[];
@@ -121,29 +122,27 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
         }
     };
 
-    const handleUpdateCost = (request: PickupRequest | FirebasePickupRequest) => {
-        const currentCost = request.cost || 0;
-        const newCostStr = prompt("Entrez le coût de la facture ($):", currentCost > 0 ? currentCost.toString() : '');
+    const [isCostModalOpen, setIsCostModalOpen] = useState(false);
+    const [requestToEditCost, setRequestToEditCost] = useState<PickupRequest | FirebasePickupRequest | null>(null);
 
-        if (newCostStr !== null) {
-            const newCost = parseFloat(newCostStr.replace(',', '.'));
-            if (!isNaN(newCost) && newCost >= 0) {
-                // Create updated request object
-                const updatedRequest = { ...request, cost: newCost };
-                // Call parent update handler
-                if (onRequestUpdated) {
-                    onRequestUpdated(updatedRequest);
-                }
-            } else if (newCostStr.trim() === '') {
-                // Allow clearing the cost
-                const updatedRequest = { ...request, cost: undefined };
-                if (onRequestUpdated) {
-                    onRequestUpdated(updatedRequest);
-                }
-            } else {
-                alert("Montant invalide.");
+    const handleOpenCostModal = (request: PickupRequest | FirebasePickupRequest) => {
+        setRequestToEditCost(request);
+        setIsCostModalOpen(true);
+    };
+
+    const handleSaveCost = (totalCost: number, locationCosts: Record<string, number>) => {
+        if (requestToEditCost) {
+            const updatedRequest = {
+                ...requestToEditCost,
+                cost: totalCost,
+                locationCosts: locationCosts
+            };
+            if (onRequestUpdated) {
+                onRequestUpdated(updatedRequest);
             }
         }
+        setIsCostModalOpen(false);
+        setRequestToEditCost(null);
     };
 
     const handleExportExcel = () => {
@@ -316,7 +315,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                             <button
-                                                onClick={() => handleUpdateCost(request)}
+                                                onClick={() => handleOpenCostModal(request)}
                                                 className={`font-medium hover:underline ${request.cost ? 'text-gray-900 dark:text-white' : 'text-blue-600 dark:text-blue-400 italic'}`}
                                                 title="Cliquez pour modifier le coût"
                                             >
@@ -390,6 +389,19 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                     onUpdate={handleRequestUpdated}
                     onCancel={() => setSelectedRequest(null)}
                     inventory={inventory}
+                />
+            )}
+            {isCostModalOpen && requestToEditCost && (
+                <CostDistributionModal
+                    isOpen={isCostModalOpen}
+                    onClose={() => setIsCostModalOpen(false)}
+                    onSave={handleSaveCost}
+                    locations={
+                        // Extract unique locations from items
+                        Array.from(new Set(requestToEditCost.items.map(item => item.location || requestToEditCost.location)))
+                    }
+                    initialTotalCost={requestToEditCost.cost}
+                    initialLocationCosts={requestToEditCost.locationCosts}
                 />
             )}
         </div>

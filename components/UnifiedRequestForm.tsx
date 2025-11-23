@@ -29,7 +29,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
     const [contactPhone, setContactPhone] = useState('');
     const [notes, setNotes] = useState('');
 
-    const handleSingleSubmit = (data: { location: string; items: any[] }) => {
+    const handleSingleSubmit = async (data: { location: string; items: any[] }) => {
         if (!contactName.trim() || !contactPhone.trim()) {
             toastError("Veuillez remplir les informations de contact.");
             return;
@@ -62,7 +62,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             });
 
             const pdfService = new PDFService();
-            pdfService.generatePickupRequestPDF(pdfRequest);
+            await pdfService.generatePickupRequestPDF(pdfRequest);
             pdfService.save(`demande_ramassage_${pdfRequest.id}.pdf`);
 
             if (onPDFGenerated) {

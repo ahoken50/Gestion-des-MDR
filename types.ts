@@ -24,5 +24,6 @@ export interface PickupRequest {
   notes?: string;
   locationComments?: Record<string, string>;
   cost?: number;
+  locationCosts?: Record<string, number>;
   invoiceUrl?: string;
 }
