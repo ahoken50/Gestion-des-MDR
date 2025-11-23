@@ -37,7 +37,14 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
     const inventoryItems = inventory
       .filter(item => item.location === editedRequest.location)
       .map(item => item.name);
-    const allItems = Array.from(new Set([...specialItems, ...inventoryItems]));
+
+    let allItems = Array.from(new Set([...specialItems, ...inventoryItems]));
+
+    // Fallback: if no items found for specific location, show all inventory items
+    if (allItems.length === 0 && inventory.length > 0) {
+      allItems = Array.from(new Set(inventory.map(i => i.name)));
+    }
+
     return allItems.sort();
   }, [editedRequest.location, inventory]);
 

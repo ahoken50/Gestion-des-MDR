@@ -511,7 +511,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
 
             {/* Advanced Filters */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">ðŸ“… Filtres Avancés</h2>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">🗓️ Filtres Avancés</h2>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     {/* Period Selector */}
                     <div>
@@ -545,7 +545,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                             }}
                             className="w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                         >
-                            â†º Réinitialiser
+                            🔄 Réinitialiser
                         </button>
                     </div>
                 </div>

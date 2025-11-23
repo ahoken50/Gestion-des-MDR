@@ -13,7 +13,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewChange }) 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
+        <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
             {/* Sidebar */}
             <Sidebar
                 currentView={currentView}
@@ -25,14 +25,14 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewChange }) 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 {/* Mobile Header */}
-                <header className="lg:hidden bg-white border-b px-4 h-16 flex items-center justify-between shadow-sm z-30">
+                <header className="lg:hidden bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-4 h-16 flex items-center justify-between shadow-sm z-30">
                     <button
                         onClick={() => setIsSidebarOpen(true)}
-                        className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                        className="p-2 -ml-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                     >
                         <Bars3Icon className="w-6 h-6" />
                     </button>
-                    <span className="font-semibold text-gray-800">Gestion MDR</span>
+                    <span className="font-semibold text-gray-800 dark:text-white">Gestion MDR</span>
                     <div className="w-8" /> {/* Spacer for centering */}
                 </header>
 
