@@ -11,11 +11,13 @@ import {
 } from './icons';
 
 interface SidebarProps {
-    activeView: string;
-    onNavigate: (view: string) => void;
+    currentView: string;
+    onViewChange: (view: string) => void;
+    isOpen?: boolean;
+    onClose?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, onClose }) => {
     const { theme, toggleTheme } = useTheme();
 
     const menuItems = [
@@ -46,15 +48,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
                 <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
                     {menuItems.map((item) => {
                         const Icon = item.icon;
-                        const isActive = activeView === item.id;
+                        const isActive = currentView === item.id;
 
                         return (
                             <button
                                 key={item.id}
-                                onClick={() => onNavigate(item.id)}
+                                onClick={() => onViewChange(item.id)}
                                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${isActive
-                                        ? 'bg-white text-blue-600 shadow-lg'
-                                        : 'text-blue-100 hover:bg-blue-700 hover:text-white'
+                                    ? 'bg-white text-blue-600 shadow-lg'
+                                    : 'text-blue-100 hover:bg-blue-700 hover:text-white'
                                     }`}
                             >
                                 <Icon className="w-5 h-5" />
@@ -87,7 +89,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
                 {/* Footer */}
                 <div className="p-4 text-center text-xs text-blue-300">
                     <p>Ville de Val-d'Or</p>
-                    <p className="mt-1">© 2024</p>
+                    <p className="mt-1">© 2025</p>
                 </div>
             </aside>
         </>
