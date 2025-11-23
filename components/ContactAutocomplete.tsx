@@ -100,14 +100,14 @@ const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({
             />
 
             {showSuggestions && suggestions.length > 0 && (
-                <ul className="absolute z-50 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
+                <ul className="absolute z-50 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
                     {suggestions.map((contact, index) => (
                         <li
                             key={index}
                             onClick={() => handleSelectSuggestion(contact)}
                             className={`px-4 py-2 cursor-pointer ${index === activeSuggestionIndex
-                                    ? 'bg-blue-100 text-blue-900'
-                                    : 'hover:bg-gray-100'
+                                ? 'bg-blue-100 text-blue-900'
+                                : 'hover:bg-gray-100'
                                 }`}
                         >
                             <div className="flex justify-between items-center">

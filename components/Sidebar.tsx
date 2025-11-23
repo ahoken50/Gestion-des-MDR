@@ -34,7 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, on
                 {/* Logo/Brand */}
                 <div className="p-6 border-b border-blue-500">
                     <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                        <div className="w-10 h-10 bg-white dark:bg-gray-700 rounded-lg flex items-center justify-center">
                             <span className="text-2xl">♻️</span>
                         </div>
                         <div>

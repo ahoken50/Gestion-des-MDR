@@ -222,7 +222,8 @@ export class PDFService {
         alternateRowStyles: { fillColor: [250, 250, 250] }
       });
 
-      y = (this.doc as any).lastAutoTable?.finalY;
+      // Correctly update y for the next iteration
+      y = (this.doc as any).lastAutoTable?.finalY || y + 20;
     });
 
     return y;
