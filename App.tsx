@@ -42,6 +42,13 @@ const App: React.FC = () => {
                         inventory={inventory}
                     />
                 )}
+                {(currentView === 'home' || currentView === 'ai') && (
+                    <UnifiedRequestForm
+                        inventory={inventory}
+                        onSubmit={handleAddRequest}
+                        onPDFGenerated={handlePDFGenerated}
+                    />
+                )}
                 {currentView === 'dashboard' && (
                     <Dashboard requests={allRequests} inventory={inventory} />
                 )}

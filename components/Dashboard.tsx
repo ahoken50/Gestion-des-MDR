@@ -481,13 +481,13 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
     };
 
     return (
-        <div className="space-y-8 slide-up p-4 bg-gray-50 min-h-screen">
+        <div className="space-y-8 slide-up p-4 bg-gray-50 dark:bg-gray-900 min-h-screen">
             <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                 <h2 className="text-2xl font-bold gradient-text">Tableau de bord</h2>
 
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-md shadow-sm border">
-                        <span className="text-sm font-medium text-gray-600">AnnÃ©e:</span>
+                    <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-2 rounded-md shadow-sm border dark:border-gray-700">
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">AnnÃ©e:</span>
                         <select
                             value={selectedYear}
                             onChange={(e) => setSelectedYear(parseInt(e.target.value))}
@@ -510,18 +510,18 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             </div>
 
             {/* Advanced Filters */}
-            <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">ðŸ“… Filtres AvancÃ©s</h2>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">ðŸ“… Filtres AvancÃ©s</h2>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     {/* Period Selector */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             PÃ©riode
                         </label>
                         <select
                             value={selectedPeriod}
                             onChange={(e) => setSelectedPeriod(e.target.value)}
-                            className="w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 focus:border-blue-500 focus:ring-blue-500"
                         >
                             <option value="all">Toute l'annÃ©e</option>
                             <option value="month">Ce mois</option>
@@ -543,7 +543,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                                 setSelectedPeriod('all');
                                 setCustomDateRange({ start: '', end: '' });
                             }}
-                            className="w-full bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors"
+                            className="w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                         >
                             â†º RÃ©initialiser
                         </button>
@@ -552,28 +552,26 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
 
                 {/* Custom Date Range */}
                 {selectedPeriod === 'custom' && (
-                    <div className="grid grid-cols-2 gap-4 mt-4 p-4 bg-gray-50 rounded-md">
+                    <div className="grid grid-cols-2 gap-4 mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-md">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Date de dÃ©but
                             </label>
                             <input
                                 type="date"
                                 value={customDateRange.start}
                                 onChange={(e) => setCustomDateRange({ ...customDateRange, start: e.target.value })}
-                                className="w-full rounded-md border-gray-300 shadow-sm p-2"
-                            />
+                                className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm p-2" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Date de fin
                             </label>
                             <input
                                 type="date"
                                 value={customDateRange.end}
                                 onChange={(e) => setCustomDateRange({ ...customDateRange, end: e.target.value })}
-                                className="w-full rounded-md border-gray-300 shadow-sm p-2"
-                            />
+                                className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm p-2" />
                         </div>
                     </div>
                 )}
@@ -581,33 +579,33 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
 
             {/* KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
-                    <h3 className="text-gray-500 text-sm font-medium uppercase">Total Demandes</h3>
-                    <p className="text-3xl font-bold text-gray-800">{kpis.totalRequests}</p>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-blue-500">
+                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">Total Demandes</h3>
+                    <p className="text-3xl font-bold text-gray-800 dark:text-white">{kpis.totalRequests}</p>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-yellow-500">
-                    <h3 className="text-gray-500 text-sm font-medium uppercase">En Attente</h3>
-                    <p className="text-3xl font-bold text-gray-800">{kpis.pendingRequests}</p>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-yellow-500">
+                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">En Attente</h3>
+                    <p className="text-3xl font-bold text-gray-800 dark:text-white">{kpis.pendingRequests}</p>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
-                    <h3 className="text-gray-500 text-sm font-medium uppercase">ComplÃ©tÃ©es</h3>
-                    <p className="text-3xl font-bold text-gray-800">{kpis.completedRequests}</p>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-green-500">
+                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">ComplÃ©tÃ©es</h3>
+                    <p className="text-3xl font-bold text-gray-800 dark:text-white">{kpis.completedRequests}</p>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500">
-                    <h3 className="text-gray-500 text-sm font-medium uppercase">Contenants</h3>
-                    <p className="text-3xl font-bold text-gray-800">{kpis.totalContainers}</p>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-purple-500">
+                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">Contenants</h3>
+                    <p className="text-3xl font-bold text-gray-800 dark:text-white">{kpis.totalContainers}</p>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
-                    <h3 className="text-gray-500 text-sm font-medium uppercase">CoÃ»t Total</h3>
-                    <p className="text-3xl font-bold text-gray-800">{kpis.totalCost.toFixed(2)} $</p>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-red-500">
+                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">CoÃ»t Total</h3>
+                    <p className="text-3xl font-bold text-gray-800 dark:text-white">{kpis.totalCost.toFixed(2)} $</p>
                 </div>
             </div>
 
             {/* Charts Row 1 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Bar Chart: Containers by Location */}
-                <div className="bg-white p-6 rounded-lg shadow-lg">
-                    <h3 className="text-lg font-semibold text-gray-700 mb-4">Contenants par Lieu (Top 5)</h3>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h3 className="text-lg font-semibold text-gray-700 dark:text-white mb-4">Contenants par Lieu (Top 5)</h3>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={locationData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
@@ -623,8 +621,8 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                 </div>
 
                 {/* Pie Chart: Container Types */}
-                <div className="bg-white p-6 rounded-lg shadow-lg">
-                    <h3 className="text-lg font-semibold text-gray-700 mb-4">Types de Contenants (Top 5)</h3>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h3 className="text-lg font-semibold text-gray-700 dark:text-white mb-4">Types de Contenants (Top 5)</h3>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -653,8 +651,8 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             {/* Charts Row 2 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Line Chart: Timeline */}
-                <div className="bg-white p-6 rounded-lg shadow-lg">
-                    <h3 className="text-lg font-semibold text-gray-700 mb-4">Tendance de Collecte</h3>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h3 className="text-lg font-semibold text-gray-700 dark:text-white mb-4">Tendance de Collecte</h3>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={timelineData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -670,8 +668,8 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
                 </div>
 
                 {/* Bar Chart: Costs by Location */}
-                <div className="bg-white p-6 rounded-lg shadow-lg">
-                    <h3 className="text-lg font-semibold text-gray-700 mb-4">CoÃ»ts par Lieu (Top 5)</h3>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h3 className="text-lg font-semibold text-gray-700 dark:text-white mb-4">CoÃ»ts par Lieu (Top 5)</h3>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={costByLocationData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>

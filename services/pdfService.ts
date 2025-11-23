@@ -94,7 +94,7 @@ export const generatePdf = async (request: PickupRequest) => {
     doc.setFont('helvetica', 'bold');
     doc.text(detail.label, 120, y);
     doc.setFont('helvetica', 'normal');
-    doc.text(detail.value, 150, y);
+    doc.text(String(detail.value), 150, y);
     y += 5;
   });
 
