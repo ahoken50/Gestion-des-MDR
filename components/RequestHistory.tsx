@@ -137,7 +137,8 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                     id: request.id,
                     notes: request.notes,
                     bcNumber: request.bcNumber,
-                    locationComments: request.locationComments
+                    locationComments: request.locationComments,
+                    requestNumber: (request as FirebasePickupRequest).requestNumber?.toString()
                 };
             }
 

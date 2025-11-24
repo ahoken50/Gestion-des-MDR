@@ -6,17 +6,18 @@ export interface SelectedItem {
   replaceBin?: boolean;
 }
 
-export interface GroupedItemsByLocation {
-  [location: string]: LocationData;
-}
-
 export interface LocationData {
   items: SelectedItem[];
   comments?: string; // Commentaires spécifiques à ce lieu
 }
 
+export interface GroupedItemsByLocation {
+  [location: string]: LocationData;
+}
+
 export interface PickupRequestPDF {
   id: string;
+  requestNumber?: string; // Numéro de requête convivial
   bcNumber?: string; // Numéro de bon de commande
   date: string;
   contactName: string;

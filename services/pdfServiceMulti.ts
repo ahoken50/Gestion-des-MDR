@@ -122,7 +122,7 @@ export class PDFService {
 
     const details = [
       { label: "Date:", value: new Date(request.date).toLocaleDateString('fr-CA') },
-      { label: "ID:", value: request.id },
+      { label: "NO DE REQUÊTE:", value: request.requestNumber ? `#${request.requestNumber}` : request.id },
       { label: "Lieux:", value: request.totalLocations.toString() },
       { label: "Total Items:", value: request.totalItems.toString() }
     ];
@@ -136,7 +136,9 @@ export class PDFService {
     });
 
     // QR Code - Positioned to the right of details
-    const qrCodeUrl = await this.getQRCode(request.id);
+    const qrId = request.requestNumber ? `#${request.requestNumber}` : request.id;
+    const qrText = `DEMANDE: ${qrId}\nDATE: ${new Date(request.date).toLocaleDateString('fr-CA')}\nCONTACT: ${request.contactName}\nITEMS: ${request.totalItems}`;
+    const qrCodeUrl = await this.getQRCode(qrText);
     if (qrCodeUrl) {
       // Position at top of details section (y=50), right aligned (x=160)
       this.doc.addImage(qrCodeUrl, 'PNG', 160, 50, 25, 25);
@@ -350,7 +352,7 @@ export function groupItemsByLocation(selectedItems: SelectedItem[]): GroupedItem
 
 export function createPickupRequestPDF(
   selectedItems: SelectedItem[],
-  contactInfo: { name: string; phone: string; notes?: string; bcNumber?: string; contactAddress?: string; },
+  contactInfo: { name: string; phone: string; notes?: string; bcNumber?: string; contactAddress?: string; requestNumber?: string; },
   groupedItemsWithComments?: Record<string, { items: any[], comments?: string }>
 ): PickupRequestPDF {
   const allItems = [...selectedItems];
@@ -375,6 +377,7 @@ export function createPickupRequestPDF(
 
   return {
     id: `REQ-${Date.now()}`,
+    requestNumber: contactInfo.requestNumber,
     bcNumber: contactInfo.bcNumber,
     date: new Date().toISOString(),
     contactName: contactInfo.name,
