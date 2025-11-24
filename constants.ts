@@ -28,10 +28,10 @@ export const LOCATION_ADDRESSES: Record<string, { street: string; city: string; 
     fullAddress: "1199 rue de l'Escale, Val-d'Or, QC J9P 7A9"
   },
   "Forêt Récréative": {
-    street: "Forêt Récréative",
+    street: "179, chemin de la Forêt-Récréative",
     city: "Val-d'Or, QC",
-    postalCode: "",
-    fullAddress: "Forêt Récréative, Val-d'Or, QC"
+    postalCode: "J9P 0G5",
+    fullAddress: "179, chemin de la Forêt-Récréative, Val-d'Or, QC J9P 0G5"
   }
 };
 

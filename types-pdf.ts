@@ -20,6 +20,7 @@ export interface PickupRequestPDF {
   date: string;
   contactName: string;
   contactPhone: string;
+  contactAddress?: string;
   notes?: string;
   groupedItems: GroupedItemsByLocation;
   totalItems: number;

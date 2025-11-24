@@ -88,16 +88,26 @@ export class PDFService {
     this.doc.setFont('helvetica', 'normal');
     this.doc.text(request.contactPhone, 14, y);
     y += 5;
+
+    if (request.contactAddress) {
+      this.doc.text(request.contactAddress, 14, y);
+      y += 5;
+    }
+
     if (request.bcNumber) {
       this.doc.text(`BC #: ${request.bcNumber}`, 14, y);
     }
 
     // Right Column: Request Details & QR Code
+    // Moved details to x=90 to give more space for QR code and prevent overlap
     y = 50;
+    const detailsX = 90;
+    const detailsValueX = 120;
+
     this.doc.setFontSize(10);
     this.doc.setTextColor(100, 100, 100);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text("DETAILS DE LA DEMANDE", 120, y);
+    this.doc.text("DETAILS DE LA DEMANDE", detailsX, y);
 
     y += 6;
     this.doc.setTextColor(0, 0, 0);
@@ -113,17 +123,17 @@ export class PDFService {
 
     details.forEach(detail => {
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text(detail.label, 120, y);
+      this.doc.text(detail.label, detailsX, y);
       this.doc.setFont('helvetica', 'normal');
-      this.doc.text(detail.value, 150, y);
+      this.doc.text(detail.value, detailsValueX, y);
       y += 5;
     });
 
     // QR Code - Positioned to the right of details
     const qrCodeUrl = await this.getQRCode(request.id);
     if (qrCodeUrl) {
-      // Position at top of details section (y=50), right aligned (x=170)
-      this.doc.addImage(qrCodeUrl, 'PNG', 170, 50, 25, 25);
+      // Position at top of details section (y=50), right aligned (x=160)
+      this.doc.addImage(qrCodeUrl, 'PNG', 160, 50, 25, 25);
     }
 
     // Notes Section
@@ -329,7 +339,7 @@ export function groupItemsByLocation(selectedItems: SelectedItem[]): GroupedItem
 
 export function createPickupRequestPDF(
   selectedItems: SelectedItem[],
-  contactInfo: { name: string; phone: string; notes?: string; bcNumber?: string; },
+  contactInfo: { name: string; phone: string; notes?: string; bcNumber?: string; contactAddress?: string; },
   groupedItemsWithComments?: Record<string, { items: any[], comments?: string }>
 ): PickupRequestPDF {
   const allItems = [...selectedItems];
@@ -358,6 +368,7 @@ export function createPickupRequestPDF(
     date: new Date().toISOString(),
     contactName: contactInfo.name,
     contactPhone: contactInfo.phone,
+    contactAddress: contactInfo.contactAddress,
     notes: contactInfo.notes,
     groupedItems,
     totalItems,
