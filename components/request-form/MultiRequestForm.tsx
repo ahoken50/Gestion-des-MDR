@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { LOCATIONS } from '../../constants';
 import { TrashIcon, DocumentArrowDownIcon } from '../icons';
-import type { InventoryItem } from '../../types';
+import type { InventoryItem, PickupRequest } from '../../types';
 import type { SelectedItem, PickupRequestPDF } from '../../types-pdf';
 import { PDFService, createPickupRequestPDF } from '../../services/pdfServiceMulti';
 import { useToast } from '../ui/Toast';
@@ -16,9 +16,10 @@ interface MultiRequestFormProps {
         bcNumber: string;
     };
     onPDFGenerated?: (request: PickupRequestPDF) => void;
+    onSubmit?: (request: Omit<PickupRequest, 'id' | 'status'>) => Promise<number | undefined>;
 }
 
-const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactInfo, onPDFGenerated }) => {
+const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactInfo, onPDFGenerated, onSubmit }) => {
     const { success, error: toastError, info } = useToast();
     const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
     const [locationComments, setLocationComments] = useState<Record<string, string>>({});
@@ -148,18 +149,50 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
                 return acc;
             }, {} as Record<string, { items: SelectedItem[], comments?: string }>);
 
+            // 1. Save to Firebase first to get the Request Number
+            let requestNumber: number | undefined;
+            if (onSubmit) {
+                // Construct the request object for saving
+                // We need to flatten items and include all details
+                const allItems = selectedItems.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    quantity: item.quantity,
+                    location: item.location,
+                    replaceBin: item.replaceBin
+                }));
+
+                requestNumber = await onSubmit({
+                    bcNumber: contactInfo.bcNumber.trim() || undefined,
+                    location: Object.keys(groupedItemsWithComments).join(', '),
+                    items: allItems,
+                    date: new Date().toISOString(),
+                    contactName: contactInfo.name,
+                    contactPhone: contactInfo.phone,
+                    notes: contactInfo.notes.trim() || undefined,
+                    locationComments: locationComments
+                });
+            }
+
+            // 2. Generate PDF with the Request Number
             const request = createPickupRequestPDF(selectedItems, {
                 name: contactInfo.name,
                 phone: contactInfo.phone,
                 notes: contactInfo.notes.trim() || undefined,
-                bcNumber: contactInfo.bcNumber.trim() || undefined
+                bcNumber: contactInfo.bcNumber.trim() || undefined,
+                requestNumber: requestNumber?.toString()
             }, groupedItemsWithComments);
 
             const pdfService = new PDFService();
             await pdfService.generatePickupRequestPDF(request);
-            pdfService.save(`demande_ramassage_${request.id}.pdf`);
+            pdfService.save(`demande_ramassage_${request.requestNumber || request.id}.pdf`);
 
-            if (onPDFGenerated) {
+            // 3. Notify parent (optional, but might trigger another save if not careful)
+            // Since we already saved via onSubmit, we might not need onPDFGenerated for saving anymore
+            // But we keep it if it does other things (like clearing inventory state in parent)
+            // However, useAppData.handlePDFGenerated ALSO saves the request. We should avoid double saving.
+            // If onSubmit is provided, we assume WE handled the saving.
+            if (onPDFGenerated && !onSubmit) {
                 onPDFGenerated(request);
             }
 
@@ -168,7 +201,7 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
 
             setSelectedItems([]);
             setLocationComments({});
-            success('PDF généré avec succès !');
+            // success('PDF généré avec succès !'); // onSubmit likely shows a success message too
         } catch (error) {
             console.error('Erreur lors de la génération du PDF:', error);
             toastError('Une erreur est survenue lors de la génération du PDF.');

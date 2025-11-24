@@ -9,7 +9,7 @@ import { useToast } from './ui/Toast';
 
 interface UnifiedRequestFormProps {
     inventory: InventoryItem[];
-    onSubmit: (request: Omit<PickupRequest, 'id' | 'status'>) => void;
+    onSubmit: (request: Omit<PickupRequest, 'id' | 'status'>) => Promise<number | undefined>;
     onPDFGenerated?: (request: PickupRequestPDF) => void;
 }
 
@@ -35,7 +35,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             return;
         }
 
-        onSubmit({
+        const requestNumber = await onSubmit({
             bcNumber: bcNumber.trim() || undefined,
             location: data.location,
             items: data.items,
@@ -58,12 +58,13 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                 name: contactName,
                 phone: contactPhone,
                 notes: notes.trim() || undefined,
-                bcNumber: bcNumber.trim() || undefined
+                bcNumber: bcNumber.trim() || undefined,
+                requestNumber: requestNumber?.toString()
             });
 
             const pdfService = new PDFService();
             await pdfService.generatePickupRequestPDF(pdfRequest);
-            pdfService.save(`demande_ramassage_${pdfRequest.id}.pdf`);
+            pdfService.save(`demande_ramassage_${pdfRequest.requestNumber || pdfRequest.id}.pdf`);
 
             if (onPDFGenerated) {
                 onPDFGenerated(pdfRequest);
@@ -131,6 +132,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                         bcNumber
                     }}
                     onPDFGenerated={onPDFGenerated}
+                    onSubmit={onSubmit}
                 />
             )}
         </div>

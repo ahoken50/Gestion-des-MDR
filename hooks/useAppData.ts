@@ -146,14 +146,18 @@ export const useAppData = () => {
 
     const allRequests = [...firebaseRequests, ...pickupRequests];
 
-    const handleAddRequest = async (newRequest: Omit<PickupRequest, 'id' | 'status'>) => {
+    const handleAddRequest = async (newRequest: Omit<PickupRequest, 'id' | 'status'>): Promise<number | undefined> => {
         try {
+            let requestNumber: number | undefined;
+
             if (isFirebaseEnabled) {
                 const firebaseRequest: Omit<FirebasePickupRequest, 'id' | 'requestNumber' | 'createdAt' | 'updatedAt'> = {
                     ...newRequest,
                     status: 'pending',
                 };
-                await firebaseService.addPickupRequest(firebaseRequest);
+                const result = await firebaseService.addPickupRequest(firebaseRequest);
+                requestNumber = result.requestNumber;
+
                 const fbRequests = await firebaseService.getPickupRequests();
                 setFirebaseRequests(fbRequests);
             } else {
@@ -175,9 +179,11 @@ export const useAppData = () => {
             setInventory(updatedInventory);
             setCurrentView('history');
             toast.success('Demande créée avec succès !');
+            return requestNumber;
         } catch (error) {
             console.error('Error saving request:', error);
             toast.error('Erreur lors de la sauvegarde de la demande');
+            return undefined;
         }
     };
 

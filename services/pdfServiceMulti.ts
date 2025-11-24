@@ -23,20 +23,7 @@ export class PDFService {
     });
   }
 
-  private async getQRCode(text: string): Promise<string> {
-    try {
-      const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(text)}`);
-      const blob = await response.blob();
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
-    } catch (e) {
-      console.error("Failed to generate QR code", e);
-      return '';
-    }
-  }
+
 
   private addHeader(title: string): void {
     // Professional Header Background
@@ -104,11 +91,11 @@ export class PDFService {
       this.doc.text(`BC #: ${request.bcNumber}`, 14, y);
     }
 
-    // Right Column: Request Details & QR Code
-    // Moved details to x=70 to give more space for QR code and prevent overlap
+    // Right Column: Request Details
+    // Moved details back to right as QR code is removed
     y = 50;
-    const detailsX = 70;
-    const detailsValueX = 100;
+    const detailsX = 115; // Moved left slightly
+    const detailsValueX = 160; // Increased gap to 45mm
 
     this.doc.setFontSize(10);
     this.doc.setTextColor(100, 100, 100);
@@ -122,7 +109,7 @@ export class PDFService {
 
     const details = [
       { label: "Date:", value: new Date(request.date).toLocaleDateString('fr-CA') },
-      { label: "NO DE REQUÊTE:", value: request.requestNumber ? `#${request.requestNumber}` : request.id },
+      { label: "NO DE REQUÊTE:", value: request.requestNumber ? `#${request.requestNumber}` : request.id, isBold: true },
       { label: "Lieux:", value: request.totalLocations.toString() },
       { label: "Total Items:", value: request.totalItems.toString() }
     ];
@@ -130,19 +117,15 @@ export class PDFService {
     details.forEach(detail => {
       this.doc.setFont('helvetica', 'bold');
       this.doc.text(detail.label, detailsX, y);
-      this.doc.setFont('helvetica', 'normal');
+
+      if (detail.isBold) {
+        this.doc.setFont('helvetica', 'bold');
+      } else {
+        this.doc.setFont('helvetica', 'normal');
+      }
       this.doc.text(detail.value, detailsValueX, y);
       y += 5;
     });
-
-    // QR Code - Positioned to the right of details
-    const qrId = request.requestNumber ? `#${request.requestNumber}` : request.id;
-    const qrText = `DEMANDE: ${qrId}\nDATE: ${new Date(request.date).toLocaleDateString('fr-CA')}\nCONTACT: ${request.contactName}\nITEMS: ${request.totalItems}`;
-    const qrCodeUrl = await this.getQRCode(qrText);
-    if (qrCodeUrl) {
-      // Position at top of details section (y=50), right aligned (x=160)
-      this.doc.addImage(qrCodeUrl, 'PNG', 160, 50, 25, 25);
-    }
 
     // Notes Section
     // Ensure notes start below details and QR code

@@ -3,20 +3,7 @@ import autoTable from 'jspdf-autotable';
 import type { PickupRequest } from '../types';
 import logoValdor from '../src/assets/logo_valdor.png';
 
-const getQRCode = async (text: string): Promise<string> => {
-  try {
-    const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(text)}`);
-    const blob = await response.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.readAsDataURL(blob);
-    });
-  } catch (e) {
-    console.error("Failed to generate QR code", e);
-    return '';
-  }
-};
+// QR Code function removed
 
 export const generatePdf = async (request: PickupRequest) => {
   const doc = new jsPDF();
@@ -98,11 +85,11 @@ export const generatePdf = async (request: PickupRequest) => {
     y += 5;
   });
 
-  // QR Code - Positioned below details to avoid overlap
-  const qrCodeUrl = await getQRCode(request.id);
-  if (qrCodeUrl) {
-    doc.addImage(qrCodeUrl, 'PNG', 170, 78, 25, 25);
-  }
+  // QR Code removed as requested
+  // const qrCodeUrl = await getQRCode(request.id);
+  // if (qrCodeUrl) {
+  //   doc.addImage(qrCodeUrl, 'PNG', 170, 78, 25, 25);
+  // }
 
   // --- Items Table ---
   y = 85;

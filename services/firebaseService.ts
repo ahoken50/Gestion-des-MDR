@@ -83,30 +83,8 @@ class FirebaseService {
       return newRequestNumber;
 
     } catch (error) {
-      console.error('Error getting next request number with transaction:', error);
-      // Fallback to timestamp-based ID if transaction fails
-      return Date.now();
-    }
-  }
-
-  // Ajouter une nouvelle demande
-  async addPickupRequest(request: Omit<FirebasePickupRequest, 'id' | 'requestNumber' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    const requestNumber = await this.getNextRequestNumber();
-    const docRef = await addDoc(collection(db, 'pickupRequests'), {
-      ...request,
-      requestNumber,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-    return docRef.id;
-  }
-
-  // Mettre à jour une demande
-  async updatePickupRequest(id: string, updates: Partial<FirebasePickupRequest>): Promise<void> {
-    const docRef = doc(db, 'pickupRequests', id);
-    await updateDoc(docRef, {
       ...updates,
-      updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp()
     });
   }
 
