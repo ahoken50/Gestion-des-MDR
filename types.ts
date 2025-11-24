@@ -10,6 +10,7 @@ export interface RequestedItem {
   name: string;
   quantity: number;
   location?: string;
+  replaceBin?: boolean;
 }
 
 export interface PickupRequest {

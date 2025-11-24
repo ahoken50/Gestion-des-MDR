@@ -225,10 +225,14 @@ export class PDFService {
 
       y += 4; // Spacing before table
 
-      const tableData: string[][] = items.map(item => [item.name, item.quantity.toString()]);
+      const tableData: string[][] = items.map(item => [
+        item.name,
+        item.quantity.toString(),
+        item.replaceBin ? 'OUI' : 'NON'
+      ]);
 
       autoTable(this.doc, {
-        head: [['DESCRIPTION DU CONTENANT', 'QUANTITÉ']],
+        head: [['DESCRIPTION DU CONTENANT', 'QUANTITÉ', 'REMPLACEMENT']],
         body: tableData,
         startY: y,
         theme: 'grid',
@@ -248,8 +252,9 @@ export class PDFService {
           borderBottomColor: [30, 58, 138]
         },
         columnStyles: {
-          0: { cellWidth: 150 },
-          1: { halign: 'center', cellWidth: 32, fontStyle: 'bold' }
+          0: { cellWidth: 120 },
+          1: { halign: 'center', cellWidth: 32, fontStyle: 'bold' },
+          2: { halign: 'center', cellWidth: 32 }
         },
         margin: { left: 14, right: 14, bottom: bottomMargin },
         alternateRowStyles: { fillColor: [250, 250, 250] },

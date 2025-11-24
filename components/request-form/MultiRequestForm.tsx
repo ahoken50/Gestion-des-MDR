@@ -54,7 +54,7 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
         }
     }, [inventory, selectedItems]);
 
-    const handleAddMultiItem = (item: InventoryItem, quantity: number) => {
+    const handleAddMultiItem = (item: InventoryItem, quantity: number, replaceBin: boolean = false) => {
         const existingIndex = selectedItems.findIndex(
             selected => selected.id === item.id || (selected.name === item.name && selected.location === item.location)
         );
@@ -62,13 +62,15 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
         if (existingIndex >= 0) {
             const newSelected = [...selectedItems];
             newSelected[existingIndex].quantity = quantity;
+            newSelected[existingIndex].replaceBin = replaceBin;
             setSelectedItems(newSelected);
         } else {
             const newItem: SelectedItem = {
                 id: item.id,
                 name: item.name,
                 quantity,
-                location: item.location
+                location: item.location,
+                replaceBin
             };
             setSelectedItems([...selectedItems, newItem]);
         }
@@ -229,7 +231,7 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
                                                     const quantity = parseInt(e.target.value, 10) || 0;
                                                     if (quantity > 0) {
                                                         const maxQuantity = item.id.startsWith('custom-') ? Infinity : item.quantity;
-                                                        handleAddMultiItem(item, Math.min(quantity, maxQuantity));
+                                                        handleAddMultiItem(item, Math.min(quantity, maxQuantity), selectedItem?.replaceBin || false);
                                                     } else if (selectedItem) {
                                                         handleRemoveMultiItem(item.id);
                                                     }
@@ -239,6 +241,23 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
                                             <span className="text-sm text-gray-500 dark:text-gray-400">
                                                 / {item.quantity}
                                             </span>
+                                        </div>
+                                        <div className="mt-2 flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                id={`replace-${item.id}`}
+                                                checked={selectedItem?.replaceBin || false}
+                                                onChange={e => {
+                                                    if (selectedItem) {
+                                                        handleAddMultiItem(item, selectedItem.quantity, e.target.checked);
+                                                    }
+                                                }}
+                                                disabled={!selectedItem}
+                                                className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                            />
+                                            <label htmlFor={`replace-${item.id}`} className="ml-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer">
+                                                Remplacement requis
+                                            </label>
                                         </div>
                                     </div>
                                 );
@@ -288,7 +307,12 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
                                         <div key={item.id} className="flex justify-between items-center text-sm">
                                             <span className="text-gray-700 dark:text-gray-300">{item.name}</span>
                                             <div className="flex items-center gap-3">
-                                                <span className="font-medium dark:text-gray-200">Quantité: {item.quantity}</span>
+                                                <div className="text-right">
+                                                    <div className="font-medium dark:text-gray-200">Quantité: {item.quantity}</div>
+                                                    {item.replaceBin && (
+                                                        <div className="text-xs text-orange-600 font-medium dark:text-orange-400">Remplacement</div>
+                                                    )}
+                                                </div>
                                                 <button
                                                     onClick={() => handleRemoveMultiItem(item.id)}
                                                     className="text-red-600 hover:text-red-800 transition-colors dark:text-red-400 dark:hover:text-red-300"

@@ -3,6 +3,7 @@ export interface SelectedItem {
   name: string;
   quantity: number;
   location: string;
+  replaceBin?: boolean;
 }
 
 export interface GroupedItemsByLocation {

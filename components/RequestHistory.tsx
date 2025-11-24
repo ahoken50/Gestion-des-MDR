@@ -112,6 +112,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
             let requestForPdf = request as any;
             if (!requestForPdf.groupedItems) {
                 // Reconstruct groupedItems from the flat items list
+                // Ensure items are cast correctly to include replaceBin
                 const groupedItems = groupItemsByLocation(request.items as SelectedItem[]);
 
                 // Create a temporary object that matches PickupRequestPDF interface
@@ -126,7 +127,8 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                     date: request.date,
                     id: request.id,
                     notes: request.notes,
-                    bcNumber: request.bcNumber
+                    bcNumber: request.bcNumber,
+                    locationComments: request.locationComments
                 };
             }
 
