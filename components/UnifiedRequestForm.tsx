@@ -51,7 +51,8 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                 id: item.name, // Using name as ID for simplicity in single request
                 name: item.name,
                 quantity: item.quantity,
-                location: data.location
+                location: data.location,
+                replaceBin: item.replaceBin
             }));
 
             const pdfRequest = createPickupRequestPDF(selectedItems, {

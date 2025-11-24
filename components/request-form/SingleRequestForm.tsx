@@ -59,7 +59,7 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
         setRequestedItems(requestedItems.filter((_, i) => i !== index));
     };
 
-    const handleItemChange = (index: number, field: 'name' | 'quantity', value: string | number) => {
+    const handleItemChange = (index: number, field: 'name' | 'quantity' | 'replaceBin', value: string | number | boolean) => {
         const newItems = [...requestedItems];
         if (field === 'name' && typeof value === 'string') {
             if (newItems.some((item, i) => i !== index && item.name === value)) {
@@ -71,6 +71,8 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
             const inventoryItem = inventory.find(i => i.name === newItems[index].name && i.location === location);
             const maxQuantity = inventoryItem ? inventoryItem.quantity : Infinity;
             newItems[index].quantity = Math.max(1, Math.min(value, maxQuantity));
+        } else if (field === 'replaceBin' && typeof value === 'boolean') {
+            newItems[index].replaceBin = value;
         }
         setRequestedItems(newItems);
     };
@@ -137,6 +139,18 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
                                 className="w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                 required
                             />
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id={`replace-${index}`}
+                                    checked={item.replaceBin || false}
+                                    onChange={e => handleItemChange(index, 'replaceBin', e.target.checked)}
+                                    className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                                />
+                                <label htmlFor={`replace-${index}`} className="text-sm text-gray-700 dark:text-gray-300 select-none">
+                                    Remplacer
+                                </label>
+                            </div>
                             {inventoryItem && <span className="text-sm text-gray-500 dark:text-gray-400">(Max: {maxQuantity})</span>}
                             <button type="button" onClick={() => handleRemoveItem(index)} className="text-red-600 hover:text-red-800 transition-colors dark:text-red-400 dark:hover:text-red-300">
                                 <TrashIcon className="w-5 h-5" />
