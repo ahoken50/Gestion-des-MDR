@@ -115,6 +115,15 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                 // Ensure items are cast correctly to include replaceBin
                 const groupedItems = groupItemsByLocation(request.items as SelectedItem[]);
 
+                // Inject location comments if available
+                if (request.locationComments) {
+                    Object.keys(groupedItems).forEach(location => {
+                        if (request.locationComments && request.locationComments[location]) {
+                            groupedItems[location].comments = request.locationComments[location];
+                        }
+                    });
+                }
+
                 // Create a temporary object that matches PickupRequestPDF interface
                 requestForPdf = {
                     ...request,

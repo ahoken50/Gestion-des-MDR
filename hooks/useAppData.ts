@@ -223,7 +223,8 @@ export const useAppData = () => {
                         id: item.id,
                         name: item.name,
                         quantity: item.quantity,
-                        location: item.location
+                        location: item.location,
+                        replaceBin: item.replaceBin
                     });
                 });
             });
