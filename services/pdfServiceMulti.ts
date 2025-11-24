@@ -89,6 +89,12 @@ export class PDFService {
     this.doc.text(request.contactPhone, 14, y);
     y += 5;
 
+    // Add City Address
+    this.doc.text("835, 2e Avenue", 14, y);
+    y += 5;
+    this.doc.text("Val-d'Or (Québec) J9P 1W7", 14, y);
+    y += 5;
+
     if (request.contactAddress) {
       this.doc.text(request.contactAddress, 14, y);
       y += 5;
@@ -99,10 +105,10 @@ export class PDFService {
     }
 
     // Right Column: Request Details & QR Code
-    // Moved details to x=90 to give more space for QR code and prevent overlap
+    // Moved details to x=70 to give more space for QR code and prevent overlap
     y = 50;
-    const detailsX = 90;
-    const detailsValueX = 120;
+    const detailsX = 70;
+    const detailsValueX = 100;
 
     this.doc.setFontSize(10);
     this.doc.setTextColor(100, 100, 100);
