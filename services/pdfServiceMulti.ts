@@ -150,6 +150,9 @@ export class PDFService {
 
   private addItemsTable(groupedItems: GroupedItemsByLocation): number {
     let y = (this.doc as any).contactInfoFinalY || 110;
+    const pageHeight = this.doc.internal.pageSize.height;
+    const footerHeight = 20; // Space reserved for footer
+    const bottomMargin = 20; // Margin from bottom of page
 
     Object.entries(groupedItems).forEach(([location, locationData], index) => {
       const items = Array.isArray(locationData) ? locationData : locationData.items;
@@ -157,30 +160,39 @@ export class PDFService {
 
       if (items.length === 0) return;
 
-      if (y > 240) {
+      // Calculate required height for the header block
+      let headerHeight = 15; // Base header height (Title + spacing)
+      const addressInfo = LOCATION_ADDRESSES[location];
+      if (addressInfo) headerHeight += 8;
+      if (comments) headerHeight += 8;
+
+      // Check if we need a page break before starting this location
+      // We need space for the header + at least one row of the table (approx 15mm)
+      if (y + headerHeight + 15 > pageHeight - bottomMargin) {
         this.doc.addPage();
         y = 20;
       }
 
-      y += 10;
+      y += 5; // Small gap before header
 
       // Location Header
       this.doc.setFillColor(230, 240, 255);
-      this.doc.rect(14, y - 6, 182, 10, 'F');
+      // Draw background rect for title
+      this.doc.rect(14, y, 182, 8, 'F');
 
       this.doc.setTextColor(30, 58, 138);
       this.doc.setFontSize(11);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text(`LIEU ${index + 1}: ${location.toUpperCase()}`, 18, y);
+      this.doc.text(`LIEU ${index + 1}: ${location.toUpperCase()}`, 18, y + 5.5);
 
-      const addressInfo = LOCATION_ADDRESSES[location];
+      y += 8; // Move past title rect
+
       if (addressInfo) {
-        y += 3; // Add spacing before address
+        y += 5;
         this.doc.setFontSize(9);
         this.doc.setFont('helvetica', 'normal');
         this.doc.setTextColor(100, 100, 100);
-        this.doc.text(addressInfo.fullAddress, 18, y + 5);
-        y += 5;
+        this.doc.text(addressInfo.fullAddress, 18, y);
       }
 
       if (comments) {
@@ -191,7 +203,7 @@ export class PDFService {
         this.doc.text(`NOTE: ${comments}`, 18, y);
       }
 
-      y += 4;
+      y += 4; // Spacing before table
 
       const tableData: string[][] = items.map(item => [item.name, item.quantity.toString()]);
 
@@ -219,8 +231,15 @@ export class PDFService {
           0: { cellWidth: 150 },
           1: { halign: 'center', cellWidth: 32, fontStyle: 'bold' }
         },
-        margin: { left: 14, right: 14 },
-        alternateRowStyles: { fillColor: [250, 250, 250] }
+        margin: { left: 14, right: 14, bottom: bottomMargin },
+        alternateRowStyles: { fillColor: [250, 250, 250] },
+        // Important: If table breaks page, this ensures header is repeated or handled correctly
+        showHead: 'everyPage',
+        didDrawPage: (data) => {
+          // Optional: Add footer or header on new pages if needed, 
+          // but our main footer is handled separately.
+          // We just need to ensure we don't write over the footer area.
+        }
       });
 
       // Correctly update y for the next iteration
@@ -232,9 +251,11 @@ export class PDFService {
 
   private addSummary(request: PickupRequestPDF, lastY: number): void {
     let y = lastY + 10;
+    const pageHeight = this.doc.internal.pageSize.height;
+    const bottomMargin = 30; // Larger margin for summary to ensure it doesn't hit footer
 
     // Keep summary on same page if possible, else new page
-    if (y > 250) {
+    if (y + 20 > pageHeight - bottomMargin) {
       this.doc.addPage();
       y = 20;
     }
