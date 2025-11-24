@@ -103,15 +103,39 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     };
 
     const handleRegeneratePDF = async (request: PickupRequest | FirebasePickupRequest) => {
-        const isMultiLocation = 'groupedItems' in request || ('items' in request && request.items.length > 0 && 'location' in request.items[0]);
-
-        if (isMultiLocation && 'groupedItems' in request) {
+        // Always try to use the new PDF service first
+        // Check if we have items to generate a PDF for
+        if (request.items && request.items.length > 0) {
             const pdfService = new PDFService();
-            await pdfService.generatePickupRequestPDF(request as any);
+
+            // If groupedItems is missing (legacy/history data), reconstruct it
+            let requestForPdf = request as any;
+            if (!requestForPdf.groupedItems) {
+                // Reconstruct groupedItems from the flat items list
+                const groupedItems = groupItemsByLocation(request.items as SelectedItem[]);
+
+                // Create a temporary object that matches PickupRequestPDF interface
+                requestForPdf = {
+                    ...request,
+                    groupedItems,
+                    totalItems: (request.items as any[]).reduce((sum: number, i: any) => sum + i.quantity, 0),
+                    totalLocations: Object.keys(groupedItems).length,
+                    // Ensure other required fields are present
+                    contactName: request.contactName || 'N/A',
+                    contactPhone: request.contactPhone || 'N/A',
+                    date: request.date,
+                    id: request.id,
+                    notes: request.notes,
+                    bcNumber: request.bcNumber
+                };
+            }
+
+            await pdfService.generatePickupRequestPDF(requestForPdf);
 
             const requestNumber = (request as FirebasePickupRequest).requestNumber || request.id.substring(0, 8);
             pdfService.save(`demande_ramassage_${requestNumber}.pdf`);
         } else {
+            // Fallback only if absolutely necessary (shouldn't happen for valid requests)
             await generatePdf(request as PickupRequest);
         }
     };

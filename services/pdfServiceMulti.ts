@@ -119,13 +119,17 @@ export class PDFService {
       y += 5;
     });
 
-    // QR Code - Positioned below details to avoid overlap
+    // QR Code - Positioned to the right of details
     const qrCodeUrl = await this.getQRCode(request.id);
     if (qrCodeUrl) {
-      this.doc.addImage(qrCodeUrl, 'PNG', 170, 78, 25, 25);
+      // Position at top of details section (y=50), right aligned (x=170)
+      this.doc.addImage(qrCodeUrl, 'PNG', 170, 50, 25, 25);
     }
 
     // Notes Section
+    // Ensure notes start below details and QR code
+    // Details end approx y=75. QR ends y=75.
+    // Start notes at y=85 to have good spacing.
     if (request.notes && request.notes.trim()) {
       y = 85;
       this.doc.setFillColor(245, 247, 250);
@@ -144,7 +148,7 @@ export class PDFService {
 
       (this.doc as any).contactInfoFinalY = y + 20;
     } else {
-      (this.doc as any).contactInfoFinalY = 80;
+      (this.doc as any).contactInfoFinalY = 85;
     }
   }
 
