@@ -22,8 +22,8 @@ service cloud.firestore {
       // Mise à jour: accès public
       allow update: if request.resource.data.requestNumber is number;
       
-      // Suppression: accès public (peut être restreint plus tard)
-      allow delete: if true;
+      // Suppression: interdite pour le moment (protection des données)
+      allow delete: if false;
     }
     
     // Règles pour l'inventaire - Accès public
