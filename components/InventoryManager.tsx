@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, memo, useEffect } from 'react';
 import type { InventoryItem } from '../types';
 import { LOCATIONS, INITIAL_INVENTORY } from '../constants';
 import { PlusIcon, TrashIcon } from './icons';
@@ -45,30 +45,127 @@ const AddItemForm: React.FC<{ onAddItem: (item: Omit<InventoryItem, 'id'>) => vo
     );
 };
 
+interface LocationInventorySectionProps {
+    location: string;
+    items: InventoryItem[];
+    onQuantityChange: (id: string, newQuantity: number) => void;
+    onDelete: (id: string) => void;
+}
+
+// Memoized Location Section Component with Custom Comparator
+const LocationInventorySection = memo(({
+    location,
+    items,
+    onQuantityChange,
+    onDelete
+}: LocationInventorySectionProps) => {
+    return (
+        <div className="card p-6 slide-up">
+            <div className="card-header p-4 -m-6 mb-6">
+                <h2 className="text-2xl font-bold gradient-text">📍 {location}</h2>
+            </div>
+            {items.length > 0 ? (
+                <div className="table-container">
+                    <table className="table">
+                        <thead className="table-header">
+                            <tr>
+                                <th scope="col" className="table-header-cell">Contenant</th>
+                                <th scope="col" className="table-header-cell w-32">Quantité (Vide)</th>
+                                <th scope="col" className="table-header-cell w-20 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {items.map(item => (
+                                <tr key={item.id} className="table-row">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <input
+                                            type="number"
+                                            value={item.quantity}
+                                            onChange={(e) => onQuantityChange(item.id, parseInt(e.target.value, 10) || 0)}
+                                            className="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-1"
+                                        />
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button onClick={() => onDelete(item.id)} className="text-red-600 hover:text-red-800 transition-colors">
+                                            <TrashIcon className="w-5 h-5" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            ) : (
+                <p className="text-gray-500 italic">Aucun contenant dans l'inventaire pour ce lieu.</p>
+            )}
+        </div>
+    );
+}, (prevProps, nextProps) => {
+    // Custom comparison to avoid re-renders when items are structurally equal but different array references
+    if (prevProps.location !== nextProps.location) return false;
+    // Handlers should be referentially stable, but we check them anyway
+    if (prevProps.onQuantityChange !== nextProps.onQuantityChange) return false;
+    if (prevProps.onDelete !== nextProps.onDelete) return false;
+
+    // Check items equality
+    if (prevProps.items === nextProps.items) return true;
+    if (prevProps.items.length !== nextProps.items.length) return false;
+
+    // Check referential equality of each item
+    // Since items are objects, and updating one creates a new reference for that one,
+    // unchanged items maintain their reference.
+    for (let i = 0; i < prevProps.items.length; i++) {
+        if (prevProps.items[i] !== nextProps.items[i]) {
+            return false;
+        }
+    }
+
+    return true;
+});
+
+LocationInventorySection.displayName = 'LocationInventorySection';
+
 const InventoryManager: React.FC<InventoryManagerProps> = ({ inventory, onUpdateInventory }) => {
     const [showAddForm, setShowAddForm] = useState(false);
 
-    const handleAddItem = (newItem: Omit<InventoryItem, 'id'>) => {
-        const itemExists = inventory.some(item => item.name.toLowerCase() === newItem.name.toLowerCase() && item.location === newItem.location);
+    // Keep a ref to inventory to use in stable callbacks without dependency
+    const inventoryRef = useRef(inventory);
+
+    // Update ref when inventory changes
+    useEffect(() => {
+        inventoryRef.current = inventory;
+    }, [inventory]);
+
+    // Stable handler for adding items
+    const handleAddItem = useCallback((newItem: Omit<InventoryItem, 'id'>) => {
+        const currentInventory = inventoryRef.current;
+        const itemExists = currentInventory.some(item => item.name.toLowerCase() === newItem.name.toLowerCase() && item.location === newItem.location);
         if (itemExists) {
             alert("Ce type de contenant existe déjà pour ce lieu.");
             return;
         }
         const newInventoryItem: InventoryItem = { ...newItem, id: Date.now().toString() };
-        onUpdateInventory([...inventory, newInventoryItem]);
+
+        onUpdateInventory([...currentInventory, newInventoryItem]);
         setShowAddForm(false);
-    };
+    }, [onUpdateInventory]);
 
-    const handleDeleteItem = (id: string) => {
+    // Stable handler for deleting items
+    const handleDeleteItem = useCallback((id: string) => {
+        const currentInventory = inventoryRef.current;
         if (window.confirm("Êtes-vous sûr de vouloir supprimer ce type de contenant?")) {
-            onUpdateInventory(inventory.filter(item => item.id !== id));
+            onUpdateInventory(currentInventory.filter(item => item.id !== id));
         }
-    };
+    }, [onUpdateInventory]);
 
-    const handleQuantityChange = (id: string, newQuantity: number) => {
-        onUpdateInventory(inventory.map(item => item.id === id ? { ...item, quantity: Math.max(0, newQuantity) } : item));
-    };
+    // Stable handler for quantity changes - this is the high frequency one!
+    const handleQuantityChange = useCallback((id: string, newQuantity: number) => {
+        const currentInventory = inventoryRef.current;
+        onUpdateInventory(currentInventory.map(item => item.id === id ? { ...item, quantity: Math.max(0, newQuantity) } : item));
+    }, [onUpdateInventory]);
 
+    // Calculate inventoryByLocation on every render (cheap), rely on Child's memo to prevent re-render
     const inventoryByLocation = LOCATIONS.map(location => ({
         location,
         items: inventory.filter(item => item.location === location),
@@ -77,46 +174,13 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ inventory, onUpdate
     return (
         <div className="space-y-8">
             {inventoryByLocation.map(({ location, items }) => (
-                <div key={location} className="card p-6 slide-up">
-                    <div className="card-header p-4 -m-6 mb-6">
-                        <h2 className="text-2xl font-bold gradient-text">📍 {location}</h2>
-                    </div>
-                    {items.length > 0 ? (
-                        <div className="table-container">
-                            <table className="table">
-                                <thead className="table-header">
-                                    <tr>
-                                        <th scope="col" className="table-header-cell">Contenant</th>
-                                        <th scope="col" className="table-header-cell w-32">Quantité (Vide)</th>
-                                        <th scope="col" className="table-header-cell w-20 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {items.map(item => (
-                                        <tr key={item.id} className="table-row">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <input
-                                                    type="number"
-                                                    value={item.quantity}
-                                                    onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value, 10) || 0)}
-                                                    className="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-1"
-                                                />
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button onClick={() => handleDeleteItem(item.id)} className="text-red-600 hover:text-red-800 transition-colors">
-                                                    <TrashIcon className="w-5 h-5" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <p className="text-gray-500 italic">Aucun contenant dans l'inventaire pour ce lieu.</p>
-                    )}
-                </div>
+                <LocationInventorySection
+                    key={location}
+                    location={location}
+                    items={items}
+                    onQuantityChange={handleQuantityChange}
+                    onDelete={handleDeleteItem}
+                />
             ))}
             <div className="mt-6 bg-white p-6 rounded-lg shadow-lg">
                 <div className="flex justify-between items-center mb-4">
