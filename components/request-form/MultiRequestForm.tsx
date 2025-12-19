@@ -349,8 +349,9 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
                                                 <button
                                                     onClick={() => handleRemoveMultiItem(item.id)}
                                                     className="text-red-600 hover:text-red-800 transition-colors dark:text-red-400 dark:hover:text-red-300"
+                                                    aria-label={`Supprimer ${item.name}`}
                                                 >
-                                                    <TrashIcon className="w-4 h-4" />
+                                                    <TrashIcon className="w-4 h-4" aria-hidden="true" />
                                                 </button>
                                             </div>
                                         </div>
