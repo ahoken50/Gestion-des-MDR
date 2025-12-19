@@ -136,11 +136,6 @@ class FirebaseService {
     return null;
   }
 
-  // Supprimer une demande
-  async deletePickupRequest(id: string): Promise<void> {
-    await deleteDoc(doc(db, 'pickupRequests', id));
-  }
-
   // Ajouter une image à une demande
   async addImageToRequest(requestId: string, file: File): Promise<string> {
     const storageRef = ref(storage, `requests/${requestId}/${Date.now()}_${file.name}`);
