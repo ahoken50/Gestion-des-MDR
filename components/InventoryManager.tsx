@@ -87,7 +87,7 @@ const LocationInventorySection = memo(({
                                         />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button onClick={() => onDelete(item.id)} className="text-red-600 hover:text-red-800 transition-colors">
+                                        <button onClick={() => onDelete(item.id)} className="text-red-600 hover:text-red-800 transition-colors" aria-label={`Supprimer ${item.name}`}>
                                             <TrashIcon className="w-5 h-5" />
                                         </button>
                                     </td>
