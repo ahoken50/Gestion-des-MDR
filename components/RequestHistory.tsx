@@ -294,6 +294,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                             onClick={handleExportExcel}
                             className="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition-colors flex items-center gap-1 text-sm"
                             title="Exporter en Excel"
+                            aria-label="Exporter en Excel"
                         >
                             <ArrowDownTrayIcon className="w-4 h-4" />
                             <span className="hidden sm:inline">Excel</span>
@@ -364,6 +365,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                                     rel="noopener noreferrer"
                                                     className="ml-2 inline-block text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                                                     title="Voir la facture"
+                                                    aria-label="Voir la facture"
                                                 >
                                                     <PaperClipIcon className="w-4 h-4" />
                                                 </a>
@@ -403,6 +405,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                                         onClick={() => handleCancelRequest(request.id)}
                                                         className="text-red-600 hover:text-red-800 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-gray-700"
                                                         title="Annuler la demande"
+                                                        aria-label="Annuler la demande"
                                                     >
                                                         <XMarkIcon className="w-4 h-4" />
                                                     </button>
