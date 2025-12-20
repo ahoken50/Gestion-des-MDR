@@ -35,14 +35,20 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             return;
         }
 
+        // Basic Input Sanitization
+        const sanitizedContactName = contactName.replace(/[<>]/g, '').trim();
+        const sanitizedContactPhone = contactPhone.replace(/[<>]/g, '').trim();
+        const sanitizedNotes = notes.replace(/[<>]/g, '').trim();
+        const sanitizedBcNumber = bcNumber.replace(/[<>]/g, '').trim();
+
         const requestNumber = await onSubmit({
-            bcNumber: bcNumber.trim() || undefined,
+            bcNumber: sanitizedBcNumber || undefined,
             location: data.location,
             items: data.items,
             date: new Date().toISOString(),
-            contactName,
-            contactPhone,
-            notes,
+            contactName: sanitizedContactName,
+            contactPhone: sanitizedContactPhone,
+            notes: sanitizedNotes,
         });
 
         // Generate PDF for single request

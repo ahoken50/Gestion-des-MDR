@@ -1,9 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Règles pour les compteurs - Accès public pour permettre la numérotation
+    // Règles pour les compteurs - Protection contre les modifications arbitraires
     match /counters/{document} {
-      allow read, write: if true;
+      allow read: if true;
+      // Création seulement si n'existe pas et valeur initiale 1
+      allow create: if request.resource.data.value == 1;
+      // Mise à jour uniquement pour incrémenter de 1 (protection contre reset)
+      allow update: if request.resource.data.value == resource.data.value + 1;
+      allow delete: if false;
     }
     
     // Règles pour les demandes de ramassage - Accès public
@@ -26,10 +31,14 @@ service cloud.firestore {
       allow delete: if false;
     }
     
-    // Règles pour l'inventaire - Accès public
+    // Règles pour l'inventaire - Accès public avec validation de type
     match /inventory/{itemId} {
-      // Lecture et écriture: accès public
-      allow read, write: if true;
+      // Lecture: accès public
+      allow read: if true;
+
+      // Écriture: validation basique des types
+      allow write: if request.resource.data.name is string
+        && request.resource.data.quantity is number;
     }
   }
 }
@@ -43,6 +52,13 @@ service firebase.storage {
       allow read: if true;
       
       // Écriture: accès public avec limite de taille (10MB)
+      allow write: if request.resource.size < 10 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Factures - Validation basique
+    match /invoices/{requestId}/{allPaths=**} {
+      allow read: if true;
       allow write: if request.resource.size < 10 * 1024 * 1024;
     }
   }

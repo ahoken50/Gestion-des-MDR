@@ -130,7 +130,7 @@ export const useAppData = () => {
                         console.error('Error loading/syncing data from Firebase:', error);
                         // Fallback to local data
                         const savedInventory = localStorage.getItem('inventory');
-                        let localInventory = savedInventory ? JSON.parse(savedInventory) : INITIAL_INVENTORY;
+                        const localInventory = savedInventory ? JSON.parse(savedInventory) : INITIAL_INVENTORY;
                         setInventory(localInventory);
                     }
                 } else {

@@ -162,15 +162,25 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
                     replaceBin: item.replaceBin
                 }));
 
+                // Basic Sanitization
+                const sanitizedName = contactInfo.name.replace(/[<>]/g, '').trim();
+                const sanitizedPhone = contactInfo.phone.replace(/[<>]/g, '').trim();
+                const sanitizedNotes = contactInfo.notes.replace(/[<>]/g, '').trim();
+                const sanitizedBc = contactInfo.bcNumber.replace(/[<>]/g, '').trim();
+                const sanitizedLocationComments = Object.entries(locationComments).reduce((acc, [key, val]) => {
+                    acc[key] = val.replace(/[<>]/g, '').trim();
+                    return acc;
+                }, {} as Record<string, string>);
+
                 requestNumber = await onSubmit({
-                    bcNumber: contactInfo.bcNumber.trim() || undefined,
+                    bcNumber: sanitizedBc || undefined,
                     location: Object.keys(groupedItemsWithComments).join(', '),
                     items: allItems,
                     date: new Date().toISOString(),
-                    contactName: contactInfo.name,
-                    contactPhone: contactInfo.phone,
-                    notes: contactInfo.notes.trim() || undefined,
-                    locationComments: locationComments
+                    contactName: sanitizedName,
+                    contactPhone: sanitizedPhone,
+                    notes: sanitizedNotes || undefined,
+                    locationComments: sanitizedLocationComments
                 });
             }
 
