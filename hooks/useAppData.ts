@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { firebaseService, type FirebasePickupRequest } from '../services/firebaseService';
 import type { InventoryItem, PickupRequest, RequestedItem } from '../types';
 import type { PickupRequestPDF } from '../types-pdf';
@@ -39,6 +39,12 @@ export const useAppData = () => {
     const [firebaseRequests, setFirebaseRequests] = useState<FirebasePickupRequest[]>([]);
     const [isFirebaseEnabled, setIsFirebaseEnabled] = useState(false);
 
+    // Keep a ref to inventory for beforeunload saving
+    const inventoryRef = useRef(inventory);
+    useEffect(() => {
+        inventoryRef.current = inventory;
+    }, [inventory]);
+
     // Persist inventory
     useEffect(() => {
         const saveInventory = async () => {
@@ -53,8 +59,21 @@ export const useAppData = () => {
                 localStorage.setItem('inventory', JSON.stringify(inventory));
             }
         };
-        saveInventory();
+
+        // Debounce saving
+        const timeoutId = setTimeout(saveInventory, 1000);
+
+        return () => clearTimeout(timeoutId);
     }, [inventory, isFirebaseEnabled]);
+
+    // Ensure we save to localStorage on tab close to prevent data loss
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            localStorage.setItem('inventory', JSON.stringify(inventoryRef.current));
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, []);
 
     // Persist local requests
     useEffect(() => {
