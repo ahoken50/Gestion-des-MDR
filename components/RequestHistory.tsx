@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import type { PickupRequest } from '../types';
 import { FirebasePickupRequest } from '../services/firebaseService';
 import { generatePdf } from '../services/pdfService';
@@ -9,6 +9,145 @@ import type { SelectedItem } from '../types-pdf';
 import { LOCATIONS } from '../constants';
 import * as XLSX from 'xlsx';
 import CostDistributionModal from './CostDistributionModal';
+
+const getStatusBadge = (status: string) => {
+    switch (status) {
+        case 'pending':
+            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200 dark:ring-yellow-900';
+        case 'in_progress':
+            return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 dark:ring-blue-900';
+        case 'completed':
+            return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200 dark:ring-green-900';
+        case 'cancelled':
+            return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200 dark:ring-red-900';
+        default:
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    }
+};
+
+const getStatusLabel = (status: string) => {
+    switch (status) {
+        case 'pending': return 'En attente';
+        case 'in_progress': return 'En cours';
+        case 'completed': return 'Complétée';
+        case 'cancelled': return 'Annulée';
+        default: return status;
+    }
+};
+
+interface RequestHistoryRowProps {
+    request: PickupRequest | FirebasePickupRequest;
+    onViewDetails: (request: PickupRequest | FirebasePickupRequest) => void;
+    onRegeneratePDF: (request: PickupRequest | FirebasePickupRequest) => void;
+    onCancel: (requestId: string) => void;
+    onOpenCostModal: (request: PickupRequest | FirebasePickupRequest) => void;
+    onStatusChange: (requestId: string, status: 'pending' | 'completed' | 'in_progress' | 'cancelled') => void;
+}
+
+const RequestHistoryRow = React.memo(({
+    request,
+    onViewDetails,
+    onRegeneratePDF,
+    onCancel,
+    onOpenCostModal,
+    onStatusChange
+}: RequestHistoryRowProps) => {
+    const isFirebaseRequest = 'requestNumber' in request;
+    const displayNumber = isFirebaseRequest
+        ? `#${(request as FirebasePickupRequest).requestNumber}`
+        : request.id.substring(0, 8);
+
+    return (
+        <tr className="table-row hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                {displayNumber}
+                {request.bcNumber && (
+                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">({request.bcNumber})</span>
+                )}
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
+                {new Date(request.date).toLocaleDateString('fr-CA')}
+            </td>
+            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                {request.location.length > 30 ? request.location.substring(0, 30) + '...' : request.location}
+                {request.locationComments && Object.keys(request.locationComments).length > 1 && (
+                    <span className="ml-1 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded dark:bg-blue-900 dark:text-blue-200">+{Object.keys(request.locationComments).length - 1}</span>
+                )}
+            </td>
+            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                <div className="font-medium dark:text-gray-300">
+                    {request.items.reduce((sum, item) => sum + item.quantity, 0)} contenant(s)
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                    {request.items.slice(0, 2).map(i => i.name).join(', ')}
+                    {request.items.length > 2 && ` +${request.items.length - 2} autre(s)`}
+                </div>
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                <button
+                    onClick={() => onOpenCostModal(request)}
+                    className={`font-medium hover:underline ${request.cost ? 'text-gray-900 dark:text-white' : 'text-blue-600 dark:text-blue-400 italic'}`}
+                    title="Cliquez pour modifier le coût"
+                >
+                    {request.cost ? `${request.cost.toFixed(2)} $` : 'Ajouter coût'}
+                </button>
+                {request.invoiceUrl && (
+                    <a
+                        href={request.invoiceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-2 inline-block text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                        title="Voir la facture"
+                    >
+                        <PaperClipIcon className="w-4 h-4" />
+                    </a>
+                )}
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap">
+                <select
+                    value={request.status}
+                    onChange={(e) => onStatusChange(request.id, e.target.value as any)}
+                    className={`text-xs font-semibold rounded-full px-2 py-1 border-0 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-500 ${getStatusBadge(request.status)}`}
+                >
+                    <option value="pending">En attente</option>
+                    <option value="in_progress">En cours</option>
+                    <option value="completed">Complétée</option>
+                    <option value="cancelled">Annulées</option>
+                </select>
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <div className="flex justify-end gap-2">
+                    <button
+                        onClick={() => onViewDetails(request)}
+                        className="text-blue-600 hover:text-blue-800 transition-colors px-2 py-1 rounded hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-gray-700"
+                        title="Voir les détails"
+                    >
+                        Détails
+                    </button>
+                    <button
+                        onClick={() => onRegeneratePDF(request)}
+                        className="text-green-600 hover:text-green-800 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-gray-700"
+                        title="Régénérer PDF"
+                    >
+                        <FileTextIcon className="w-4 h-4" />
+                        <span className="text-xs">PDF</span>
+                    </button>
+                    {request.status !== 'cancelled' && (
+                        <button
+                            onClick={() => onCancel(request.id)}
+                            className="text-red-600 hover:text-red-800 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-gray-700"
+                            title="Annuler la demande"
+                        >
+                            <XMarkIcon className="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
+            </td>
+        </tr>
+    );
+});
+
+RequestHistoryRow.displayName = 'RequestHistoryRow';
 
 interface RequestHistoryProps {
     requests: (PickupRequest | FirebasePickupRequest)[];
@@ -32,77 +171,54 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     const [locationFilter, setLocationFilter] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState<string>('');
 
-    const filteredRequests = requests.filter(request => {
-        // Status Filter
-        if (filter !== 'all' && request.status !== filter) return false;
+    const filteredRequests = useMemo(() => {
+        return requests.filter(request => {
+            // Status Filter
+            if (filter !== 'all' && request.status !== filter) return false;
 
-        // Date Range Filter
-        const requestDate = new Date(request.date);
-        if (startDate) {
-            const start = new Date(startDate);
-            if (requestDate < start) return false;
-        }
-        if (endDate) {
-            const end = new Date(endDate);
-            // Set end date to end of day
-            end.setHours(23, 59, 59, 999);
-            if (requestDate > end) return false;
-        }
+            // Date Range Filter
+            const requestDate = new Date(request.date);
+            if (startDate) {
+                const start = new Date(startDate);
+                if (requestDate < start) return false;
+            }
+            if (endDate) {
+                const end = new Date(endDate);
+                // Set end date to end of day
+                end.setHours(23, 59, 59, 999);
+                if (requestDate > end) return false;
+            }
 
-        // Location Filter
-        if (locationFilter && !request.location.includes(locationFilter)) return false;
+            // Location Filter
+            if (locationFilter && !request.location.includes(locationFilter)) return false;
 
-        // Search Filter (Container name or ID)
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            const matchesId = 'requestNumber' in request
-                ? request.requestNumber.toString().includes(query)
-                : request.id.toLowerCase().includes(query);
-            const matchesItems = request.items.some(item => item.name.toLowerCase().includes(query));
+            // Search Filter (Container name or ID)
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                const matchesId = 'requestNumber' in request
+                    ? request.requestNumber.toString().includes(query)
+                    : request.id.toLowerCase().includes(query);
+                const matchesItems = request.items.some(item => item.name.toLowerCase().includes(query));
 
-            if (!matchesId && !matchesItems) return false;
-        }
+                if (!matchesId && !matchesItems) return false;
+            }
 
-        return true;
-    });
+            return true;
+        });
+    }, [requests, filter, startDate, endDate, locationFilter, searchQuery]);
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'pending':
-                return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200 dark:ring-yellow-900';
-            case 'in_progress':
-                return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 dark:ring-blue-900';
-            case 'completed':
-                return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200 dark:ring-green-900';
-            case 'cancelled':
-                return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200 dark:ring-red-900';
-            default:
-                return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-        }
-    };
-
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case 'pending': return 'En attente';
-            case 'in_progress': return 'En cours';
-            case 'completed': return 'Complétée';
-            case 'cancelled': return 'Annulée';
-            default: return status;
-        }
-    };
-
-    const handleViewDetails = (request: PickupRequest | FirebasePickupRequest) => {
+    const handleViewDetails = useCallback((request: PickupRequest | FirebasePickupRequest) => {
         setSelectedRequest(request);
-    };
+    }, []);
 
-    const handleRequestUpdated = (updatedRequest: PickupRequest | FirebasePickupRequest) => {
+    const handleRequestUpdated = useCallback((updatedRequest: PickupRequest | FirebasePickupRequest) => {
         if (onRequestUpdated) {
             onRequestUpdated(updatedRequest);
         }
         setSelectedRequest(null);
-    };
+    }, [onRequestUpdated]);
 
-    const handleRegeneratePDF = async (request: PickupRequest | FirebasePickupRequest) => {
+    const handleRegeneratePDF = useCallback(async (request: PickupRequest | FirebasePickupRequest) => {
         // Always try to use the new PDF service first
         // Check if we have items to generate a PDF for
         if (request.items && request.items.length > 0) {
@@ -150,23 +266,23 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
             // Fallback only if absolutely necessary (shouldn't happen for valid requests)
             await generatePdf(request as PickupRequest);
         }
-    };
+    }, []);
 
-    const handleCancelRequest = (requestId: string) => {
+    const handleCancelRequest = useCallback((requestId: string) => {
         if (confirm('Voulez-vous vraiment annuler cette demande?')) {
             onUpdateRequestStatus(requestId, 'cancelled');
         }
-    };
+    }, [onUpdateRequestStatus]);
 
     const [isCostModalOpen, setIsCostModalOpen] = useState(false);
     const [requestToEditCost, setRequestToEditCost] = useState<PickupRequest | FirebasePickupRequest | null>(null);
 
-    const handleOpenCostModal = (request: PickupRequest | FirebasePickupRequest) => {
+    const handleOpenCostModal = useCallback((request: PickupRequest | FirebasePickupRequest) => {
         setRequestToEditCost(request);
         setIsCostModalOpen(true);
-    };
+    }, []);
 
-    const handleSaveCost = (totalCost: number, locationCosts: Record<string, number>) => {
+    const handleSaveCost = useCallback((totalCost: number, locationCosts: Record<string, number>) => {
         if (requestToEditCost) {
             const updatedRequest = {
                 ...requestToEditCost,
@@ -179,9 +295,9 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
         }
         setIsCostModalOpen(false);
         setRequestToEditCost(null);
-    };
+    }, [requestToEditCost, onRequestUpdated]);
 
-    const handleExportExcel = () => {
+    const handleExportExcel = useCallback(() => {
         if (filteredRequests.length === 0) {
             alert("Aucune donnée à exporter");
             return;
@@ -224,7 +340,11 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
         worksheet['!cols'] = wscols;
 
         XLSX.writeFile(workbook, `export_demandes_${new Date().toISOString().split('T')[0]}.xlsx`);
-    };
+    }, [filteredRequests]);
+
+    const handleStatusChange = useCallback((requestId: string, status: 'pending' | 'completed' | 'in_progress' | 'cancelled') => {
+        onUpdateRequestStatus(requestId, status as any);
+    }, [onUpdateRequestStatus]);
 
     return (
         <div className="card p-6 slide-up dark:bg-gray-800 dark:border-gray-700">
@@ -317,101 +437,17 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                            {filteredRequests.map(request => {
-                                const isFirebaseRequest = 'requestNumber' in request;
-                                const displayNumber = isFirebaseRequest
-                                    ? `#${(request as FirebasePickupRequest).requestNumber}`
-                                    : request.id.substring(0, 8);
-
-                                return (
-                                    <tr key={request.id} className="table-row hover:bg-gray-50 dark:hover:bg-gray-700">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                            {displayNumber}
-                                            {request.bcNumber && (
-                                                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">({request.bcNumber})</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                                            {new Date(request.date).toLocaleDateString('fr-CA')}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                                            {request.location.length > 30 ? request.location.substring(0, 30) + '...' : request.location}
-                                            {request.locationComments && Object.keys(request.locationComments).length > 1 && (
-                                                <span className="ml-1 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded dark:bg-blue-900 dark:text-blue-200">+{Object.keys(request.locationComments).length - 1}</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                                            <div className="font-medium dark:text-gray-300">
-                                                {request.items.reduce((sum, item) => sum + item.quantity, 0)} contenant(s)
-                                            </div>
-                                            <div className="text-xs text-gray-400 mt-1">
-                                                {request.items.slice(0, 2).map(i => i.name).join(', ')}
-                                                {request.items.length > 2 && ` +${request.items.length - 2} autre(s)`}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                            <button
-                                                onClick={() => handleOpenCostModal(request)}
-                                                className={`font-medium hover:underline ${request.cost ? 'text-gray-900 dark:text-white' : 'text-blue-600 dark:text-blue-400 italic'}`}
-                                                title="Cliquez pour modifier le coût"
-                                            >
-                                                {request.cost ? `${request.cost.toFixed(2)} $` : 'Ajouter coût'}
-                                            </button>
-                                            {request.invoiceUrl && (
-                                                <a
-                                                    href={request.invoiceUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="ml-2 inline-block text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                                                    title="Voir la facture"
-                                                >
-                                                    <PaperClipIcon className="w-4 h-4" />
-                                                </a>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <select
-                                                value={request.status}
-                                                onChange={(e) => onUpdateRequestStatus(request.id, e.target.value as any)}
-                                                className={`text-xs font-semibold rounded-full px-2 py-1 border-0 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-500 ${getStatusBadge(request.status)}`}
-                                            >
-                                                <option value="pending">En attente</option>
-                                                <option value="in_progress">En cours</option>
-                                                <option value="completed">Complétée</option>
-                                                <option value="cancelled">Annulées</option>
-                                            </select>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex justify-end gap-2">
-                                                <button
-                                                    onClick={() => handleViewDetails(request)}
-                                                    className="text-blue-600 hover:text-blue-800 transition-colors px-2 py-1 rounded hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-gray-700"
-                                                    title="Voir les détails"
-                                                >
-                                                    Détails
-                                                </button>
-                                                <button
-                                                    onClick={() => handleRegeneratePDF(request)}
-                                                    className="text-green-600 hover:text-green-800 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-gray-700"
-                                                    title="Régénérer PDF"
-                                                >
-                                                    <FileTextIcon className="w-4 h-4" />
-                                                    <span className="text-xs">PDF</span>
-                                                </button>
-                                                {request.status !== 'cancelled' && (
-                                                    <button
-                                                        onClick={() => handleCancelRequest(request.id)}
-                                                        className="text-red-600 hover:text-red-800 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-gray-700"
-                                                        title="Annuler la demande"
-                                                    >
-                                                        <XMarkIcon className="w-4 h-4" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                            {filteredRequests.map(request => (
+                                <RequestHistoryRow
+                                    key={request.id}
+                                    request={request}
+                                    onViewDetails={handleViewDetails}
+                                    onRegeneratePDF={handleRegeneratePDF}
+                                    onCancel={handleCancelRequest}
+                                    onOpenCostModal={handleOpenCostModal}
+                                    onStatusChange={handleStatusChange}
+                                />
+                            ))}
                         </tbody>
                     </table>
                 </div>
