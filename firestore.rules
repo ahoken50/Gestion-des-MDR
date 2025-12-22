@@ -3,7 +3,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Règles pour les compteurs - Accès public pour permettre la numérotation
     match /counters/{document} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create, update: if request.resource.data.value is number;
+      allow delete: if false;
     }
     
     // Règles pour les demandes de ramassage - Accès public
@@ -28,8 +30,16 @@ service cloud.firestore {
     
     // Règles pour l'inventaire - Accès public
     match /inventory/{itemId} {
-      // Lecture et écriture: accès public
-      allow read, write: if true;
+      // Lecture: accès public
+      allow read: if true;
+
+      // Écriture: accès public avec validation du schéma
+      allow create, update: if request.resource.data.name is string
+        && request.resource.data.quantity is number
+        && request.resource.data.location is string;
+
+      // Suppression: interdite (l'application utilise set/update uniquement)
+      allow delete: if false;
     }
   }
 }
