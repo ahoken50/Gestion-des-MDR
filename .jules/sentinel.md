@@ -1,0 +1,4 @@
+## 2024-05-23 - Insecure Firestore Rules
+**Vulnerability:** Firestore rules for `counters` and `inventory` collections were set to `allow read, write: if true;`, allowing any user (even unauthenticated) to modify or delete all data.
+**Learning:** Initial prototyping often leaves security rules wide open ("Test Mode"), which can persist into production if not audited.
+**Prevention:** Always define schema validation and explicitly deny destructive actions (like `delete`) in Firestore rules from the start, even if authentication is not yet implemented. Use `request.resource.data` to validate input types.
