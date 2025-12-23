@@ -54,7 +54,7 @@ const App: React.FC = () => {
                     <AIInsights />
                 )}
                 {currentView === 'dashboard' && (
-                    <Dashboard requests={allRequests} inventory={inventory} />
+                    <Dashboard requests={allRequests} />
                 )}
             </Layout>
         </ThemeProvider>

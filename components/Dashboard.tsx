@@ -23,12 +23,11 @@ import { useToast } from './ui/Toast';
 
 interface DashboardProps {
     requests: (PickupRequest | FirebasePickupRequest)[];
-    inventory: InventoryItem[];
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
-const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
+const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
     const { error: toastError, success: toastSuccess } = useToast();
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     const [selectedPeriod, setSelectedPeriod] = useState<string>('all');
@@ -693,6 +692,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             </div>
         </div>
     );
-};
+});
 
+Dashboard.displayName = 'Dashboard';
 export default Dashboard;
