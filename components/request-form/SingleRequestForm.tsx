@@ -127,6 +127,7 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
                                 value={item.name}
                                 onChange={e => handleItemChange(index, 'name', e.target.value)}
                                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 flex-grow dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                aria-label="Sélectionner le type de contenant"
                             >
                                 {availableItems.map(name => <option key={name} value={name}>{name}</option>)}
                             </select>
@@ -138,6 +139,7 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
                                 max={maxQuantity}
                                 className="w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                 required
+                                aria-label={`Quantité pour ${item.name}`}
                             />
                             <div className="flex items-center gap-2">
                                 <input
@@ -146,6 +148,7 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
                                     checked={item.replaceBin || false}
                                     onChange={e => handleItemChange(index, 'replaceBin', e.target.checked)}
                                     className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                                    aria-label={`Remplacer le contenant ${item.name}`}
                                 />
                                 <label htmlFor={`replace-${index}`} className="text-sm text-gray-700 dark:text-gray-300 select-none">
                                     Remplacer
