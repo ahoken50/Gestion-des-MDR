@@ -2,8 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // Règles pour les compteurs - Accès public pour permettre la numérotation
+    // Protection: Validation du type de données
     match /counters/{document} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.resource.data.value is number;
     }
     
     // Règles pour les demandes de ramassage - Accès public
@@ -11,7 +13,7 @@ service cloud.firestore {
       // Lecture: accès public
       allow read: if true;
       
-      // Création: accès public avec validation des données
+      // Création: accès public avec validation stricte des données
       allow create: if request.resource.data.requestNumber is number
         && request.resource.data.contactName is string
         && request.resource.data.contactPhone is string
@@ -19,17 +21,31 @@ service cloud.firestore {
         && request.resource.data.items is list
         && request.resource.data.items.size() > 0;
       
-      // Mise à jour: accès public
-      allow update: if request.resource.data.requestNumber is number;
+      // Mise à jour: accès public avec validation stricte du statut et structure
+      allow update: if request.resource.data.requestNumber is number
+        // Validation du statut si présent
+        && (!('status' in request.resource.data) || request.resource.data.status in ['pending', 'in_progress', 'completed', 'cancelled'])
+        // Si les items sont mis à jour, s'assurer que c'est une liste
+        && (!('items' in request.resource.data) || request.resource.data.items is list);
       
-      // Suppression: interdite pour le moment (protection des données)
+      // Suppression: interdite (protection contre la perte de données)
       allow delete: if false;
     }
     
     // Règles pour l'inventaire - Accès public
+    // Protection: Validation stricte du schéma et types
     match /inventory/{itemId} {
-      // Lecture et écriture: accès public
-      allow read, write: if true;
+      allow read: if true;
+
+      // Écriture (création/mise à jour): Uniquement avec schéma valide
+      allow write: if request.resource.data.name is string
+        && request.resource.data.quantity is number
+        && request.resource.data.quantity >= 0
+        && request.resource.data.location is string;
+
+      // Note: "allow write" englobe create, update, delete.
+      // Pour delete, request.resource est null, donc la condition ci-dessus échoue (false).
+      // Cela empêche implicitement la suppression, ce qui est souhaité pour la sécurité.
     }
   }
 }
@@ -42,8 +58,16 @@ service firebase.storage {
       // Lecture: accès public
       allow read: if true;
       
-      // Écriture: accès public avec limite de taille (10MB)
-      allow write: if request.resource.size < 10 * 1024 * 1024;
+      // Écriture: accès public avec limite de taille (10MB) et validation type image
+      allow write: if request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Factures - Accès public
+    match /invoices/{requestId}/{allPaths=**} {
+       allow read: if true;
+       allow write: if request.resource.size < 10 * 1024 * 1024
+         && (request.resource.contentType.matches('image/.*') || request.resource.contentType == 'application/pdf');
     }
   }
 }

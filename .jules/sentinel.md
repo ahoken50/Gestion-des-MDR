@@ -1,0 +1,4 @@
+## 2024-05-23 - Firestore Open Access Mitigation
+**Vulnerability:** Firestore rules were configured with `allow read, write: if true;` for critical collections (`inventory`, `counters`), allowing any user to delete or corrupt the entire database.
+**Learning:** Even in applications without user authentication (public access), security rules must enforce data schema and integrity constraints to prevent malicious data destruction.
+**Prevention:** Always validate `request.resource.data` schema (types, required fields) and restrict destructive actions (`delete`) even for public collections. Use strict allowlists for status fields.
