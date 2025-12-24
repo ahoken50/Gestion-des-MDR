@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { firebaseService, type FirebasePickupRequest } from '../services/firebaseService';
 import type { InventoryItem, PickupRequest, RequestedItem } from '../types';
 import type { PickupRequestPDF } from '../types-pdf';
@@ -163,7 +163,10 @@ export const useAppData = () => {
         initFirebase();
     }, []);
 
-    const allRequests = [...firebaseRequests, ...pickupRequests];
+    const allRequests = useMemo(
+        () => [...firebaseRequests, ...pickupRequests],
+        [firebaseRequests, pickupRequests]
+    );
 
     const handleAddRequest = async (newRequest: Omit<PickupRequest, 'id' | 'status'>): Promise<number | undefined> => {
         try {
