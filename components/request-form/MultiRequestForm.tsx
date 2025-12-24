@@ -270,6 +270,7 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
                                                     }
                                                 }}
                                                 className="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                                aria-label={`Quantité pour ${item.name}`}
                                             />
                                             <span className="text-sm text-gray-500 dark:text-gray-400">
                                                 / {item.quantity}
