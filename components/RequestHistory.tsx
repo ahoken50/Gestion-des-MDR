@@ -172,29 +172,25 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     const [searchQuery, setSearchQuery] = useState<string>('');
 
     const filteredRequests = useMemo(() => {
+        const start = startDate ? new Date(startDate) : null;
+        const end = endDate ? new Date(endDate) : null;
+        if (end) end.setHours(23, 59, 59, 999);
+        const query = searchQuery ? searchQuery.toLowerCase() : null;
+
         return requests.filter(request => {
             // Status Filter
             if (filter !== 'all' && request.status !== filter) return false;
 
             // Date Range Filter
             const requestDate = new Date(request.date);
-            if (startDate) {
-                const start = new Date(startDate);
-                if (requestDate < start) return false;
-            }
-            if (endDate) {
-                const end = new Date(endDate);
-                // Set end date to end of day
-                end.setHours(23, 59, 59, 999);
-                if (requestDate > end) return false;
-            }
+            if (start && requestDate < start) return false;
+            if (end && requestDate > end) return false;
 
             // Location Filter
             if (locationFilter && !request.location.includes(locationFilter)) return false;
 
             // Search Filter (Container name or ID)
-            if (searchQuery) {
-                const query = searchQuery.toLowerCase();
+            if (query) {
                 const matchesId = 'requestNumber' in request
                     ? request.requestNumber.toString().includes(query)
                     : request.id.toLowerCase().includes(query);
