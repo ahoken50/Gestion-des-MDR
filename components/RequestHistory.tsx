@@ -172,20 +172,31 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     const [searchQuery, setSearchQuery] = useState<string>('');
 
     const filteredRequests = useMemo(() => {
+        // Optimization: Hoist expensive calculations outside the loop
+        let start: Date | null = null;
+        let end: Date | null = null;
+
+        if (startDate) {
+            start = new Date(startDate);
+        }
+        if (endDate) {
+            end = new Date(endDate);
+            // Set end date to end of day
+            end.setHours(23, 59, 59, 999);
+        }
+
+        const query = searchQuery ? searchQuery.toLowerCase() : '';
+
         return requests.filter(request => {
             // Status Filter
             if (filter !== 'all' && request.status !== filter) return false;
 
             // Date Range Filter
             const requestDate = new Date(request.date);
-            if (startDate) {
-                const start = new Date(startDate);
+            if (start) {
                 if (requestDate < start) return false;
             }
-            if (endDate) {
-                const end = new Date(endDate);
-                // Set end date to end of day
-                end.setHours(23, 59, 59, 999);
+            if (end) {
                 if (requestDate > end) return false;
             }
 
@@ -193,8 +204,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
             if (locationFilter && !request.location.includes(locationFilter)) return false;
 
             // Search Filter (Container name or ID)
-            if (searchQuery) {
-                const query = searchQuery.toLowerCase();
+            if (query) {
                 const matchesId = 'requestNumber' in request
                     ? request.requestNumber.toString().includes(query)
                     : request.id.toLowerCase().includes(query);
