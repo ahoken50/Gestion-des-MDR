@@ -1,3 +1,3 @@
-## 2024-05-23 - Accessibility of Icon-only Buttons
-**Learning:** Found several icon-only "trash" buttons used for destructive actions (deleting items from request forms) that lacked `aria-label`. This makes them inaccessible to screen reader users who would only hear "button" without context.
-**Action:** Added `aria-label="Supprimer [Item Name]"` to these buttons. Also, since `TrashIcon` accepts props, passed `aria-hidden="true"` implicitly? No, I decided to just rely on the button having an `aria-label`. Actually, standard practice is to hide the icon if the button has a label. I will verify if I should explicitly hide the icon. Since I'm adding `aria-label` to the button, the button's accessible name becomes that label, and the icon's content is ignored. But good practice is `aria-hidden="true"` on the SVG.
+## 2025-12-25 - Navigation Accessibility
+**Learning:** The navigation elements (Sidebar and Header) relied solely on visual cues (background color) to indicate the active page. This left screen reader users without context on their current location.
+**Action:** Added `aria-current="page"` to the active navigation button in both `Sidebar.tsx` and `Header.tsx`. This programmatic indicator allows screen readers to announce "Current Page" alongside the link text.

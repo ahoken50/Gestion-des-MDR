@@ -31,6 +31,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange }) => {
                     <div className="flex items-center space-x-2 md:space-x-3">
                         <button
                             onClick={() => onViewChange('inventory')}
+                            aria-current={currentView === 'inventory' ? 'page' : undefined}
                             className={`${navItemClasses} ${currentView === 'inventory' ? activeClasses : inactiveClasses}`}
                         >
                             <span className="flex items-center gap-2">
@@ -40,6 +41,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange }) => {
                         </button>
                         <button
                             onClick={() => onViewChange('new_request')}
+                            aria-current={currentView === 'new_request' ? 'page' : undefined}
                             className={`${navItemClasses} ${currentView === 'new_request' ? activeClasses : inactiveClasses}`}
                         >
                             <span className="flex items-center gap-2">
@@ -49,6 +51,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange }) => {
                         </button>
                         <button
                             onClick={() => onViewChange('history')}
+                            aria-current={currentView === 'history' ? 'page' : undefined}
                             className={`${navItemClasses} ${currentView === 'history' ? activeClasses : inactiveClasses}`}
                         >
                             <span className="flex items-center gap-2">
@@ -58,6 +61,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange }) => {
                         </button>
                         <button
                             onClick={() => onViewChange('dashboard')}
+                            aria-current={currentView === 'dashboard' ? 'page' : undefined}
                             className={`${navItemClasses} ${currentView === 'dashboard' ? activeClasses : inactiveClasses}`}
                         >
                             <span className="flex items-center gap-2">
