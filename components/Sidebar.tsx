@@ -54,6 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, on
                             <button
                                 key={item.id}
                                 onClick={() => onViewChange(item.id)}
+                                aria-current={isActive ? 'page' : undefined}
                                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${isActive
                                     ? 'bg-white text-blue-600 shadow-lg'
                                     : 'text-blue-100 hover:bg-blue-700 hover:text-white'
