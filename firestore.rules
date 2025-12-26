@@ -1,9 +1,21 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Règles pour les compteurs - Accès public pour permettre la numérotation
+    // Helper function for inventory validation
+    function isValidInventoryItem() {
+      // Allow if required fields are present and typed correctly
+      return request.resource.data.name is string
+        && request.resource.data.quantity is number
+        && request.resource.data.location is string;
+    }
+
+    // Règles pour les compteurs - Protection contre les modifications arbitraires
     match /counters/{document} {
-      allow read, write: if true;
+      allow read: if true;
+      // Création: uniquement si valeur initiale est 1 (pour l'initialisation)
+      allow create: if request.resource.data.value == 1;
+      // Mise à jour: uniquement incrémentation atomique (+1)
+      allow update: if request.resource.data.value == resource.data.value + 1;
     }
     
     // Règles pour les demandes de ramassage - Accès public
@@ -19,17 +31,22 @@ service cloud.firestore {
         && request.resource.data.items is list
         && request.resource.data.items.size() > 0;
       
-      // Mise à jour: accès public
+      // Mise à jour: accès public avec validation
       allow update: if request.resource.data.requestNumber is number;
       
       // Suppression: interdite pour le moment (protection des données)
       allow delete: if false;
     }
     
-    // Règles pour l'inventaire - Accès public
+    // Règles pour l'inventaire - Protection contre les écritures invalides
     match /inventory/{itemId} {
-      // Lecture et écriture: accès public
-      allow read, write: if true;
+      // Lecture: accès public
+      allow read: if true;
+
+      // Écriture (Create/Update): validation des données
+      // Note: 'write' inclut 'delete', mais isValidInventoryItem() vérifie request.resource.data
+      // qui est null lors d'une suppression, donc la suppression échouera comme prévu.
+      allow write: if isValidInventoryItem();
     }
   }
 }
@@ -42,8 +59,16 @@ service firebase.storage {
       // Lecture: accès public
       allow read: if true;
       
-      // Écriture: accès public avec limite de taille (10MB)
-      allow write: if request.resource.size < 10 * 1024 * 1024;
+      // Écriture: accès public avec limite de taille (10MB) et type d'image/pdf
+      allow write: if request.resource.size < 10 * 1024 * 1024
+                   && (request.resource.contentType.matches('image/.*') || request.resource.contentType == 'application/pdf');
+    }
+
+    // Factures - Similaire aux requêtes
+    match /invoices/{requestId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.resource.size < 10 * 1024 * 1024
+                   && (request.resource.contentType.matches('image/.*') || request.resource.contentType == 'application/pdf');
     }
   }
 }
