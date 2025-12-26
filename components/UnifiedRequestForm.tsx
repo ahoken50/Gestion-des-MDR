@@ -22,6 +22,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
 }) => {
     const { error: toastError } = useToast();
     const [mode, setMode] = useState<RequestMode>('single');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Shared Contact State
     const [bcNumber, setBcNumber] = useState('');
@@ -35,18 +36,19 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             return;
         }
 
-        const requestNumber = await onSubmit({
-            bcNumber: bcNumber.trim() || undefined,
-            location: data.location,
-            items: data.items,
-            date: new Date().toISOString(),
-            contactName,
-            contactPhone,
-            notes,
-        });
-
-        // Generate PDF for single request
+        setIsSubmitting(true);
         try {
+            const requestNumber = await onSubmit({
+                bcNumber: bcNumber.trim() || undefined,
+                location: data.location,
+                items: data.items,
+                date: new Date().toISOString(),
+                contactName,
+                contactPhone,
+                notes,
+            });
+
+            // Generate PDF for single request
             const selectedItems = data.items.map(item => ({
                 id: item.name, // Using name as ID for simplicity in single request
                 name: item.name,
@@ -70,23 +72,33 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             if (onPDFGenerated) {
                 onPDFGenerated(pdfRequest);
             }
+
+            // Reset shared fields after submit
+            setBcNumber('');
+            setContactName('');
+            setContactPhone('');
+            setNotes('');
         } catch (error) {
             console.error('Error generating PDF for single request:', error);
             toastError('Erreur lors de la génération du PDF.');
+        } finally {
+            setIsSubmitting(false);
         }
-
-        // Reset shared fields after submit
-        setBcNumber('');
-        setContactName('');
-        setContactPhone('');
-        setNotes('');
     };
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             {/* Mode Selection */}
-            <div className="grid grid-cols-2 gap-4 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <div
+                className="grid grid-cols-2 gap-4 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg"
+                role="tablist"
+                aria-label="Type de demande"
+            >
                 <button
+                    role="tab"
+                    aria-selected={mode === 'single'}
+                    aria-controls="single-panel"
+                    id="single-tab"
                     onClick={() => setMode('single')}
                     className={`py-2 px-4 rounded-md text-sm font-medium transition-all ${mode === 'single'
                         ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
@@ -96,6 +108,10 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                     Demande Unique
                 </button>
                 <button
+                    role="tab"
+                    aria-selected={mode === 'multi'}
+                    aria-controls="multi-panel"
+                    id="multi-tab"
                     onClick={() => setMode('multi')}
                     className={`py-2 px-4 rounded-md text-sm font-medium transition-all ${mode === 'multi'
                         ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
@@ -119,22 +135,27 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
 
             {/* Specific Forms */}
             {mode === 'single' ? (
-                <SingleRequestForm
-                    inventory={inventory}
-                    onSubmit={handleSingleSubmit}
-                />
+                <div role="tabpanel" id="single-panel" aria-labelledby="single-tab">
+                    <SingleRequestForm
+                        inventory={inventory}
+                        onSubmit={handleSingleSubmit}
+                        isSubmitting={isSubmitting}
+                    />
+                </div>
             ) : (
-                <MultiRequestForm
-                    inventory={inventory}
-                    contactInfo={{
-                        name: contactName,
-                        phone: contactPhone,
-                        notes,
-                        bcNumber
-                    }}
-                    onPDFGenerated={onPDFGenerated}
-                    onSubmit={onSubmit}
-                />
+                <div role="tabpanel" id="multi-panel" aria-labelledby="multi-tab">
+                    <MultiRequestForm
+                        inventory={inventory}
+                        contactInfo={{
+                            name: contactName,
+                            phone: contactPhone,
+                            notes,
+                            bcNumber
+                        }}
+                        onPDFGenerated={onPDFGenerated}
+                        onSubmit={onSubmit}
+                    />
+                </div>
             )}
         </div>
     );
