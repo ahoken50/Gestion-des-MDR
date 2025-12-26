@@ -7,9 +7,10 @@ import { useToast } from '../ui/Toast';
 interface SingleRequestFormProps {
     inventory: InventoryItem[];
     onSubmit: (data: { location: string; items: RequestedItem[] }) => void;
+    isSubmitting?: boolean;
 }
 
-const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubmit }) => {
+const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubmit, isSubmitting = false }) => {
     const { error: toastError } = useToast();
     const [location, setLocation] = useState(LOCATIONS[0]);
     const [requestedItems, setRequestedItems] = useState<RequestedItem[]>([]);
@@ -127,6 +128,7 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
                                 value={item.name}
                                 onChange={e => handleItemChange(index, 'name', e.target.value)}
                                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 flex-grow dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                aria-label="Choisir le contenant"
                             >
                                 {availableItems.map(name => <option key={name} value={name}>{name}</option>)}
                             </select>
@@ -138,6 +140,7 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
                                 max={maxQuantity}
                                 className="w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                 required
+                                aria-label="Quantité"
                             />
                             <div className="flex items-center gap-2">
                                 <input
@@ -174,8 +177,22 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
             </div>
 
             <div className="text-right">
-                <button type="submit" className="btn btn-primary py-3 px-8 text-lg">
-                    ✅ Soumettre la demande
+                <button
+                    type="submit"
+                    className="btn btn-primary py-3 px-8 text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ml-auto"
+                    disabled={isSubmitting}
+                >
+                    {isSubmitting ? (
+                        <>
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Traitement en cours...
+                        </>
+                    ) : (
+                        '✅ Soumettre la demande'
+                    )}
                 </button>
             </div>
         </form>
