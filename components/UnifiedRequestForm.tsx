@@ -85,8 +85,16 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             {/* Mode Selection */}
-            <div className="grid grid-cols-2 gap-4 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <div
+                className="grid grid-cols-2 gap-4 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg"
+                role="tablist"
+                aria-label="Mode de demande"
+            >
                 <button
+                    role="tab"
+                    id="tab-single"
+                    aria-selected={mode === 'single'}
+                    aria-controls="panel-single"
                     onClick={() => setMode('single')}
                     className={`py-2 px-4 rounded-md text-sm font-medium transition-all ${mode === 'single'
                         ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
@@ -96,6 +104,10 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
                     Demande Unique
                 </button>
                 <button
+                    role="tab"
+                    id="tab-multi"
+                    aria-selected={mode === 'multi'}
+                    aria-controls="panel-multi"
                     onClick={() => setMode('multi')}
                     className={`py-2 px-4 rounded-md text-sm font-medium transition-all ${mode === 'multi'
                         ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
@@ -118,24 +130,31 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             />
 
             {/* Specific Forms */}
-            {mode === 'single' ? (
-                <SingleRequestForm
-                    inventory={inventory}
-                    onSubmit={handleSingleSubmit}
-                />
-            ) : (
-                <MultiRequestForm
-                    inventory={inventory}
-                    contactInfo={{
-                        name: contactName,
-                        phone: contactPhone,
-                        notes,
-                        bcNumber
-                    }}
-                    onPDFGenerated={onPDFGenerated}
-                    onSubmit={onSubmit}
-                />
-            )}
+            <div
+                role="tabpanel"
+                id={`panel-${mode}`}
+                aria-labelledby={`tab-${mode}`}
+                className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+            >
+                {mode === 'single' ? (
+                    <SingleRequestForm
+                        inventory={inventory}
+                        onSubmit={handleSingleSubmit}
+                    />
+                ) : (
+                    <MultiRequestForm
+                        inventory={inventory}
+                        contactInfo={{
+                            name: contactName,
+                            phone: contactPhone,
+                            notes,
+                            bcNumber
+                        }}
+                        onPDFGenerated={onPDFGenerated}
+                        onSubmit={onSubmit}
+                    />
+                )}
+            </div>
         </div>
     );
 };
