@@ -1,35 +1,48 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Règles pour les compteurs - Accès public pour permettre la numérotation
-    match /counters/{document} {
-      allow read, write: if true;
+
+    function isValidInventoryItem() {
+      return request.resource.data.name is string
+        && request.resource.data.quantity is number
+        && request.resource.data.location is string;
     }
     
-    // Règles pour les demandes de ramassage - Accès public
-    match /pickupRequests/{requestId} {
-      // Lecture: accès public
-      allow read: if true;
-      
-      // Création: accès public avec validation des données
-      allow create: if request.resource.data.requestNumber is number
+    function isValidPickupRequest() {
+      return request.resource.data.requestNumber is number
         && request.resource.data.contactName is string
         && request.resource.data.contactPhone is string
-        && request.resource.data.status in ['pending', 'completed']
+        && request.resource.data.status in ['pending', 'in_progress', 'completed', 'cancelled']
         && request.resource.data.items is list
         && request.resource.data.items.size() > 0;
+    }
+
+    // Règles pour les compteurs
+    match /counters/{document} {
+      allow read: if true;
+      allow write: if request.resource.data.value is number;
+    }
+
+    // Règles pour les demandes de ramassage
+    match /pickupRequests/{requestId} {
+      allow read: if true;
       
-      // Mise à jour: accès public
-      allow update: if request.resource.data.requestNumber is number;
+      // Création: status doit être 'pending' ou 'completed' (pour import)
+      allow create: if isValidPickupRequest()
+        && request.resource.data.status in ['pending', 'completed'];
+
+      // Mise à jour: préserver requestNumber
+      allow update: if isValidPickupRequest()
+        && request.resource.data.requestNumber == resource.data.requestNumber;
       
-      // Suppression: interdite pour le moment (protection des données)
       allow delete: if false;
     }
     
-    // Règles pour l'inventaire - Accès public
+    // Règles pour l'inventaire
     match /inventory/{itemId} {
-      // Lecture et écriture: accès public
-      allow read, write: if true;
+      allow read: if true;
+      allow create, update: if isValidInventoryItem();
+      allow delete: if true;
     }
   }
 }
@@ -39,10 +52,12 @@ service firebase.storage {
   match /b/{bucket}/o {
     // Images des demandes - Accès public
     match /requests/{requestId}/{allPaths=**} {
-      // Lecture: accès public
       allow read: if true;
-      
-      // Écriture: accès public avec limite de taille (10MB)
+      allow write: if request.resource.size < 10 * 1024 * 1024;
+    }
+    // Factures - Accès public
+    match /invoices/{requestId}/{allPaths=**} {
+      allow read: if true;
       allow write: if request.resource.size < 10 * 1024 * 1024;
     }
   }
