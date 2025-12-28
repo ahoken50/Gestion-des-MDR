@@ -97,6 +97,7 @@ const RequestHistoryRow = React.memo(({
                     onClick={() => onOpenCostModal(request)}
                     className={`font-medium hover:underline ${request.cost ? 'text-gray-900 dark:text-white' : 'text-blue-600 dark:text-blue-400 italic'}`}
                     title="Cliquez pour modifier le coût"
+                    aria-label={`Modifier le coût de la demande ${displayNumber}`}
                 >
                     {request.cost ? `${request.cost.toFixed(2)} $` : 'Ajouter coût'}
                 </button>
@@ -107,6 +108,7 @@ const RequestHistoryRow = React.memo(({
                         rel="noopener noreferrer"
                         className="ml-2 inline-block text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                         title="Voir la facture"
+                        aria-label={`Voir la facture de la demande ${displayNumber}`}
                     >
                         <PaperClipIcon className="w-4 h-4" />
                     </a>
@@ -117,6 +119,7 @@ const RequestHistoryRow = React.memo(({
                     value={request.status}
                     onChange={(e) => onStatusChange(request.id, e.target.value as any)}
                     className={`text-xs font-semibold rounded-full px-2 py-1 border-0 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-500 ${getStatusBadge(request.status)}`}
+                    aria-label={`Modifier le statut de la demande ${displayNumber}`}
                 >
                     <option value="pending">En attente</option>
                     <option value="in_progress">En cours</option>
@@ -130,6 +133,7 @@ const RequestHistoryRow = React.memo(({
                         onClick={() => onViewDetails(request)}
                         className="text-blue-600 hover:text-blue-800 transition-colors px-2 py-1 rounded hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-gray-700"
                         title="Voir les détails"
+                        aria-label={`Voir les détails de la demande ${displayNumber}`}
                     >
                         Détails
                     </button>
@@ -137,6 +141,7 @@ const RequestHistoryRow = React.memo(({
                         onClick={() => onRegeneratePDF(request)}
                         className="text-green-600 hover:text-green-800 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-gray-700"
                         title="Régénérer PDF"
+                        aria-label={`Régénérer le PDF de la demande ${displayNumber}`}
                     >
                         <FileTextIcon className="w-4 h-4" />
                         <span className="text-xs">PDF</span>
@@ -146,6 +151,7 @@ const RequestHistoryRow = React.memo(({
                             onClick={() => onCancel(request.id)}
                             className="text-red-600 hover:text-red-800 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-gray-700"
                             title="Annuler la demande"
+                            aria-label={`Annuler la demande ${displayNumber}`}
                         >
                             <XMarkIcon className="w-4 h-4" />
                         </button>
@@ -420,11 +426,13 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1.5 flex-grow dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            aria-label="Rechercher dans l'historique"
                         />
                         <button
                             onClick={handleExportExcel}
                             className="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition-colors flex items-center gap-1 text-sm"
                             title="Exporter en Excel"
+                            aria-label="Exporter l'historique en Excel"
                         >
                             <ArrowDownTrayIcon className="w-4 h-4" />
                             <span className="hidden sm:inline">Excel</span>
