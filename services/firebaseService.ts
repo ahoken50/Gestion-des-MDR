@@ -35,6 +35,7 @@ export interface FirebasePickupRequest {
   emails?: string[]; // Courriels en suivi
   images?: string[]; // URLs des images
   locationComments?: Record<string, string>; // Commentaires par lieu
+  locationCosts?: Record<string, number>; // Coûts par lieu
   cost?: number; // Coût de la demande
   invoiceUrl?: string; // URL de la facture (PDF ou image)
   createdAt: any; // Timestamp Firebase
