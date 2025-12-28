@@ -5,6 +5,7 @@ service cloud.firestore {
     function isValidInventoryItem() {
       return request.resource.data.name is string
         && request.resource.data.quantity is number
+        && request.resource.data.quantity >= 0
         && request.resource.data.location is string;
     }
     
@@ -20,7 +21,10 @@ service cloud.firestore {
     // Règles pour les compteurs
     match /counters/{document} {
       allow read: if true;
-      allow write: if request.resource.data.value is number;
+      // CREATE: Initialiser à 1
+      allow create: if request.resource.data.value == 1;
+      // UPDATE: Incrémenter de 1 seulement, de manière atomique
+      allow update: if request.resource.data.value == resource.data.value + 1;
     }
 
     // Règles pour les demandes de ramassage
@@ -35,14 +39,17 @@ service cloud.firestore {
       allow update: if isValidPickupRequest()
         && request.resource.data.requestNumber == resource.data.requestNumber;
       
+      // SECURITY: Empêcher la suppression
       allow delete: if false;
     }
     
     // Règles pour l'inventaire
     match /inventory/{itemId} {
       allow read: if true;
+      // SECURITY: Valider la structure et empêcher les quantités négatives
       allow create, update: if isValidInventoryItem();
-      allow delete: if true;
+      // SECURITY: Empêcher la suppression (l'app utilise update pour synchroniser)
+      allow delete: if false;
     }
   }
 }
