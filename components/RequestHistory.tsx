@@ -10,6 +10,15 @@ import { LOCATIONS } from '../constants';
 import * as XLSX from 'xlsx';
 import CostDistributionModal from './CostDistributionModal';
 
+const calculateTotalQuantity = (items: { quantity: number }[]) => {
+    let sum = 0;
+    if (!items) return 0;
+    for (const item of items) {
+        sum += item.quantity || 0;
+    }
+    return sum;
+};
+
 const getStatusBadge = (status: string) => {
     switch (status) {
         case 'pending':
@@ -76,7 +85,7 @@ const RequestHistoryRow = React.memo(({
             </td>
             <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                 <div className="font-medium dark:text-gray-300">
-                    {request.items.reduce((sum, item) => sum + item.quantity, 0)} contenant(s)
+                    {calculateTotalQuantity(request.items)} contenant(s)
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
                     {request.items.slice(0, 2).map(i => i.name).join(', ')}
@@ -151,7 +160,7 @@ RequestHistoryRow.displayName = 'RequestHistoryRow';
 
 interface RequestHistoryProps {
     requests: (PickupRequest | FirebasePickupRequest)[];
-    onUpdateRequestStatus: (requestId: string, status: 'pending' | 'completed') => void;
+    onUpdateRequestStatus: (requestId: string, status: 'pending' | 'completed' | 'in_progress' | 'cancelled') => void;
     onRequestUpdated?: (updatedRequest: PickupRequest | FirebasePickupRequest) => void;
     inventory: Array<{ id: string; name: string; quantity: number; location: string }>;
 }
@@ -172,29 +181,31 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     const [searchQuery, setSearchQuery] = useState<string>('');
 
     const filteredRequests = useMemo(() => {
+        // Optimization: Hoist Date creation and query normalization outside the loop
+        // to avoid O(N) redundant operations during filtering.
+        const start = startDate ? new Date(startDate) : null;
+        const end = endDate ? new Date(endDate) : null;
+        if (end) {
+            end.setHours(23, 59, 59, 999);
+        }
+        const query = searchQuery ? searchQuery.toLowerCase() : '';
+
         return requests.filter(request => {
             // Status Filter
             if (filter !== 'all' && request.status !== filter) return false;
 
             // Date Range Filter
-            const requestDate = new Date(request.date);
-            if (startDate) {
-                const start = new Date(startDate);
-                if (requestDate < start) return false;
-            }
-            if (endDate) {
-                const end = new Date(endDate);
-                // Set end date to end of day
-                end.setHours(23, 59, 59, 999);
-                if (requestDate > end) return false;
+            if (start || end) {
+                const requestDate = new Date(request.date);
+                if (start && requestDate < start) return false;
+                if (end && requestDate > end) return false;
             }
 
             // Location Filter
             if (locationFilter && !request.location.includes(locationFilter)) return false;
 
             // Search Filter (Container name or ID)
-            if (searchQuery) {
-                const query = searchQuery.toLowerCase();
+            if (query) {
                 const matchesId = 'requestNumber' in request
                     ? request.requestNumber.toString().includes(query)
                     : request.id.toLowerCase().includes(query);
@@ -244,7 +255,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                 requestForPdf = {
                     ...request,
                     groupedItems,
-                    totalItems: (request.items as any[]).reduce((sum: number, i: any) => sum + i.quantity, 0),
+                    totalItems: calculateTotalQuantity(request.items),
                     totalLocations: Object.keys(groupedItems).length,
                     // Ensure other required fields are present
                     contactName: request.contactName || 'N/A',
@@ -309,7 +320,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
             const status = getStatusLabel(req.status);
             const location = req.location;
             const items = req.items.map(i => `${i.quantity}x ${i.name}`).join('; ');
-            const totalQty = req.items.reduce((sum, i) => sum + i.quantity, 0);
+            const totalQty = calculateTotalQuantity(req.items);
             const cost = req.cost ? req.cost : 0;
 
             return {
