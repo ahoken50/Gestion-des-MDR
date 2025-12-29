@@ -5,6 +5,7 @@ interface ContactAutocompleteProps {
     value: string;
     onSelect: (name: string, phone: string) => void;
     onChange: (value: string) => void;
+    id?: string;
     placeholder?: string;
     className?: string;
     disabled?: boolean;
@@ -14,6 +15,7 @@ const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({
     value,
     onSelect,
     onChange,
+    id,
     placeholder = "Nom du contact",
     className = "",
     disabled = false
@@ -22,6 +24,7 @@ const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const listboxId = id ? `${id}-listbox` : undefined;
 
     // Handle click outside to close suggestions
     useEffect(() => {
@@ -82,7 +85,17 @@ const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({
     return (
         <div ref={wrapperRef} className="relative">
             <input
+                id={id}
                 type="text"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={showSuggestions}
+                aria-controls={showSuggestions ? listboxId : undefined}
+                aria-activedescendant={
+                    showSuggestions && suggestions[activeSuggestionIndex] && listboxId
+                        ? `${listboxId}-option-${activeSuggestionIndex}`
+                        : undefined
+                }
                 value={value}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
@@ -100,10 +113,17 @@ const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({
             />
 
             {showSuggestions && suggestions.length > 0 && (
-                <ul className="absolute z-50 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
+                <ul
+                    id={listboxId}
+                    role="listbox"
+                    className="absolute z-50 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg mt-1 max-h-60 overflow-auto"
+                >
                     {suggestions.map((contact, index) => (
                         <li
                             key={index}
+                            id={listboxId ? `${listboxId}-option-${index}` : undefined}
+                            role="option"
+                            aria-selected={index === activeSuggestionIndex}
                             onClick={() => handleSelectSuggestion(contact)}
                             className={`px-4 py-2 cursor-pointer ${index === activeSuggestionIndex
                                 ? 'bg-blue-100 text-blue-900'
