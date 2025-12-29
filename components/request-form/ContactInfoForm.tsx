@@ -48,6 +48,7 @@ const ContactInfoForm: React.FC<ContactInfoFormProps> = ({
                         Nom du contact *
                     </label>
                     <ContactAutocomplete
+                        id="contactName"
                         value={contactName}
                         onChange={setContactName}
                         onSelect={(name, phone) => {

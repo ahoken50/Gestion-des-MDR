@@ -127,6 +127,7 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
                                 value={item.name}
                                 onChange={e => handleItemChange(index, 'name', e.target.value)}
                                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 flex-grow dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                aria-label={`Type de contenant pour l'item ${index + 1}`}
                             >
                                 {availableItems.map(name => <option key={name} value={name}>{name}</option>)}
                             </select>
