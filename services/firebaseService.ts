@@ -139,6 +139,14 @@ class FirebaseService {
 
   // Ajouter une image à une demande
   async addImageToRequest(requestId: string, file: File): Promise<string> {
+    // SECURITY: Validate file size (max 10MB) and type
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error('File size exceeds 10MB limit');
+    }
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Invalid file type. Only images are allowed.');
+    }
+
     const storageRef = ref(storage, `requests/${requestId}/${Date.now()}_${file.name}`);
     await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(storageRef);
@@ -156,6 +164,15 @@ class FirebaseService {
 
   // Ajouter une facture à une demande
   async addInvoiceToRequest(requestId: string, file: File): Promise<string> {
+    // SECURITY: Validate file size (max 10MB) and type
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error('File size exceeds 10MB limit');
+    }
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type) && !file.type.startsWith('image/')) {
+      throw new Error('Invalid file type. Only PDF and images are allowed.');
+    }
+
     const storageRef = ref(storage, `invoices/${requestId}/${Date.now()}_${file.name}`);
     await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(storageRef);
