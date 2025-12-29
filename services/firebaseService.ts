@@ -90,6 +90,88 @@ class FirebaseService {
     }
   }
 
+  // Réserver une plage de numéros de requête
+  async reserveRequestNumbers(count: number): Promise<number> {
+    const counterDocRef = doc(db, 'counters', 'requestNumber');
+
+    try {
+      const startValue = await runTransaction(db, async (transaction) => {
+        const counterDoc = await transaction.get(counterDocRef);
+
+        let rangeStart: number;
+        let nextValue: number;
+
+        if (!counterDoc.exists()) {
+          rangeStart = 1;
+          nextValue = count; // Last assigned value will be count (e.g., if count=3, assignments are 1,2,3. Last=3)
+
+          transaction.set(counterDocRef, {
+            value: nextValue,
+            updatedAt: serverTimestamp()
+          });
+        } else {
+          const currentValue = counterDoc.data()?.value || 0;
+          rangeStart = currentValue + 1;
+          nextValue = currentValue + count;
+
+          transaction.update(counterDocRef, {
+            value: nextValue,
+            updatedAt: serverTimestamp()
+          });
+        }
+
+        return rangeStart;
+      });
+
+      return startValue;
+
+    } catch (error) {
+      console.error('Error reserving request numbers:', error);
+      throw error;
+    }
+  }
+
+  // Ajouter plusieurs demandes (batch)
+  async addPickupRequests(requests: Omit<FirebasePickupRequest, 'id' | 'requestNumber' | 'createdAt' | 'updatedAt'>[]): Promise<void> {
+    if (requests.length === 0) return;
+
+    try {
+      // 1. Réserver les numéros
+      const startRequestNumber = await this.reserveRequestNumbers(requests.length);
+
+      // 2. Traiter par lots de 500
+      const batchSize = 500;
+      const chunks = [];
+
+      for (let i = 0; i < requests.length; i += batchSize) {
+        chunks.push(requests.slice(i, i + batchSize));
+      }
+
+      let currentRequestNumber = startRequestNumber;
+
+      for (const chunk of chunks) {
+        const batch = writeBatch(db);
+
+        chunk.forEach(request => {
+          const docRef = doc(collection(db, 'pickupRequests'));
+          batch.set(docRef, {
+            ...request,
+            requestNumber: currentRequestNumber++,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+        });
+
+        await batch.commit();
+      }
+
+      console.log(`Successfully added ${requests.length} pickup requests.`);
+    } catch (error) {
+      console.error('Error adding pickup requests in batch:', error);
+      throw error;
+    }
+  }
+
   // Ajouter une nouvelle demande
   async addPickupRequest(request: Omit<FirebasePickupRequest, 'id' | 'requestNumber' | 'createdAt' | 'updatedAt'>): Promise<{ id: string, requestNumber: number }> {
     const requestNumber = await this.getNextRequestNumber();

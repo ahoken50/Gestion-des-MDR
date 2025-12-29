@@ -117,30 +117,25 @@ export const useAppData = () => {
                             const localRequests: PickupRequest[] = JSON.parse(savedRequests);
                             if (localRequests.length > 0) {
                                 toast.info(`Synchronisation de ${localRequests.length} demandes hors ligne...`);
-                                let syncedCount = 0;
-                                for (const req of localRequests) {
-                                    try {
-                                        const firebaseRequest: Omit<FirebasePickupRequest, 'id' | 'requestNumber' | 'createdAt' | 'updatedAt'> = {
-                                            ...req,
-                                            status: req.status as any, // Ensure status matches
-                                        };
-                                        // Remove ID to let Firebase generate one, or keep it if we want to track?
-                                        // FirebaseService.addPickupRequest ignores ID anyway.
-                                        await firebaseService.addPickupRequest(firebaseRequest);
-                                        syncedCount++;
-                                    } catch (err) {
-                                        console.error("Failed to sync request", req, err);
-                                    }
-                                }
 
-                                if (syncedCount > 0) {
-                                    toast.success(`${syncedCount} demandes synchronisées avec succès !`);
+                                try {
+                                    const firebaseRequestsToSync: Omit<FirebasePickupRequest, 'id' | 'requestNumber' | 'createdAt' | 'updatedAt'>[] = localRequests.map(req => ({
+                                        ...req,
+                                        status: req.status as any, // Ensure status matches
+                                    }));
+
+                                    await firebaseService.addPickupRequests(firebaseRequestsToSync);
+
+                                    toast.success(`${localRequests.length} demandes synchronisées avec succès !`);
                                     // Clear local requests after sync
                                     setPickupRequests([]);
                                     localStorage.removeItem('pickupRequests');
                                     // Refresh Firebase requests
                                     const updatedFbRequests = await firebaseService.getPickupRequests();
                                     setFirebaseRequests(updatedFbRequests);
+                                } catch (err) {
+                                    console.error("Failed to sync requests", err);
+                                    toast.error("Erreur lors de la synchronisation des demandes");
                                 }
                             }
                         }
