@@ -39,6 +39,8 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
 
     // Filter requests by selected year and period
     const filteredRequests = useMemo(() => {
+        // Note: We use new Date() for year checking to ensure we respect the local timezone.
+        // String parsing (substring) would imply UTC and might categorize New Year's Eve events incorrectly.
         let filtered = requests.filter(req => new Date(req.date).getFullYear() === selectedYear);
 
         const now = new Date();
@@ -47,31 +49,39 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
             case 'month':
                 const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
                 const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                const startOfMonthTime = startOfMonth.getTime();
+                const endOfMonthTime = endOfMonth.getTime();
+
                 filtered = filtered.filter(req => {
-                    const date = new Date(req.date);
-                    return date >= startOfMonth && date <= endOfMonth;
+                    const dateTime = new Date(req.date).getTime();
+                    return dateTime >= startOfMonthTime && dateTime <= endOfMonthTime;
                 });
                 break;
             case 'quarter':
                 const currentQuarter = Math.floor(now.getMonth() / 3);
                 const startOfQuarter = new Date(now.getFullYear(), currentQuarter * 3, 1);
                 const endOfQuarter = new Date(now.getFullYear(), (currentQuarter + 1) * 3, 0);
+                const startOfQuarterTime = startOfQuarter.getTime();
+                const endOfQuarterTime = endOfQuarter.getTime();
+
                 filtered = filtered.filter(req => {
-                    const date = new Date(req.date);
-                    return date >= startOfQuarter && date <= endOfQuarter;
+                    const dateTime = new Date(req.date).getTime();
+                    return dateTime >= startOfQuarterTime && dateTime <= endOfQuarterTime;
                 });
                 break;
             case 'last30':
-                const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-                filtered = filtered.filter(req => new Date(req.date) >= last30Days);
+                const last30DaysTime = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+                // Optimization: Use Date.parse (or getTime) to compare numbers instead of Date objects
+                // Date.parse is robust for ISO strings and returns UTC timestamp, which works for relative time comparison
+                filtered = filtered.filter(req => Date.parse(req.date) >= last30DaysTime);
                 break;
             case 'custom':
                 if (customDateRange.start && customDateRange.end) {
-                    const startDate = new Date(customDateRange.start);
-                    const endDate = new Date(customDateRange.end);
+                    const startTime = new Date(customDateRange.start).getTime();
+                    const endTime = new Date(customDateRange.end).getTime();
                     filtered = filtered.filter(req => {
-                        const date = new Date(req.date);
-                        return date >= startDate && date <= endDate;
+                        const time = Date.parse(req.date);
+                        return time >= startTime && time <= endTime;
                     });
                 }
                 break;
@@ -86,8 +96,15 @@ const Dashboard: React.FC<DashboardProps> = ({ requests, inventory }) => {
 
     // Get available years from requests
     const availableYears = useMemo(() => {
-        const years = new Set(requests.map(req => new Date(req.date).getFullYear()));
+        const years = new Set<number>();
         years.add(new Date().getFullYear()); // Always include current year
+
+        // Note: Using new Date().getFullYear() to respect local timezone logic
+        requests.forEach(req => {
+            const year = new Date(req.date).getFullYear();
+            years.add(year);
+        });
+
         return Array.from(years).sort((a, b) => b - a);
     }, [requests]);
 
