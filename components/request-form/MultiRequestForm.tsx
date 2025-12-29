@@ -25,6 +25,10 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
     const [locationComments, setLocationComments] = useState<Record<string, string>>({});
     const [isGenerating, setIsGenerating] = useState(false);
 
+    const inventoryMap = useMemo(() => {
+        return new Map(inventory.map(item => [item.id, item]));
+    }, [inventory]);
+
     const inventoryByLocation = useMemo(() => {
         return LOCATIONS.map(loc => ({
             location: loc,
@@ -46,14 +50,14 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
     useEffect(() => {
         const validSelectedItems = selectedItems.filter(selectedItem => {
             if (selectedItem.id.startsWith('custom-')) return true;
-            const inventoryItem = inventory.find(item => item.id === selectedItem.id);
+            const inventoryItem = inventoryMap.get(selectedItem.id);
             return inventoryItem && inventoryItem.quantity >= selectedItem.quantity;
         });
 
         if (validSelectedItems.length !== selectedItems.length) {
             setSelectedItems(validSelectedItems);
         }
-    }, [inventory, selectedItems]);
+    }, [inventoryMap, selectedItems]);
 
     const handleAddMultiItem = (item: InventoryItem, quantity: number, replaceBin: boolean = false) => {
         const existingIndex = selectedItems.findIndex(
