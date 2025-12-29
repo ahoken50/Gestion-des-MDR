@@ -8,6 +8,7 @@ interface ContactAutocompleteProps {
     placeholder?: string;
     className?: string;
     disabled?: boolean;
+    id?: string;
 }
 
 const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({
@@ -16,7 +17,8 @@ const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({
     onChange,
     placeholder = "Nom du contact",
     className = "",
-    disabled = false
+    disabled = false,
+    id
 }) => {
     const [suggestions, setSuggestions] = useState<Contact[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -83,6 +85,7 @@ const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({
         <div ref={wrapperRef} className="relative">
             <input
                 type="text"
+                id={id}
                 value={value}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
