@@ -232,8 +232,11 @@ class FirebaseService {
       const firebaseInventory = await this.getInventory();
 
       // Fusionner les données
+      // Optimization: Create a Map for O(1) lookup instead of O(N) find inside loop
+      const firebaseInventoryMap = new Map(firebaseInventory.map(item => [item.id, item]));
+
       const mergedInventory = localInventory.map(localItem => {
-        const firebaseItem = firebaseInventory.find(fi => fi.id === localItem.id);
+        const firebaseItem = firebaseInventoryMap.get(localItem.id);
         return firebaseItem || {
           ...localItem,
           updatedAt: serverTimestamp()
