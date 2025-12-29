@@ -188,10 +188,21 @@ export const useAppData = () => {
                 setPickupRequests(prev => [requestWithId, ...prev]);
             }
 
+            // Optimization: Create a map for O(1) lookup
+            const requestedItemsMap = new Map<string, number>();
+            newRequest.items.forEach(item => {
+                if (!requestedItemsMap.has(item.name)) {
+                    requestedItemsMap.set(item.name, item.quantity);
+                }
+            });
+
             const updatedInventory = inventory.map(invItem => {
-                const requested = newRequest.items.find(reqItem => reqItem.name === invItem.name && newRequest.location === invItem.location);
-                if (requested) {
-                    return { ...invItem, quantity: Math.max(0, invItem.quantity - requested.quantity) };
+                // Optimization: Only process items in the requested location
+                if (invItem.location === newRequest.location) {
+                    const requestedQty = requestedItemsMap.get(invItem.name);
+                    if (requestedQty !== undefined) {
+                        return { ...invItem, quantity: Math.max(0, invItem.quantity - requestedQty) };
+                    }
                 }
                 return invItem;
             });
@@ -282,13 +293,26 @@ export const useAppData = () => {
                 setPickupRequests(prev => [requestWithId, ...prev]);
             }
 
-            const updatedInventory = inventory.map(invItem => {
-                const totalRequested = allItems
-                    .filter(reqItem => !reqItem.id.startsWith('custom-') && reqItem.name === invItem.name && reqItem.location === invItem.location)
-                    .reduce((sum, item) => sum + item.quantity, 0);
+            // Optimization: Create a nested map (Location -> Name -> Quantity) for O(1) lookup
+            const quantityMap = new Map<string, Map<string, number>>();
 
-                if (totalRequested > 0) {
-                    return { ...invItem, quantity: Math.max(0, invItem.quantity - totalRequested) };
+            allItems.forEach(item => {
+                if (item.id.startsWith('custom-')) return;
+
+                if (!quantityMap.has(item.location)) {
+                    quantityMap.set(item.location, new Map());
+                }
+                const locMap = quantityMap.get(item.location)!;
+                locMap.set(item.name, (locMap.get(item.name) || 0) + item.quantity);
+            });
+
+            const updatedInventory = inventory.map(invItem => {
+                const locMap = quantityMap.get(invItem.location);
+                if (locMap) {
+                    const qty = locMap.get(invItem.name);
+                    if (qty !== undefined && qty > 0) {
+                        return { ...invItem, quantity: Math.max(0, invItem.quantity - qty) };
+                    }
                 }
                 return invItem;
             });
