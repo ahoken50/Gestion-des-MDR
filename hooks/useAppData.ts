@@ -282,10 +282,18 @@ export const useAppData = () => {
                 setPickupRequests(prev => [requestWithId, ...prev]);
             }
 
+            // Pre-aggregate quantities to avoid O(N^2) complexity
+            const itemQuantities = new Map<string, number>();
+            allItems.forEach(item => {
+                if (!item.id.startsWith('custom-')) {
+                    const key = `${item.name}|${item.location}`;
+                    itemQuantities.set(key, (itemQuantities.get(key) || 0) + item.quantity);
+                }
+            });
+
             const updatedInventory = inventory.map(invItem => {
-                const totalRequested = allItems
-                    .filter(reqItem => !reqItem.id.startsWith('custom-') && reqItem.name === invItem.name && reqItem.location === invItem.location)
-                    .reduce((sum, item) => sum + item.quantity, 0);
+                const key = `${invItem.name}|${invItem.location}`;
+                const totalRequested = itemQuantities.get(key) || 0;
 
                 if (totalRequested > 0) {
                     return { ...invItem, quantity: Math.max(0, invItem.quantity - totalRequested) };
