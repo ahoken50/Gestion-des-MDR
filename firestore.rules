@@ -60,12 +60,16 @@ service firebase.storage {
     // Images des demandes - Accès public
     match /requests/{requestId}/{allPaths=**} {
       allow read: if true;
-      allow write: if request.resource.size < 10 * 1024 * 1024;
+      // SECURITY: Validate size (<10MB) and ensure content type is image
+      allow write: if request.resource.size < 10 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
     }
     // Factures - Accès public
     match /invoices/{requestId}/{allPaths=**} {
       allow read: if true;
-      allow write: if request.resource.size < 10 * 1024 * 1024;
+      // SECURITY: Validate size (<10MB) and ensure content type is image or PDF
+      allow write: if request.resource.size < 10 * 1024 * 1024
+                   && (request.resource.contentType.matches('image/.*') || request.resource.contentType == 'application/pdf');
     }
   }
 }

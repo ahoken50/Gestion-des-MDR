@@ -523,6 +523,12 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                             return;
                           }
 
+                          const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+                          if (!allowedTypes.includes(file.type) && !file.type.startsWith('image/')) {
+                            alert("Type de fichier invalide. Seuls les PDF et les images sont autorisés.");
+                            return;
+                          }
+
                           setIsUploading(true);
                           try {
                             if (isFirebase && 'id' in request) {
