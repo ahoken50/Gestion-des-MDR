@@ -84,11 +84,16 @@ const LocationInventorySection = memo(({
                                             value={item.quantity}
                                             onChange={(e) => onQuantityChange(item.id, parseInt(e.target.value, 10) || 0)}
                                             className="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-1"
+                                            aria-label={`Quantité pour ${item.name}`}
                                         />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button onClick={() => onDelete(item.id)} className="text-red-600 hover:text-red-800 transition-colors">
-                                            <TrashIcon className="w-5 h-5" />
+                                        <button
+                                            onClick={() => onDelete(item.id)}
+                                            className="text-red-600 hover:text-red-800 transition-colors"
+                                            aria-label={`Supprimer ${item.name}`}
+                                        >
+                                            <TrashIcon className="w-5 h-5" aria-hidden="true" />
                                         </button>
                                     </td>
                                 </tr>
