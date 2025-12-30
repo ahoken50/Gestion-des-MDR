@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { firebaseService, type FirebasePickupRequest } from '../services/firebaseService';
 import type { InventoryItem, PickupRequest, RequestedItem } from '../types';
 import type { PickupRequestPDF } from '../types-pdf';
@@ -10,7 +10,7 @@ export type View = 'inventory' | 'new_request' | 'history' | 'dashboard';
 export const useAppData = () => {
     const { success, error, info } = useToast();
     // Helper for toast usage because useToast returns object with methods
-    const toast = { success, error, info };
+    const toast = useMemo(() => ({ success, error, info }), [success, error, info]);
 
     const [currentView, setCurrentView] = useState<View>('inventory');
 
@@ -156,11 +156,11 @@ export const useAppData = () => {
             }
         };
         initFirebase();
-    }, []);
+    }, [toast]);
 
     const allRequests = useMemo(() => [...firebaseRequests, ...pickupRequests], [firebaseRequests, pickupRequests]);
 
-    const handleAddRequest = async (newRequest: Omit<PickupRequest, 'id' | 'status'>): Promise<number | undefined> => {
+    const handleAddRequest = useCallback(async (newRequest: Omit<PickupRequest, 'id' | 'status'>): Promise<number | undefined> => {
         try {
             let requestNumber: number | undefined;
 
@@ -191,7 +191,8 @@ export const useAppData = () => {
                 }
             });
 
-            const updatedInventory = inventory.map(invItem => {
+            // Functional update to avoid dependency on 'inventory'
+            setInventory(currentInventory => currentInventory.map(invItem => {
                 // Optimization: Only process items in the requested location
                 if (invItem.location === newRequest.location) {
                     const requestedQty = requestedItemsMap.get(invItem.name);
@@ -200,8 +201,8 @@ export const useAppData = () => {
                     }
                 }
                 return invItem;
-            });
-            setInventory(updatedInventory);
+            }));
+
             setCurrentView('history');
             toast.success('Demande créée avec succès !');
             return requestNumber;
@@ -210,11 +211,15 @@ export const useAppData = () => {
             toast.error('Erreur lors de la sauvegarde de la demande');
             return undefined;
         }
-    };
+    }, [isFirebaseEnabled, toast]);
 
-    const handleUpdateRequestStatus = async (requestId: string, status: 'pending' | 'in_progress' | 'completed' | 'cancelled') => {
+    const handleUpdateRequestStatus = useCallback(async (requestId: string, status: 'pending' | 'in_progress' | 'completed' | 'cancelled') => {
         try {
+            // Check if it's a firebase request by looking it up in the current list
+            // Note: We need firebaseRequests in dependency for this.
+            // Alternatively, we could assume if isFirebaseEnabled is true, we try firebase.
             const firebaseRequest = firebaseRequests.find(req => req.id === requestId);
+
             if (firebaseRequest && isFirebaseEnabled) {
                 await firebaseService.updatePickupRequest(requestId, { status });
                 setFirebaseRequests(prev => prev.map(req => req.id === requestId ? { ...req, status } : req));
@@ -225,9 +230,9 @@ export const useAppData = () => {
             console.error('Error updating request status:', error);
             toast.error('Erreur lors de la mise à jour du statut');
         }
-    };
+    }, [firebaseRequests, isFirebaseEnabled, toast]);
 
-    const handleRequestUpdated = async (updatedRequest: PickupRequest | FirebasePickupRequest) => {
+    const handleRequestUpdated = useCallback(async (updatedRequest: PickupRequest | FirebasePickupRequest) => {
         try {
             if ('requestNumber' in updatedRequest && isFirebaseEnabled) {
                 await firebaseService.updatePickupRequest(updatedRequest.id!, updatedRequest);
@@ -239,9 +244,9 @@ export const useAppData = () => {
             console.error('Error updating request:', error);
             toast.error('Erreur lors de la mise à jour de la demande');
         }
-    };
+    }, [isFirebaseEnabled, toast]);
 
-    const handlePDFGenerated = async (request: PickupRequestPDF) => {
+    const handlePDFGenerated = useCallback(async (request: PickupRequestPDF) => {
         try {
             const allItems: RequestedItem[] = [];
             const locations: string[] = [];
@@ -301,7 +306,8 @@ export const useAppData = () => {
                 locMap.set(item.name, (locMap.get(item.name) || 0) + item.quantity);
             });
 
-            const updatedInventory = inventory.map(invItem => {
+            // Functional update to avoid dependency on 'inventory'
+            setInventory(currentInventory => currentInventory.map(invItem => {
                 const locMap = quantityMap.get(invItem.location);
                 if (locMap) {
                     const qty = locMap.get(invItem.name);
@@ -310,13 +316,12 @@ export const useAppData = () => {
                     }
                 }
                 return invItem;
-            });
-            setInventory(updatedInventory);
+            }));
 
         } catch (error) {
             console.error('Error saving PDF request to history:', error);
         }
-    };
+    }, [isFirebaseEnabled]);
 
     return {
         currentView,
