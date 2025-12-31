@@ -9,6 +9,7 @@ interface ContactAutocompleteProps {
     className?: string;
     disabled?: boolean;
     id?: string;
+    maxLength?: number;
 }
 
 const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({
@@ -18,7 +19,8 @@ const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({
     placeholder = "Nom du contact",
     className = "",
     disabled = false,
-    id
+    id,
+    maxLength
 }) => {
     const [suggestions, setSuggestions] = useState<Contact[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -88,6 +90,7 @@ const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({
                 id={id}
                 value={value}
                 onChange={handleChange}
+                maxLength={maxLength}
                 onKeyDown={handleKeyDown}
                 onFocus={() => {
                     if (value.trim().length >= 2) {
