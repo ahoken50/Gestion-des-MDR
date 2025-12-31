@@ -186,26 +186,36 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     const [locationFilter, setLocationFilter] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState<string>('');
 
+    // Optimization: Pre-calculate timestamps for all requests when 'requests' changes.
+    // This avoids O(N) `new Date()` operations during every filter render (e.g., typing in search box).
+    const requestsWithMeta = useMemo(() => {
+        return requests.map(req => ({
+            original: req,
+            // Cache timestamp for fast range comparison
+            timestamp: new Date(req.date).getTime()
+        }));
+    }, [requests]);
+
     const filteredRequests = useMemo(() => {
-        // Optimization: Hoist Date creation and query normalization outside the loop
-        // to avoid O(N) redundant operations during filtering.
-        const start = startDate ? new Date(startDate) : null;
+        // Optimization: Normalize query and boundary timestamps outside the loop
+        const startTimestamp = startDate ? new Date(startDate).getTime() : null;
         const end = endDate ? new Date(endDate) : null;
+        let endTimestamp: number | null = null;
+
         if (end) {
             end.setHours(23, 59, 59, 999);
+            endTimestamp = end.getTime();
         }
+
         const query = searchQuery ? searchQuery.toLowerCase() : '';
 
-        return requests.filter(request => {
+        return requestsWithMeta.filter(({ original: request, timestamp }) => {
             // Status Filter
             if (filter !== 'all' && request.status !== filter) return false;
 
-            // Date Range Filter
-            if (start || end) {
-                const requestDate = new Date(request.date);
-                if (start && requestDate < start) return false;
-                if (end && requestDate > end) return false;
-            }
+            // Date Range Filter (using pre-calculated timestamp)
+            if (startTimestamp !== null && timestamp < startTimestamp) return false;
+            if (endTimestamp !== null && timestamp > endTimestamp) return false;
 
             // Location Filter
             if (locationFilter && !request.location.includes(locationFilter)) return false;
@@ -215,14 +225,17 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                 const matchesId = 'requestNumber' in request
                     ? request.requestNumber.toString().includes(query)
                     : request.id.toLowerCase().includes(query);
-                const matchesItems = request.items.some(item => item.name.toLowerCase().includes(query));
 
-                if (!matchesId && !matchesItems) return false;
+                if (matchesId) return true;
+
+                // Only check items if ID doesn't match (short-circuit)
+                const matchesItems = request.items.some(item => item.name.toLowerCase().includes(query));
+                if (!matchesItems) return false;
             }
 
             return true;
-        });
-    }, [requests, filter, startDate, endDate, locationFilter, searchQuery]);
+        }).map(item => item.original);
+    }, [requestsWithMeta, filter, startDate, endDate, locationFilter, searchQuery]);
 
     const handleViewDetails = useCallback((request: PickupRequest | FirebasePickupRequest) => {
         setSelectedRequest(request);
