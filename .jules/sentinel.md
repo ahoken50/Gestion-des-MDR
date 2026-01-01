@@ -19,3 +19,13 @@
 **Prevention:**
 - Always add `request.resource.contentType.matches('image/.*')` or specific whitelist in Storage rules.
 - Mirror these validations on the client-side for better UX.
+
+## 2025-05-25 - Missing Subresource Integrity for CDN Scripts
+**Vulnerability:** The application was loading `jspdf` and `jspdf-autotable` scripts from a public CDN without Subresource Integrity (SRI) checks. If the CDN were compromised, malicious code could be injected into the application context.
+
+**Learning:** When relying on external CDNs for core libraries, especially in security-sensitive applications (handling inventory/invoices), trusting the delivery mechanism is a vulnerability.
+
+**Prevention:**
+- Always generate and include `integrity` hashes (SRI) for external scripts.
+- Use `crossorigin="anonymous"` to ensure correct CORS handling for integrity checks.
+- Periodically audit external dependencies.
