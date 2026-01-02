@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     BarChart,
     Bar,
@@ -107,88 +107,89 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
         return Array.from(years).sort((a, b) => b - a);
     }, [requests]);
 
-    // KPI Calculations
-    const kpis = useMemo(() => {
-        const totalRequests = filteredRequests.length;
-        const pendingRequests = filteredRequests.filter(r => r.status === 'pending').length;
-        const completedRequests = filteredRequests.filter(r => r.status === 'completed').length;
+    // Optimization: Calculate all metrics in a single pass over filteredRequests (O(N))
+    // instead of multiple iterations (O(5*N)).
+    const { kpis, locationData, typeData, timelineData, costByLocationData } = useMemo(() => {
+        let totalRequests = 0;
+        let pendingRequests = 0;
+        let completedRequests = 0;
+        let totalContainers = 0;
+        let totalCost = 0;
 
-        const totalContainers = filteredRequests.reduce((sum, req) => {
-            return sum + req.items.reduce((itemSum, item) => itemSum + item.quantity, 0);
-        }, 0);
-
-        const totalCost = filteredRequests.reduce((sum, req) => sum + (req.cost || 0), 0);
-
-        return { totalRequests, pendingRequests, completedRequests, totalContainers, totalCost };
-    }, [filteredRequests]);
-
-    // Chart Data Preparation
-    const locationData = useMemo(() => {
         const locationCounts: Record<string, number> = {};
-        filteredRequests.forEach(req => {
-            req.items.forEach(item => {
-                const loc = item.location || req.location;
-                // Clean up location name if it's a combined string
-                const cleanLoc = loc.split(',')[0].trim();
-                locationCounts[cleanLoc] = (locationCounts[cleanLoc] || 0) + item.quantity;
-            });
-        });
-
-        return Object.entries(locationCounts)
-            .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value) // Sort by highest count
-            .slice(0, 5); // Top 5 locations
-    }, [filteredRequests]);
-
-    const typeData = useMemo(() => {
         const typeCounts: Record<string, number> = {};
-        filteredRequests.forEach(req => {
-            req.items.forEach(item => {
-                typeCounts[item.name] = (typeCounts[item.name] || 0) + item.quantity;
-            });
-        });
-
-        return Object.entries(typeCounts)
-            .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 5); // Top 5 types
-    }, [filteredRequests]);
-
-    const timelineData = useMemo(() => {
         const dateCounts: Record<string, number> = {};
-        // Sort requests by date first
-        const sortedRequests = [...filteredRequests].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-        sortedRequests.forEach(req => {
-            const date = new Date(req.date).toLocaleDateString('fr-CA');
-            const quantity = req.items.reduce((sum, item) => sum + item.quantity, 0);
-            dateCounts[date] = (dateCounts[date] || 0) + quantity;
-        });
-
-        // Take last 7 active days or just map all
-        return Object.entries(dateCounts).map(([date, count]) => ({ date, count }));
-    }, [filteredRequests]);
-
-    const costByLocationData = useMemo(() => {
         const locationCosts: Record<string, number> = {};
+
         filteredRequests.forEach(req => {
+            // KPIs
+            totalRequests++;
+            if (req.status === 'pending') pendingRequests++;
+            if (req.status === 'completed') completedRequests++;
+            totalCost += (req.cost || 0);
+
+            // Calculate item-based metrics
+            let reqQuantity = 0;
+            req.items.forEach(item => {
+                const qty = item.quantity;
+                reqQuantity += qty;
+                totalContainers += qty;
+
+                // Location Data
+                const loc = item.location || req.location;
+                const cleanLoc = (loc || 'Inconnu').split(',')[0].trim();
+                locationCounts[cleanLoc] = (locationCounts[cleanLoc] || 0) + qty;
+
+                // Type Data
+                typeCounts[item.name] = (typeCounts[item.name] || 0) + qty;
+            });
+
+            // Timeline Data (aggregate by date)
+            const date = new Date(req.date).toLocaleDateString('fr-CA');
+            dateCounts[date] = (dateCounts[date] || 0) + reqQuantity;
+
+            // Cost by Location Data
             if (req.locationCosts) {
-                // Use detailed location costs if available
                 Object.entries(req.locationCosts).forEach(([loc, cost]) => {
                     const cleanLoc = loc.split(',')[0].trim();
                     locationCosts[cleanLoc] = (locationCosts[cleanLoc] || 0) + cost;
                 });
             } else if (req.cost) {
-                // Fallback to total cost attributed to primary location
                 const loc = req.location.split(',')[0].trim();
                 locationCosts[loc] = (locationCosts[loc] || 0) + req.cost;
             }
         });
 
-        return Object.entries(locationCosts)
+        const finalKpis = { totalRequests, pendingRequests, completedRequests, totalContainers, totalCost };
+
+        // Post-process aggregations (sorting and slicing)
+        const finalLocationData = Object.entries(locationCounts)
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value)
             .slice(0, 5);
+
+        const finalTypeData = Object.entries(typeCounts)
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5);
+
+        // Sort dates chronologically
+        const finalTimelineData = Object.entries(dateCounts)
+            .map(([date, count]) => ({ date, count }))
+            .sort((a, b) => a.date.localeCompare(b.date));
+
+        const finalCostByLocationData = Object.entries(locationCosts)
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5);
+
+        return {
+            kpis: finalKpis,
+            locationData: finalLocationData,
+            typeData: finalTypeData,
+            timelineData: finalTimelineData,
+            costByLocationData: finalCostByLocationData
+        };
     }, [filteredRequests]);
 
     const handleDownloadPDF = () => {
