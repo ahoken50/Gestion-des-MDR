@@ -45,7 +45,7 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
         const now = new Date();
 
         switch (selectedPeriod) {
-            case 'month':
+            case 'month': {
                 const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
                 const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
                 const startOfMonthTime = startOfMonth.getTime();
@@ -56,7 +56,8 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
                     return dateTime >= startOfMonthTime && dateTime <= endOfMonthTime;
                 });
                 break;
-            case 'quarter':
+            }
+            case 'quarter': {
                 const currentQuarter = Math.floor(now.getMonth() / 3);
                 const startOfQuarter = new Date(now.getFullYear(), currentQuarter * 3, 1);
                 const endOfQuarter = new Date(now.getFullYear(), (currentQuarter + 1) * 3, 0);
@@ -68,13 +69,15 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
                     return dateTime >= startOfQuarterTime && dateTime <= endOfQuarterTime;
                 });
                 break;
-            case 'last30':
+            }
+            case 'last30': {
                 const last30DaysTime = now.getTime() - 30 * 24 * 60 * 60 * 1000;
                 // Optimization: Use Date.parse (or getTime) to compare numbers instead of Date objects
                 // Date.parse is robust for ISO strings and returns UTC timestamp, which works for relative time comparison
                 filtered = filtered.filter(req => Date.parse(req.date) >= last30DaysTime);
                 break;
-            case 'custom':
+            }
+            case 'custom': {
                 if (customDateRange.start && customDateRange.end) {
                     const startTime = new Date(customDateRange.start).getTime();
                     const endTime = new Date(customDateRange.end).getTime();
@@ -84,6 +87,7 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
                     });
                 }
                 break;
+            }
             case 'all':
             default:
                 // Already filtered by year

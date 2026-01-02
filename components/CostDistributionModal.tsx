@@ -21,37 +21,55 @@ const CostDistributionModal: React.FC<CostDistributionModalProps> = ({
     const [costs, setCosts] = useState<Record<string, string>>({});
     const [total, setTotal] = useState<number>(0);
 
+    // Reset state when closed or open
     useEffect(() => {
-        if (isOpen) {
-            // Initialize costs
-            const newCosts: Record<string, string> = {};
-            locations.forEach(loc => {
-                newCosts[loc] = initialLocationCosts[loc] ? initialLocationCosts[loc].toString() : '';
-            });
-
-            // If no split costs but total exists, put it all in the first location or leave empty to let user decide
-            if (Object.keys(initialLocationCosts).length === 0 && initialTotalCost > 0 && locations.length === 1) {
-                newCosts[locations[0]] = initialTotalCost.toString();
-            }
-
-            setCosts(newCosts);
+        if (!isOpen) {
+            setCosts({});
+            setTotal(0);
+            return;
         }
-    }, [isOpen, locations, initialLocationCosts, initialTotalCost]);
 
-    useEffect(() => {
-        // Calculate total whenever costs change
-        const newTotal = Object.values(costs).reduce((sum, val) => {
+        // Initialize costs when opened
+        const newCosts: Record<string, string> = {};
+        locations.forEach(loc => {
+            newCosts[loc] = initialLocationCosts[loc] ? initialLocationCosts[loc].toString() : '';
+        });
+
+        // If no split costs but total exists, put it all in the first location or leave empty to let user decide
+        if (Object.keys(initialLocationCosts).length === 0 && initialTotalCost > 0 && locations.length === 1) {
+            newCosts[locations[0]] = initialTotalCost.toString();
+        }
+
+        // Calculate initial total
+        const newTotal = Object.values(newCosts).reduce((sum, val) => {
             const num = parseFloat(val.replace(',', '.'));
             return sum + (isNaN(num) ? 0 : num);
         }, 0);
+
+        // We can safely call set state here because it's inside useEffect dependent on isOpen
+        // But we need to ensure it doesn't loop if we included 'costs' in dependency
+        setCosts(newCosts);
         setTotal(newTotal);
-    }, [costs]);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen]);
 
     const handleCostChange = (location: string, value: string) => {
-        setCosts(prev => ({
-            ...prev,
-            [location]: value
-        }));
+        setCosts(prev => {
+            const nextCosts = {
+                ...prev,
+                [location]: value
+            };
+
+            // Calculate total whenever costs change
+            const newTotal = Object.values(nextCosts).reduce((sum, val) => {
+                const num = parseFloat(val.replace(',', '.'));
+                return sum + (isNaN(num) ? 0 : num);
+            }, 0);
+            setTotal(newTotal);
+
+            return nextCosts;
+        });
     };
 
     const handleSave = () => {

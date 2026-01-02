@@ -174,10 +174,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ inventory, onUpdate
     // We use a ref to store the previous result and only create new object references
     // if the actual content has changed. This allows LocationInventorySection's
     // custom comparator to return true (fast path) more often.
-    const prevInventoryByLocationRef = useRef<{ location: string; items: InventoryItem[] }[]>([]);
-
     const inventoryByLocation = useMemo(() => {
-        const prev = prevInventoryByLocationRef.current;
         const newGroups: Record<string, InventoryItem[]> = {};
 
         // Single pass O(N) grouping instead of N * Locations
@@ -188,32 +185,14 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ inventory, onUpdate
             newGroups[item.location].push(item);
         });
 
-        const next = LOCATIONS.map((location, index) => {
+        const next = LOCATIONS.map((location) => {
             const newItems = newGroups[location] || [];
-            const prevGroup = prev[index];
-
-            // Check if we can reuse the previous group object
-            // We compare length first, then referential equality of items
-            if (prevGroup && prevGroup.location === location && prevGroup.items.length === newItems.length) {
-                let isSame = true;
-                for (let i = 0; i < newItems.length; i++) {
-                    if (newItems[i] !== prevGroup.items[i]) {
-                        isSame = false;
-                        break;
-                    }
-                }
-                if (isSame) {
-                    return prevGroup; // Reuse the old object reference!
-                }
-            }
-
             return {
                 location,
                 items: newItems,
             };
         });
 
-        prevInventoryByLocationRef.current = next;
         return next;
     }, [inventory]);
 
