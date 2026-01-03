@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     BarChart,
     Bar,
@@ -25,6 +25,13 @@ interface DashboardProps {
     requests: (PickupRequest | FirebasePickupRequest)[];
 }
 
+interface RequestMeta {
+    request: PickupRequest | FirebasePickupRequest;
+    dateObj: Date;
+    timestamp: number;
+    year: number;
+}
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
@@ -36,11 +43,24 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
         end: ''
     });
 
+    // Optimization: Pre-calculate date objects and timestamps to avoid repeated instantiation
+    // in filters and sorts (O(N) allocations instead of O(N log N) or O(N * renders))
+    const requestsWithMeta = useMemo(() => {
+        return requests.map(req => {
+            const date = new Date(req.date);
+            return {
+                request: req,
+                dateObj: date,
+                timestamp: date.getTime(),
+                year: date.getFullYear()
+            };
+        });
+    }, [requests]);
+
     // Filter requests by selected year and period
     const filteredRequests = useMemo(() => {
-        // Note: We use new Date() for year checking to ensure we respect the local timezone.
-        // String parsing (substring) would imply UTC and might categorize New Year's Eve events incorrectly.
-        let filtered = requests.filter(req => new Date(req.date).getFullYear() === selectedYear);
+        // Use pre-calculated year for fast filtering
+        let filtered = requestsWithMeta.filter(meta => meta.year === selectedYear);
 
         const now = new Date();
 
@@ -51,9 +71,8 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
                 const startOfMonthTime = startOfMonth.getTime();
                 const endOfMonthTime = endOfMonth.getTime();
 
-                filtered = filtered.filter(req => {
-                    const dateTime = new Date(req.date).getTime();
-                    return dateTime >= startOfMonthTime && dateTime <= endOfMonthTime;
+                filtered = filtered.filter(meta => {
+                    return meta.timestamp >= startOfMonthTime && meta.timestamp <= endOfMonthTime;
                 });
                 break;
             }
@@ -64,26 +83,22 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
                 const startOfQuarterTime = startOfQuarter.getTime();
                 const endOfQuarterTime = endOfQuarter.getTime();
 
-                filtered = filtered.filter(req => {
-                    const dateTime = new Date(req.date).getTime();
-                    return dateTime >= startOfQuarterTime && dateTime <= endOfQuarterTime;
+                filtered = filtered.filter(meta => {
+                    return meta.timestamp >= startOfQuarterTime && meta.timestamp <= endOfQuarterTime;
                 });
                 break;
             }
             case 'last30': {
                 const last30DaysTime = now.getTime() - 30 * 24 * 60 * 60 * 1000;
-                // Optimization: Use Date.parse (or getTime) to compare numbers instead of Date objects
-                // Date.parse is robust for ISO strings and returns UTC timestamp, which works for relative time comparison
-                filtered = filtered.filter(req => Date.parse(req.date) >= last30DaysTime);
+                filtered = filtered.filter(meta => meta.timestamp >= last30DaysTime);
                 break;
             }
             case 'custom': {
                 if (customDateRange.start && customDateRange.end) {
                     const startTime = new Date(customDateRange.start).getTime();
                     const endTime = new Date(customDateRange.end).getTime();
-                    filtered = filtered.filter(req => {
-                        const time = Date.parse(req.date);
-                        return time >= startTime && time <= endTime;
+                    filtered = filtered.filter(meta => {
+                        return meta.timestamp >= startTime && meta.timestamp <= endTime;
                     });
                 }
                 break;
@@ -95,33 +110,31 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
         }
 
         return filtered;
-    }, [requests, selectedYear, selectedPeriod, customDateRange]);
+    }, [requestsWithMeta, selectedYear, selectedPeriod, customDateRange]);
 
     // Get available years from requests
     const availableYears = useMemo(() => {
         const years = new Set<number>();
         years.add(new Date().getFullYear()); // Always include current year
 
-        // Note: Using new Date().getFullYear() to respect local timezone logic
-        requests.forEach(req => {
-            const year = new Date(req.date).getFullYear();
-            years.add(year);
+        requestsWithMeta.forEach(meta => {
+            years.add(meta.year);
         });
 
         return Array.from(years).sort((a, b) => b - a);
-    }, [requests]);
+    }, [requestsWithMeta]);
 
     // KPI Calculations
     const kpis = useMemo(() => {
         const totalRequests = filteredRequests.length;
-        const pendingRequests = filteredRequests.filter(r => r.status === 'pending').length;
-        const completedRequests = filteredRequests.filter(r => r.status === 'completed').length;
+        const pendingRequests = filteredRequests.filter(meta => meta.request.status === 'pending').length;
+        const completedRequests = filteredRequests.filter(meta => meta.request.status === 'completed').length;
 
-        const totalContainers = filteredRequests.reduce((sum, req) => {
-            return sum + req.items.reduce((itemSum, item) => itemSum + item.quantity, 0);
+        const totalContainers = filteredRequests.reduce((sum, meta) => {
+            return sum + meta.request.items.reduce((itemSum, item) => itemSum + item.quantity, 0);
         }, 0);
 
-        const totalCost = filteredRequests.reduce((sum, req) => sum + (req.cost || 0), 0);
+        const totalCost = filteredRequests.reduce((sum, meta) => sum + (meta.request.cost || 0), 0);
 
         return { totalRequests, pendingRequests, completedRequests, totalContainers, totalCost };
     }, [filteredRequests]);
@@ -129,9 +142,9 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
     // Chart Data Preparation
     const locationData = useMemo(() => {
         const locationCounts: Record<string, number> = {};
-        filteredRequests.forEach(req => {
-            req.items.forEach(item => {
-                const loc = item.location || req.location;
+        filteredRequests.forEach(meta => {
+            meta.request.items.forEach(item => {
+                const loc = item.location || meta.request.location;
                 // Clean up location name if it's a combined string
                 const cleanLoc = loc.split(',')[0].trim();
                 locationCounts[cleanLoc] = (locationCounts[cleanLoc] || 0) + item.quantity;
@@ -146,8 +159,8 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
 
     const typeData = useMemo(() => {
         const typeCounts: Record<string, number> = {};
-        filteredRequests.forEach(req => {
-            req.items.forEach(item => {
+        filteredRequests.forEach(meta => {
+            meta.request.items.forEach(item => {
                 typeCounts[item.name] = (typeCounts[item.name] || 0) + item.quantity;
             });
         });
@@ -160,12 +173,13 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
 
     const timelineData = useMemo(() => {
         const dateCounts: Record<string, number> = {};
-        // Sort requests by date first
-        const sortedRequests = [...filteredRequests].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        // Sort requests by pre-calculated timestamp (fast sort)
+        const sortedRequests = [...filteredRequests].sort((a, b) => a.timestamp - b.timestamp);
 
-        sortedRequests.forEach(req => {
-            const date = new Date(req.date).toLocaleDateString('fr-CA');
-            const quantity = req.items.reduce((sum, item) => sum + item.quantity, 0);
+        sortedRequests.forEach(meta => {
+            // Reuse the cached dateObj
+            const date = meta.dateObj.toLocaleDateString('fr-CA');
+            const quantity = meta.request.items.reduce((sum, item) => sum + item.quantity, 0);
             dateCounts[date] = (dateCounts[date] || 0) + quantity;
         });
 
@@ -175,7 +189,8 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
 
     const costByLocationData = useMemo(() => {
         const locationCosts: Record<string, number> = {};
-        filteredRequests.forEach(req => {
+        filteredRequests.forEach(meta => {
+            const req = meta.request;
             if (req.locationCosts) {
                 // Use detailed location costs if available
                 Object.entries(req.locationCosts).forEach(([loc, cost]) => {
