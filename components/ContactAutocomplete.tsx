@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import { contactService, type Contact } from '../services/contactService';
 
 interface ContactAutocompleteProps {
@@ -24,6 +24,7 @@ const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const listboxId = useId();
 
     // Handle click outside to close suggestions
     useEffect(() => {
@@ -100,13 +101,27 @@ const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({
                 disabled={disabled}
                 className={className}
                 autoComplete="off"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={showSuggestions && suggestions.length > 0}
+                aria-controls={listboxId}
+                aria-activedescendant={showSuggestions ? `${listboxId}-option-${activeSuggestionIndex}` : undefined}
+                aria-haspopup="listbox"
             />
 
             {showSuggestions && suggestions.length > 0 && (
-                <ul className="absolute z-50 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
+                <ul
+                    id={listboxId}
+                    role="listbox"
+                    aria-label="Suggestions de contact"
+                    className="absolute z-50 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg mt-1 max-h-60 overflow-auto"
+                >
                     {suggestions.map((contact, index) => (
                         <li
                             key={index}
+                            id={`${listboxId}-option-${index}`}
+                            role="option"
+                            aria-selected={index === activeSuggestionIndex}
                             onClick={() => handleSelectSuggestion(contact)}
                             className={`px-4 py-2 cursor-pointer ${index === activeSuggestionIndex
                                 ? 'bg-blue-100 text-blue-900'
