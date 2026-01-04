@@ -36,80 +36,98 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
         end: ''
     });
 
+    // Optimization: Pre-calculate metadata for requests to avoid O(N) Date parsing during filtering
+    // This reduces overhead when switching filters or re-rendering
+    const requestsWithMeta = useMemo(() => {
+        return requests.map(req => {
+            const dateObj = new Date(req.date);
+            return {
+                original: req,
+                dateObj,
+                year: dateObj.getFullYear(),
+                timestamp: dateObj.getTime()
+            };
+        });
+    }, [requests]);
+
     // Filter requests by selected year and period
     const filteredRequests = useMemo(() => {
-        // Note: We use new Date() for year checking to ensure we respect the local timezone.
-        // String parsing (substring) would imply UTC and might categorize New Year's Eve events incorrectly.
-        let filtered = requests.filter(req => new Date(req.date).getFullYear() === selectedYear);
-
         const now = new Date();
+        let startTimestamp: number | null = null;
+        let endTimestamp: number | null = null;
 
+        // Determine time range boundaries outside the loop
         switch (selectedPeriod) {
             case 'month': {
                 const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
                 const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-                const startOfMonthTime = startOfMonth.getTime();
-                const endOfMonthTime = endOfMonth.getTime();
-
-                filtered = filtered.filter(req => {
-                    const dateTime = new Date(req.date).getTime();
-                    return dateTime >= startOfMonthTime && dateTime <= endOfMonthTime;
-                });
+                // Adjust end of month to end of day
+                endOfMonth.setHours(23, 59, 59, 999);
+                startTimestamp = startOfMonth.getTime();
+                endTimestamp = endOfMonth.getTime();
                 break;
             }
             case 'quarter': {
                 const currentQuarter = Math.floor(now.getMonth() / 3);
                 const startOfQuarter = new Date(now.getFullYear(), currentQuarter * 3, 1);
                 const endOfQuarter = new Date(now.getFullYear(), (currentQuarter + 1) * 3, 0);
-                const startOfQuarterTime = startOfQuarter.getTime();
-                const endOfQuarterTime = endOfQuarter.getTime();
-
-                filtered = filtered.filter(req => {
-                    const dateTime = new Date(req.date).getTime();
-                    return dateTime >= startOfQuarterTime && dateTime <= endOfQuarterTime;
-                });
+                // Adjust end of quarter to end of day
+                endOfQuarter.setHours(23, 59, 59, 999);
+                startTimestamp = startOfQuarter.getTime();
+                endTimestamp = endOfQuarter.getTime();
                 break;
             }
             case 'last30': {
-                const last30DaysTime = now.getTime() - 30 * 24 * 60 * 60 * 1000;
-                // Optimization: Use Date.parse (or getTime) to compare numbers instead of Date objects
-                // Date.parse is robust for ISO strings and returns UTC timestamp, which works for relative time comparison
-                filtered = filtered.filter(req => Date.parse(req.date) >= last30DaysTime);
+                startTimestamp = now.getTime() - 30 * 24 * 60 * 60 * 1000;
                 break;
             }
             case 'custom': {
                 if (customDateRange.start && customDateRange.end) {
-                    const startTime = new Date(customDateRange.start).getTime();
-                    const endTime = new Date(customDateRange.end).getTime();
-                    filtered = filtered.filter(req => {
-                        const time = Date.parse(req.date);
-                        return time >= startTime && time <= endTime;
-                    });
+                    // Start at beginning of start date
+                    // Note: '2023-01-01' input value is YYYY-MM-DD.
+                    // new Date('2023-01-01') is UTC.
+                    // To respect local time as intended by the input, we should append 'T00:00:00'.
+                    // However, existing logic used Date.parse/new Date() directly.
+                    // We will stick to consistent local parsing:
+                    const start = new Date(customDateRange.start);
+                    start.setHours(0, 0, 0, 0);
+                    const end = new Date(customDateRange.end);
+                    end.setHours(23, 59, 59, 999);
+
+                    startTimestamp = start.getTime();
+                    endTimestamp = end.getTime();
                 }
                 break;
             }
             case 'all':
             default:
-                // Already filtered by year
                 break;
         }
 
-        return filtered;
-    }, [requests, selectedYear, selectedPeriod, customDateRange]);
+        return requestsWithMeta.filter(meta => {
+            // Filter by year first
+            if (meta.year !== selectedYear) return false;
+
+            // Filter by period
+            if (startTimestamp !== null && meta.timestamp < startTimestamp) return false;
+            if (endTimestamp !== null && meta.timestamp > endTimestamp) return false;
+
+            return true;
+        }).map(meta => meta.original);
+    }, [requestsWithMeta, selectedYear, selectedPeriod, customDateRange]);
 
     // Get available years from requests
     const availableYears = useMemo(() => {
         const years = new Set<number>();
         years.add(new Date().getFullYear()); // Always include current year
 
-        // Note: Using new Date().getFullYear() to respect local timezone logic
-        requests.forEach(req => {
-            const year = new Date(req.date).getFullYear();
-            years.add(year);
+        // Use pre-calculated years
+        requestsWithMeta.forEach(meta => {
+            years.add(meta.year);
         });
 
         return Array.from(years).sort((a, b) => b - a);
-    }, [requests]);
+    }, [requestsWithMeta]);
 
     // KPI Calculations
     const kpis = useMemo(() => {
