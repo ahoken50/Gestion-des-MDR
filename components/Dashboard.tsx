@@ -36,11 +36,22 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
         end: ''
     });
 
+    // Optimization: Pre-calculate date metadata to avoid repetitive new Date() calls
+    const requestsWithMeta = useMemo(() => {
+        return requests.map(req => {
+            const date = new Date(req.date);
+            return {
+                original: req,
+                timestamp: date.getTime(),
+                year: date.getFullYear()
+            };
+        });
+    }, [requests]);
+
     // Filter requests by selected year and period
     const filteredRequests = useMemo(() => {
-        // Note: We use new Date() for year checking to ensure we respect the local timezone.
-        // String parsing (substring) would imply UTC and might categorize New Year's Eve events incorrectly.
-        let filtered = requests.filter(req => new Date(req.date).getFullYear() === selectedYear);
+        // Optimization: Use pre-calculated year to avoid new Date()
+        let filtered = requestsWithMeta.filter(meta => meta.year === selectedYear);
 
         const now = new Date();
 
@@ -51,9 +62,9 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
                 const startOfMonthTime = startOfMonth.getTime();
                 const endOfMonthTime = endOfMonth.getTime();
 
-                filtered = filtered.filter(req => {
-                    const dateTime = new Date(req.date).getTime();
-                    return dateTime >= startOfMonthTime && dateTime <= endOfMonthTime;
+                // Optimization: Use pre-calculated timestamp
+                filtered = filtered.filter(meta => {
+                    return meta.timestamp >= startOfMonthTime && meta.timestamp <= endOfMonthTime;
                 });
                 break;
             }
@@ -64,26 +75,24 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
                 const startOfQuarterTime = startOfQuarter.getTime();
                 const endOfQuarterTime = endOfQuarter.getTime();
 
-                filtered = filtered.filter(req => {
-                    const dateTime = new Date(req.date).getTime();
-                    return dateTime >= startOfQuarterTime && dateTime <= endOfQuarterTime;
+                // Optimization: Use pre-calculated timestamp
+                filtered = filtered.filter(meta => {
+                    return meta.timestamp >= startOfQuarterTime && meta.timestamp <= endOfQuarterTime;
                 });
                 break;
             }
             case 'last30': {
                 const last30DaysTime = now.getTime() - 30 * 24 * 60 * 60 * 1000;
-                // Optimization: Use Date.parse (or getTime) to compare numbers instead of Date objects
-                // Date.parse is robust for ISO strings and returns UTC timestamp, which works for relative time comparison
-                filtered = filtered.filter(req => Date.parse(req.date) >= last30DaysTime);
+                // Optimization: Use pre-calculated timestamp
+                filtered = filtered.filter(meta => meta.timestamp >= last30DaysTime);
                 break;
             }
             case 'custom': {
                 if (customDateRange.start && customDateRange.end) {
                     const startTime = new Date(customDateRange.start).getTime();
                     const endTime = new Date(customDateRange.end).getTime();
-                    filtered = filtered.filter(req => {
-                        const time = Date.parse(req.date);
-                        return time >= startTime && time <= endTime;
+                    filtered = filtered.filter(meta => {
+                        return meta.timestamp >= startTime && meta.timestamp <= endTime;
                     });
                 }
                 break;
@@ -94,22 +103,21 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
                 break;
         }
 
-        return filtered;
-    }, [requests, selectedYear, selectedPeriod, customDateRange]);
+        return filtered.map(meta => meta.original);
+    }, [requestsWithMeta, selectedYear, selectedPeriod, customDateRange]);
 
     // Get available years from requests
     const availableYears = useMemo(() => {
         const years = new Set<number>();
         years.add(new Date().getFullYear()); // Always include current year
 
-        // Note: Using new Date().getFullYear() to respect local timezone logic
-        requests.forEach(req => {
-            const year = new Date(req.date).getFullYear();
-            years.add(year);
+        // Optimization: Use pre-calculated years
+        requestsWithMeta.forEach(meta => {
+            years.add(meta.year);
         });
 
         return Array.from(years).sort((a, b) => b - a);
-    }, [requests]);
+    }, [requestsWithMeta]);
 
     // KPI Calculations
     const kpis = useMemo(() => {
