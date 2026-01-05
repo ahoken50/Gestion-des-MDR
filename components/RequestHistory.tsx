@@ -3,7 +3,7 @@ import type { PickupRequest } from '../types';
 import { FirebasePickupRequest } from '../services/firebaseService';
 import { generatePdf } from '../services/pdfService';
 import { PDFService, createPickupRequestPDF, groupItemsByLocation } from '../services/pdfServiceMulti';
-import { FileTextIcon, XMarkIcon, ArrowDownTrayIcon, PaperClipIcon } from './icons';
+import { FileTextIcon, XMarkIcon, ArrowDownTrayIcon, PaperClipIcon, MagnifyingGlassIcon } from './icons';
 import RequestDetail from './RequestDetail';
 import type { SelectedItem } from '../types-pdf';
 import { LOCATIONS } from '../constants';
@@ -185,6 +185,14 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     const [endDate, setEndDate] = useState<string>('');
     const [locationFilter, setLocationFilter] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState<string>('');
+
+    const handleResetFilters = useCallback(() => {
+        setStartDate('');
+        setEndDate('');
+        setLocationFilter('');
+        setFilter('all');
+        setSearchQuery('');
+    }, []);
 
     // Optimization: Pre-calculate timestamps for all requests when 'requests' changes.
     // This avoids O(N) `new Date()` operations during every filter render (e.g., typing in search box).
@@ -484,7 +492,25 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                     </table>
                 </div>
             ) : (
-                <p className="text-gray-500 italic mt-4 dark:text-gray-400">Aucune demande trouvée pour ce filtre.</p>
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-center rounded-lg bg-gray-50 border border-dashed border-gray-300 dark:bg-gray-800/50 dark:border-gray-700 mt-4">
+                    <div className="bg-gray-100 p-3 rounded-full mb-3 dark:bg-gray-700">
+                        <MagnifyingGlassIcon className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+                    </div>
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                        Aucune demande trouvée
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 max-w-sm">
+                        Aucun résultat ne correspond à vos filtres actuels. Essayez de modifier vos critères de recherche.
+                    </p>
+                    {(startDate || endDate || locationFilter || filter !== 'all' || searchQuery) && (
+                        <button
+                            onClick={handleResetFilters}
+                            className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                            Réinitialiser tous les filtres
+                        </button>
+                    )}
+                </div>
             )}
 
             {selectedRequest && (
