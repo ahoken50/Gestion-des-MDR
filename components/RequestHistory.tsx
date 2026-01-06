@@ -3,7 +3,7 @@ import type { PickupRequest } from '../types';
 import { FirebasePickupRequest } from '../services/firebaseService';
 import { generatePdf } from '../services/pdfService';
 import { PDFService, createPickupRequestPDF, groupItemsByLocation } from '../services/pdfServiceMulti';
-import { FileTextIcon, XMarkIcon, ArrowDownTrayIcon, PaperClipIcon } from './icons';
+import { FileTextIcon, XMarkIcon, ArrowDownTrayIcon, PaperClipIcon, MagnifyingGlassIcon } from './icons';
 import RequestDetail from './RequestDetail';
 import type { SelectedItem } from '../types-pdf';
 import { LOCATIONS } from '../constants';
@@ -376,6 +376,18 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
         onUpdateRequestStatus(requestId, status as any);
     }, [onUpdateRequestStatus]);
 
+    const hasActiveFilters = useMemo(() => {
+        return filter !== 'all' || startDate !== '' || endDate !== '' || locationFilter !== '' || searchQuery !== '';
+    }, [filter, startDate, endDate, locationFilter, searchQuery]);
+
+    const resetFilters = useCallback(() => {
+        setFilter('all');
+        setStartDate('');
+        setEndDate('');
+        setLocationFilter('');
+        setSearchQuery('');
+    }, []);
+
     return (
         <div className="card p-6 slide-up dark:bg-gray-800 dark:border-gray-700">
             <div className="flex justify-between items-center mb-6 card-header p-4 -m-6 mb-6 dark:border-gray-700">
@@ -484,7 +496,25 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                     </table>
                 </div>
             ) : (
-                <p className="text-gray-500 italic mt-4 dark:text-gray-400">Aucune demande trouvée pour ce filtre.</p>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-full mb-4">
+                        <MagnifyingGlassIcon className="w-8 h-8 text-gray-400 dark:text-gray-300" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">Aucune demande trouvée</h3>
+                    <p className="text-gray-500 dark:text-gray-400 mb-4 max-w-sm">
+                        {hasActiveFilters
+                            ? "Essayez de modifier vos filtres ou d'élargir votre recherche."
+                            : "Aucune demande n'a encore été créée."}
+                    </p>
+                    {hasActiveFilters && (
+                        <button
+                            onClick={resetFilters}
+                            className="text-blue-600 dark:text-blue-400 font-medium hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                        >
+                            Réinitialiser les filtres
+                        </button>
+                    )}
+                </div>
             )}
 
             {selectedRequest && (
