@@ -228,6 +228,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                 value={editedRequest.bcNumber || ''}
                 onChange={(e) => setEditedRequest({ ...editedRequest, bcNumber: e.target.value })}
                 disabled={!isEditing}
+                maxLength={50}
                 className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 disabled:bg-gray-100 dark:disabled:bg-gray-900"
               />
             </div>
@@ -255,6 +256,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                 value={editedRequest.contactName}
                 onChange={(e) => setEditedRequest({ ...editedRequest, contactName: e.target.value })}
                 disabled={!isEditing}
+                maxLength={100}
                 className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 disabled:bg-gray-100 dark:disabled:bg-gray-900"
               />
             </div>
@@ -267,6 +269,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                 value={editedRequest.contactPhone}
                 onChange={(e) => setEditedRequest({ ...editedRequest, contactPhone: e.target.value })}
                 disabled={!isEditing}
+                maxLength={20}
                 className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 disabled:bg-gray-100 dark:disabled:bg-gray-900"
               />
             </div>
@@ -334,6 +337,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
               value={editedRequest.notes || ''}
               onChange={(e) => setEditedRequest({ ...editedRequest, notes: e.target.value })}
               disabled={!isEditing}
+              maxLength={500}
               rows={3}
               className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 disabled:bg-gray-100 dark:disabled:bg-gray-900"
             />
