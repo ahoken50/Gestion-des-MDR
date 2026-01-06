@@ -36,55 +36,52 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
         end: ''
     });
 
+    // Optimization: Pre-calculate metadata to avoid repetitive Date parsing
+    // This reduces date parsing complexity from O(N * Filters) to O(N)
+    const requestsWithMeta = useMemo(() => {
+        return requests.map(req => {
+            const dateObj = new Date(req.date);
+            return {
+                original: req,
+                year: dateObj.getFullYear(),
+                timestamp: dateObj.getTime(),
+                // Pre-format date string for timeline aggregation
+                dateStr: dateObj.toLocaleDateString('fr-CA')
+            };
+        });
+    }, [requests]);
+
     // Filter requests by selected year and period
-    const filteredRequests = useMemo(() => {
-        // Note: We use new Date() for year checking to ensure we respect the local timezone.
-        // String parsing (substring) would imply UTC and might categorize New Year's Eve events incorrectly.
-        let filtered = requests.filter(req => new Date(req.date).getFullYear() === selectedYear);
+    const filteredItems = useMemo(() => {
+        // Filter by year using pre-calculated value
+        let filtered = requestsWithMeta.filter(req => req.year === selectedYear);
 
         const now = new Date();
 
         switch (selectedPeriod) {
             case 'month': {
-                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-                const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-                const startOfMonthTime = startOfMonth.getTime();
-                const endOfMonthTime = endOfMonth.getTime();
-
-                filtered = filtered.filter(req => {
-                    const dateTime = new Date(req.date).getTime();
-                    return dateTime >= startOfMonthTime && dateTime <= endOfMonthTime;
-                });
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+                const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getTime();
+                filtered = filtered.filter(req => req.timestamp >= startOfMonth && req.timestamp <= endOfMonth);
                 break;
             }
             case 'quarter': {
                 const currentQuarter = Math.floor(now.getMonth() / 3);
-                const startOfQuarter = new Date(now.getFullYear(), currentQuarter * 3, 1);
-                const endOfQuarter = new Date(now.getFullYear(), (currentQuarter + 1) * 3, 0);
-                const startOfQuarterTime = startOfQuarter.getTime();
-                const endOfQuarterTime = endOfQuarter.getTime();
-
-                filtered = filtered.filter(req => {
-                    const dateTime = new Date(req.date).getTime();
-                    return dateTime >= startOfQuarterTime && dateTime <= endOfQuarterTime;
-                });
+                const startOfQuarter = new Date(now.getFullYear(), currentQuarter * 3, 1).getTime();
+                const endOfQuarter = new Date(now.getFullYear(), (currentQuarter + 1) * 3, 0).getTime();
+                filtered = filtered.filter(req => req.timestamp >= startOfQuarter && req.timestamp <= endOfQuarter);
                 break;
             }
             case 'last30': {
                 const last30DaysTime = now.getTime() - 30 * 24 * 60 * 60 * 1000;
-                // Optimization: Use Date.parse (or getTime) to compare numbers instead of Date objects
-                // Date.parse is robust for ISO strings and returns UTC timestamp, which works for relative time comparison
-                filtered = filtered.filter(req => Date.parse(req.date) >= last30DaysTime);
+                filtered = filtered.filter(req => req.timestamp >= last30DaysTime);
                 break;
             }
             case 'custom': {
                 if (customDateRange.start && customDateRange.end) {
                     const startTime = new Date(customDateRange.start).getTime();
                     const endTime = new Date(customDateRange.end).getTime();
-                    filtered = filtered.filter(req => {
-                        const time = Date.parse(req.date);
-                        return time >= startTime && time <= endTime;
-                    });
+                    filtered = filtered.filter(req => req.timestamp >= startTime && req.timestamp <= endTime);
                 }
                 break;
             }
@@ -95,105 +92,87 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
         }
 
         return filtered;
-    }, [requests, selectedYear, selectedPeriod, customDateRange]);
+    }, [requestsWithMeta, selectedYear, selectedPeriod, customDateRange]);
 
     // Get available years from requests
     const availableYears = useMemo(() => {
         const years = new Set<number>();
         years.add(new Date().getFullYear()); // Always include current year
-
-        // Note: Using new Date().getFullYear() to respect local timezone logic
-        requests.forEach(req => {
-            const year = new Date(req.date).getFullYear();
-            years.add(year);
-        });
-
+        requestsWithMeta.forEach(req => years.add(req.year));
         return Array.from(years).sort((a, b) => b - a);
-    }, [requests]);
+    }, [requestsWithMeta]);
 
-    // KPI Calculations
-    const kpis = useMemo(() => {
-        const totalRequests = filteredRequests.length;
-        const pendingRequests = filteredRequests.filter(r => r.status === 'pending').length;
-        const completedRequests = filteredRequests.filter(r => r.status === 'completed').length;
+    // Consolidated Stats Calculation: Single pass O(N) instead of multiple passes O(5N)
+    const { kpis, locationData, typeData, timelineData, costByLocationData } = useMemo(() => {
+        let totalRequests = 0;
+        let pendingRequests = 0;
+        let completedRequests = 0;
+        let totalContainers = 0;
+        let totalCost = 0;
 
-        const totalContainers = filteredRequests.reduce((sum, req) => {
-            return sum + req.items.reduce((itemSum, item) => itemSum + item.quantity, 0);
-        }, 0);
-
-        const totalCost = filteredRequests.reduce((sum, req) => sum + (req.cost || 0), 0);
-
-        return { totalRequests, pendingRequests, completedRequests, totalContainers, totalCost };
-    }, [filteredRequests]);
-
-    // Chart Data Preparation
-    const locationData = useMemo(() => {
         const locationCounts: Record<string, number> = {};
-        filteredRequests.forEach(req => {
-            req.items.forEach(item => {
-                const loc = item.location || req.location;
-                // Clean up location name if it's a combined string
-                const cleanLoc = loc.split(',')[0].trim();
-                locationCounts[cleanLoc] = (locationCounts[cleanLoc] || 0) + item.quantity;
-            });
-        });
-
-        return Object.entries(locationCounts)
-            .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value) // Sort by highest count
-            .slice(0, 5); // Top 5 locations
-    }, [filteredRequests]);
-
-    const typeData = useMemo(() => {
         const typeCounts: Record<string, number> = {};
-        filteredRequests.forEach(req => {
-            req.items.forEach(item => {
-                typeCounts[item.name] = (typeCounts[item.name] || 0) + item.quantity;
-            });
-        });
-
-        return Object.entries(typeCounts)
-            .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 5); // Top 5 types
-    }, [filteredRequests]);
-
-    const timelineData = useMemo(() => {
         const dateCounts: Record<string, number> = {};
-        // Sort requests by date first
-        const sortedRequests = [...filteredRequests].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-        sortedRequests.forEach(req => {
-            const date = new Date(req.date).toLocaleDateString('fr-CA');
-            const quantity = req.items.reduce((sum, item) => sum + item.quantity, 0);
-            dateCounts[date] = (dateCounts[date] || 0) + quantity;
-        });
-
-        // Take last 7 active days or just map all
-        return Object.entries(dateCounts).map(([date, count]) => ({ date, count }));
-    }, [filteredRequests]);
-
-    const costByLocationData = useMemo(() => {
         const locationCosts: Record<string, number> = {};
-        filteredRequests.forEach(req => {
+
+        for (const { original: req, dateStr } of filteredItems) {
+            // KPIs
+            totalRequests++;
+            if (req.status === 'pending') pendingRequests++;
+            if (req.status === 'completed') completedRequests++;
+            totalCost += (req.cost || 0);
+
+            // Items loop
+            let reqContainers = 0;
+            if (req.items) {
+                for (const item of req.items) {
+                    const qty = item.quantity;
+                    reqContainers += qty;
+
+                    // Type Data
+                    typeCounts[item.name] = (typeCounts[item.name] || 0) + qty;
+
+                    // Location Data
+                    const loc = (item.location || req.location || '').split(',')[0].trim();
+                    if (loc) locationCounts[loc] = (locationCounts[loc] || 0) + qty;
+                }
+            }
+            totalContainers += reqContainers;
+
+            // Timeline Data
+            dateCounts[dateStr] = (dateCounts[dateStr] || 0) + reqContainers;
+
+            // Cost by Location
             if (req.locationCosts) {
-                // Use detailed location costs if available
                 Object.entries(req.locationCosts).forEach(([loc, cost]) => {
                     const cleanLoc = loc.split(',')[0].trim();
                     locationCosts[cleanLoc] = (locationCosts[cleanLoc] || 0) + cost;
                 });
             } else if (req.cost) {
-                // Fallback to total cost attributed to primary location
-                const loc = req.location.split(',')[0].trim();
-                locationCosts[loc] = (locationCosts[loc] || 0) + req.cost;
+                const loc = (req.location || '').split(',')[0].trim();
+                if (loc) locationCosts[loc] = (locationCosts[loc] || 0) + req.cost;
             }
-        });
+        }
 
-        return Object.entries(locationCosts)
-            .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 5);
-    }, [filteredRequests]);
+        return {
+            kpis: { totalRequests, pendingRequests, completedRequests, totalContainers, totalCost },
+            locationData: Object.entries(locationCounts)
+                .map(([name, value]) => ({ name, value }))
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 5),
+            typeData: Object.entries(typeCounts)
+                .map(([name, value]) => ({ name, value }))
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 5),
+            timelineData: Object.entries(dateCounts)
+                .map(([date, count]) => ({ date, count }))
+                .sort((a, b) => a.date.localeCompare(b.date)),
+            costByLocationData: Object.entries(locationCosts)
+                .map(([name, value]) => ({ name, value }))
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 5)
+        };
+    }, [filteredItems]);
 
     const handleDownloadPDF = () => {
         try {
