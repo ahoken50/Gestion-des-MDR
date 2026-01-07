@@ -3,7 +3,7 @@ import type { PickupRequest } from '../types';
 import { FirebasePickupRequest } from '../services/firebaseService';
 import { generatePdf } from '../services/pdfService';
 import { PDFService, createPickupRequestPDF, groupItemsByLocation } from '../services/pdfServiceMulti';
-import { FileTextIcon, XMarkIcon, ArrowDownTrayIcon, PaperClipIcon } from './icons';
+import { FileTextIcon, XMarkIcon, ArrowDownTrayIcon, PaperClipIcon, MagnifyingGlassIcon } from './icons';
 import RequestDetail from './RequestDetail';
 import type { SelectedItem } from '../types-pdf';
 import { LOCATIONS } from '../constants';
@@ -484,7 +484,27 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                     </table>
                 </div>
             ) : (
-                <p className="text-gray-500 italic mt-4 dark:text-gray-400">Aucune demande trouvée pour ce filtre.</p>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-full mb-3">
+                        <MagnifyingGlassIcon className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">Aucune demande trouvée</h3>
+                    <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-4">
+                        Aucun résultat ne correspond à vos filtres actuels. Essayez de modifier vos critères de recherche.
+                    </p>
+                    <button
+                        onClick={() => {
+                            setFilter('all');
+                            setStartDate('');
+                            setEndDate('');
+                            setLocationFilter('');
+                            setSearchQuery('');
+                        }}
+                        className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
+                    >
+                        Réinitialiser tous les filtres
+                    </button>
+                </div>
             )}
 
             {selectedRequest && (
