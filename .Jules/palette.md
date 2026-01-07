@@ -1,3 +1,3 @@
-## 2025-12-25 - Navigation Accessibility
-**Learning:** The navigation elements (Sidebar and Header) relied solely on visual cues (background color) to indicate the active page. This left screen reader users without context on their current location.
-**Action:** Added `aria-current="page"` to the active navigation button in both `Sidebar.tsx` and `Header.tsx`. This programmatic indicator allows screen readers to announce "Current Page" alongside the link text.
+## 2025-05-24 - Empty State UX
+**Learning:** Users often hit "dead ends" in data tables when filtering heavily (e.g., search + date + status). A simple text message like "No results" feels like a system error or failure.
+**Action:** Implemented a rich "Empty State" pattern in `RequestHistory.tsx` using a relevant icon (`MagnifyingGlassIcon`), clear explanation, and a "Reset Filters" action button. This turns a dead end into a helpful recovery path. This pattern should be replicated for other lists (e.g., Inventory) if they become filterable.
