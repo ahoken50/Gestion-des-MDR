@@ -310,8 +310,9 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                       <button
                         onClick={() => handleRemoveItem(index)}
                         className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                        aria-label={`Supprimer ${item.name}`}
                       >
-                        <TrashIcon className="w-4 h-4" />
+                        <TrashIcon className="w-4 h-4" aria-hidden="true" />
                       </button>
                     </>
                   ) : (
@@ -351,8 +352,9 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                       <button
                         onClick={() => handleRemoveEmail(email)}
                         className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                        aria-label={`Supprimer l'email ${email}`}
                       >
-                        <XMarkIcon className="w-4 h-4" />
+                        <XMarkIcon className="w-4 h-4" aria-hidden="true" />
                       </button>
                     )}
                   </div>
@@ -395,8 +397,9 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                         <button
                           onClick={() => handleRemoveImage(imageUrl)}
                           className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label={`Supprimer l'image ${index + 1}`}
                         >
-                          <XMarkIcon className="w-4 h-4" />
+                          <XMarkIcon className="w-4 h-4" aria-hidden="true" />
                         </button>
                       )}
                       <a
@@ -404,6 +407,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                         target="_blank"
                         rel="noopener noreferrer"
                         className="absolute bottom-1 right-1 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label={`Voir l'image ${index + 1}`}
                       >
                         Voir
                       </a>
@@ -503,8 +507,9 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                         onClick={() => setEditedRequest({ ...editedRequest, invoiceUrl: undefined })}
                         className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 p-1"
                         title="Supprimer la facture"
+                        aria-label="Supprimer la facture"
                       >
-                        <XMarkIcon className="w-4 h-4" />
+                        <XMarkIcon className="w-4 h-4" aria-hidden="true" />
                       </button>
                     )}
                   </div>
