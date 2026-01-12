@@ -89,6 +89,11 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
         const customName = prompt('Entrez le nom du contenant personnalisé (ex: Baril de colasse vide):');
         if (!customName || !customName.trim()) return;
 
+        if (customName.length > 100) {
+            toastError('Le nom est trop long (max 100 caractères).');
+            return;
+        }
+
         const locationChoice = prompt(`Choisissez le lieu pour "${customName.trim()}":\n\n${LOCATIONS.map((loc, i) => `${i + 1}. ${loc}`).join('\n')}\n\nEntrez le numéro:`);
         if (!locationChoice) return;
 
@@ -376,6 +381,7 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
                                         rows={2}
                                         className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                         placeholder="Instructions spécifiques pour ce lieu..."
+                                        maxLength={500}
                                     />
                                 </div>
                             </div>

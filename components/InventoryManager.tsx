@@ -26,11 +26,11 @@ const AddItemForm: React.FC<{ onAddItem: (item: Omit<InventoryItem, 'id'>) => vo
         <form onSubmit={handleSubmit} className="mt-4 p-4 bg-gray-100 rounded-lg grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div className="md:col-span-2">
                 <label htmlFor="itemName" className="block text-sm font-medium text-gray-700">Nom du contenant</label>
-                <input type="text" id="itemName" value={name} onChange={e => setName(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2" required />
+                <input type="text" id="itemName" value={name} onChange={e => setName(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2" required maxLength={100} />
             </div>
             <div>
                 <label htmlFor="itemQuantity" className="block text-sm font-medium text-gray-700">Quantité</label>
-                <input type="number" id="itemQuantity" value={quantity} onChange={e => setQuantity(parseInt(e.target.value, 10))} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2" min="0" required />
+                <input type="number" id="itemQuantity" value={quantity} onChange={e => setQuantity(parseInt(e.target.value, 10))} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2" min="0" max="99999" required />
             </div>
             <div>
                 <label htmlFor="itemLocation" className="block text-sm font-medium text-gray-700">Lieu</label>
@@ -85,6 +85,8 @@ const LocationInventorySection = memo(({
                                             value={item.quantity}
                                             onChange={(e) => onQuantityChange(item.id, parseInt(e.target.value, 10) || 0)}
                                             className="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-1"
+                                            min="0"
+                                            max="99999"
                                         />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

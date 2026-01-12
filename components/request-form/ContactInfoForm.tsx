@@ -41,6 +41,7 @@ const ContactInfoForm: React.FC<ContactInfoFormProps> = ({
                         onChange={e => setBcNumber(e.target.value)}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         placeholder="Ex: BC-2024-001"
+                        maxLength={50}
                     />
                 </div>
                 <div>
@@ -70,6 +71,7 @@ const ContactInfoForm: React.FC<ContactInfoFormProps> = ({
                         onChange={e => setContactPhone(e.target.value)}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         required
+                        maxLength={20}
                     />
                 </div>
             </div>
@@ -83,6 +85,7 @@ const ContactInfoForm: React.FC<ContactInfoFormProps> = ({
                     onChange={e => setNotes(e.target.value)}
                     rows={3}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    maxLength={1000}
                 />
             </div>
         </div>

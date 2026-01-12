@@ -229,6 +229,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                 onChange={(e) => setEditedRequest({ ...editedRequest, bcNumber: e.target.value })}
                 disabled={!isEditing}
                 className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 disabled:bg-gray-100 dark:disabled:bg-gray-900"
+                maxLength={50}
               />
             </div>
             <div>
@@ -256,6 +257,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                 onChange={(e) => setEditedRequest({ ...editedRequest, contactName: e.target.value })}
                 disabled={!isEditing}
                 className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 disabled:bg-gray-100 dark:disabled:bg-gray-900"
+                maxLength={100}
               />
             </div>
             <div>
@@ -268,6 +270,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                 onChange={(e) => setEditedRequest({ ...editedRequest, contactPhone: e.target.value })}
                 disabled={!isEditing}
                 className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 disabled:bg-gray-100 dark:disabled:bg-gray-900"
+                maxLength={20}
               />
             </div>
           </div>
@@ -305,6 +308,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                         value={item.quantity}
                         onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value, 10) || 1)}
                         min="1"
+                        max="999"
                         className="w-20 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2"
                       />
                       <button
@@ -336,6 +340,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
               disabled={!isEditing}
               rows={3}
               className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2 disabled:bg-gray-100 dark:disabled:bg-gray-900"
+              maxLength={1000}
             />
           </div>
 
@@ -365,6 +370,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                       onChange={(e) => setNewEmail(e.target.value)}
                       placeholder="Ajouter un courriel"
                       className="flex-1 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm p-2"
+                      maxLength={100}
                     />
                     <button
                       onClick={handleAddEmail}
@@ -477,6 +483,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                   type="number"
                   step="0.01"
                   min="0"
+                  max="999999"
                   value={editedRequest.cost || ''}
                   onChange={(e) => setEditedRequest({ ...editedRequest, cost: parseFloat(e.target.value) || undefined })}
                   disabled={!isEditing}

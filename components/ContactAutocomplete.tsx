@@ -100,6 +100,7 @@ const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({
                 disabled={disabled}
                 className={className}
                 autoComplete="off"
+                maxLength={100}
             />
 
             {showSuggestions && suggestions.length > 0 && (

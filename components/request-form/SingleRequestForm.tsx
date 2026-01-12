@@ -47,6 +47,10 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
     const handleAddCustomItem = () => {
         const customName = prompt('Entrez le nom du contenant personnalisé (ex: Baril de colasse vide):');
         if (customName && customName.trim()) {
+            if (customName.length > 100) {
+                toastError('Le nom est trop long (max 100 caractères).');
+                return;
+            }
             if (!requestedItems.some(item => item.name === customName.trim())) {
                 setRequestedItems([...requestedItems, { name: customName.trim(), quantity: 1 }]);
             } else {
@@ -147,7 +151,7 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
                                 value={item.quantity}
                                 onChange={e => handleItemChange(index, 'quantity', parseInt(e.target.value, 10) || 1)}
                                 min="1"
-                                max={maxQuantity}
+                                max={maxQuantity ?? 999}
                                 className="w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                 required
                                 aria-label={`Quantité pour ${item.name}`}
