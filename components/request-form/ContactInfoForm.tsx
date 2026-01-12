@@ -39,6 +39,7 @@ const ContactInfoForm: React.FC<ContactInfoFormProps> = ({
                         id="bcNumber"
                         value={bcNumber}
                         onChange={e => setBcNumber(e.target.value)}
+                        maxLength={50}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         placeholder="Ex: BC-2024-001"
                     />
@@ -51,6 +52,7 @@ const ContactInfoForm: React.FC<ContactInfoFormProps> = ({
                         id="contactName"
                         value={contactName}
                         onChange={setContactName}
+                        maxLength={100}
                         onSelect={(name, phone) => {
                             setContactName(name);
                             setContactPhone(phone);
@@ -68,6 +70,7 @@ const ContactInfoForm: React.FC<ContactInfoFormProps> = ({
                         id="contactPhone"
                         value={contactPhone}
                         onChange={e => setContactPhone(e.target.value)}
+                        maxLength={20}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         required
                     />
@@ -81,6 +84,7 @@ const ContactInfoForm: React.FC<ContactInfoFormProps> = ({
                     id="notes"
                     value={notes}
                     onChange={e => setNotes(e.target.value)}
+                    maxLength={500}
                     rows={3}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
