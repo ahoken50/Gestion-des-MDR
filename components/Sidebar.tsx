@@ -30,16 +30,16 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, on
 
     return (
         <>
-            <aside className="w-64 bg-gradient-to-b from-blue-600 to-blue-800 text-white flex flex-col shadow-2xl">
+            <aside className={`w-64 glass dark:glass-dark flex flex-col shadow-2xl border-r border-white/20 dark:border-white/5 transition-all duration-300 z-50 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
                 {/* Logo/Brand */}
-                <div className="p-6 border-b border-blue-500">
+                <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50">
                     <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-white dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                            <span className="text-2xl">♻️</span>
+                        <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                            <span className="text-2xl filter drop-shadow-md">♻️</span>
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold">Gestion MDR</h1>
-                            <p className="text-xs text-blue-300 truncate">Service Env.</p>
+                            <h1 className="text-xl font-bold text-gray-800 dark:text-white leading-tight">Gestion MDR</h1>
+                            <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Service Env.</p>
                         </div>
                     </div>
                 </div>
@@ -55,42 +55,41 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, on
                                 key={item.id}
                                 onClick={() => onViewChange(item.id)}
                                 aria-current={isActive ? 'page' : undefined}
-                                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${isActive
-                                    ? 'bg-white text-blue-600 shadow-lg'
-                                    : 'text-blue-100 hover:bg-blue-700 hover:text-white'
+                                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-blue-600 dark:hover:text-blue-400'
                                     }`}
                             >
-                                <Icon className="w-5 h-5" />
-                                <span className="font-medium">{item.label}</span>
+                                <Icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                                <span className="font-semibold">{item.label}</span>
                             </button>
                         );
                     })}
                 </nav>
 
-                {/* Dark Mode Toggle */}
-                <div className="p-4 border-t border-blue-500">
+                {/* Theme Toggle & Footer */}
+                <div className="p-4 space-y-4 border-t border-gray-200/50 dark:border-gray-700/50">
                     <button
                         onClick={toggleTheme}
-                        className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg bg-blue-700 hover:bg-blue-600 transition-all"
+                        className="w-full flex items-center justify-center space-x-3 px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-750 transition-all border border-transparent hover:border-blue-500/30 group"
                     >
                         {theme === 'dark' ? (
                             <>
-                                <SunIcon className="w-5 h-5" />
-                                <span>Mode Clair</span>
+                                <SunIcon className="w-5 h-5 text-yellow-400 transition-transform group-hover:rotate-45" />
+                                <span className="text-gray-700 dark:text-gray-200 font-medium">Mode Clair</span>
                             </>
                         ) : (
                             <>
-                                <MoonIcon className="w-5 h-5" />
-                                <span>Mode Sombre</span>
+                                <MoonIcon className="w-5 h-5 text-blue-600 transition-transform group-hover:-rotate-12" />
+                                <span className="text-gray-700 dark:text-gray-200 font-medium">Mode Sombre</span>
                             </>
                         )}
                     </button>
-                </div>
 
-                {/* Footer */}
-                <div className="p-4 text-center text-xs text-blue-300">
-                    <p>Ville de Val-d'Or</p>
-                    <p className="mt-1">© 2025</p>
+                    <div className="text-center text-[10px] text-gray-400 dark:text-gray-500 font-medium tracking-wide">
+                        <p>VILLE DE VAL-D'OR</p>
+                        <p className="mt-0.5 opacity-60 italic">Optimisé par IA • © 2025</p>
+                    </div>
                 </div>
             </aside>
         </>

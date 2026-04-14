@@ -9,6 +9,7 @@ import type { SelectedItem } from '../types-pdf';
 import { LOCATIONS } from '../constants';
 import * as XLSX from 'xlsx';
 import CostDistributionModal from './CostDistributionModal';
+import { useToast } from './ui/Toast';
 
 const calculateTotalQuantity = (items: { quantity: number }[]) => {
     let sum = 0;
@@ -177,6 +178,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     onRequestUpdated,
     inventory
 }) => {
+    const { success: toastSuccess } = useToast();
     const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed' | 'cancelled'>('all');
     const [selectedRequest, setSelectedRequest] = useState<PickupRequest | FirebasePickupRequest | null>(null);
 
@@ -333,44 +335,67 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
             return;
         }
 
-        const data = filteredRequests.map(req => {
+        // 1. Prepare Summary Data
+        const summaryData = filteredRequests.map(req => {
             const number = 'requestNumber' in req ? req.requestNumber : req.id.substring(0, 8);
             const date = new Date(req.date).toLocaleDateString('fr-CA');
             const status = getStatusLabel(req.status);
-            const location = req.location;
-            const items = req.items.map(i => `${i.quantity}x ${i.name}`).join('; ');
             const totalQty = calculateTotalQuantity(req.items);
-            const cost = req.cost ? req.cost : 0;
+            const cost = req.cost || 0;
 
             return {
                 'Numéro': number,
-                'Date': date,
+                'Date de Demande': date,
                 'Statut': status,
-                'Lieu': location,
-                'Contenants': items,
-                'Quantité Totale': totalQty,
-                'Coût ($)': cost
+                'Lieu Principal': req.location,
+                'Total Contenants': totalQty,
+                'Coût ($)': cost,
+                'BC #': req.bcNumber || '',
+                'Notes': req.notes || ''
             };
         });
 
-        const worksheet = XLSX.utils.json_to_sheet(data);
+        // 2. Prepare Detailed Items Data
+        const detailedData: any[] = [];
+        filteredRequests.forEach(req => {
+            const number = 'requestNumber' in req ? req.requestNumber : req.id.substring(0, 8);
+            req.items.forEach(item => {
+                detailedData.push({
+                    'No Requête': number,
+                    'Date': new Date(req.date).toLocaleDateString('fr-CA'),
+                    'Nom du Contenant': item.name,
+                    'Quantité': item.quantity,
+                    'Lieu Spécifique': item.location || req.location,
+                    'Remplacement': item.replaceBin ? 'OUI' : 'NON'
+                });
+            });
+        });
+
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Historique");
 
-        // Adjust column widths
-        const wscols = [
-            { wch: 10 }, // Numéro
-            { wch: 12 }, // Date
-            { wch: 15 }, // Statut
-            { wch: 30 }, // Lieu
-            { wch: 50 }, // Contenants
-            { wch: 15 }, // Qté Totale
-            { wch: 10 }, // Coût
+        // Create Summary Sheet
+        const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(workbook, wsSummary, "Résumé des Demandes");
+
+        // Create Detailed Sheet
+        const wsDetailed = XLSX.utils.json_to_sheet(detailedData);
+        XLSX.utils.book_append_sheet(workbook, wsDetailed, "Détails par Article");
+
+        // Adjust Summary Column Widths
+        wsSummary['!cols'] = [
+            { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 35 },
+            { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 40 }
         ];
-        worksheet['!cols'] = wscols;
 
-        XLSX.writeFile(workbook, `export_demandes_${new Date().toISOString().split('T')[0]}.xlsx`);
-    }, [filteredRequests]);
+        // Adjust Detailed Column Widths
+        wsDetailed['!cols'] = [
+            { wch: 12 }, { wch: 12 }, { wch: 30 }, { wch: 10 },
+            { wch: 35 }, { wch: 15 }
+        ];
+
+        XLSX.writeFile(workbook, `Rapport_MDR_${new Date().toISOString().split('T')[0]}.xlsx`);
+        toastSuccess('Fichier Excel généré avec succès !');
+    }, [filteredRequests, toastSuccess]);
 
     const handleStatusChange = useCallback((requestId: string, status: 'pending' | 'completed' | 'in_progress' | 'cancelled') => {
         onUpdateRequestStatus(requestId, status as any);

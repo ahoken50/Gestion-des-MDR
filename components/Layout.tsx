@@ -13,7 +13,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewChange }) 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     return (
-        <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+        <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden premium-bg">
             {/* Sidebar */}
             <Sidebar
                 currentView={currentView}
@@ -38,7 +38,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewChange }) 
 
                 {/* Scrollable Content */}
                 <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 scroll-smooth">
-                    <div className="max-w-7xl mx-auto fade-in">
+                    <div className="max-w-7xl mx-auto">
                         {children}
                     </div>
                 </main>

@@ -25,37 +25,39 @@ const App: React.FC = () => {
     return (
         <ThemeProvider>
             <Layout currentView={currentView} onViewChange={setCurrentView}>
-                {currentView === 'inventory' && (
-                    <InventoryManager inventory={inventory} onUpdateInventory={setInventory} />
-                )}
-                {currentView === 'new_request' && (
-                    <UnifiedRequestForm
-                        inventory={inventory}
-                        onSubmit={handleAddRequest}
-                        onPDFGenerated={handlePDFGenerated}
-                    />
-                )}
-                {currentView === 'history' && (
-                    <RequestHistory
-                        requests={allRequests}
-                        onUpdateRequestStatus={handleUpdateRequestStatus}
-                        onRequestUpdated={handleRequestUpdated}
-                        inventory={inventory}
-                    />
-                )}
-                {currentView === 'home' && (
-                    <UnifiedRequestForm
-                        inventory={inventory}
-                        onSubmit={handleAddRequest}
-                        onPDFGenerated={handlePDFGenerated}
-                    />
-                )}
-                {currentView === 'ai' && (
-                    <AIInsights />
-                )}
-                {currentView === 'dashboard' && (
-                    <Dashboard requests={allRequests} />
-                )}
+                <div key={currentView} className="view-enter">
+                    {currentView === 'inventory' && (
+                        <InventoryManager inventory={inventory} onUpdateInventory={setInventory} />
+                    )}
+                    {currentView === 'new_request' && (
+                        <UnifiedRequestForm
+                            inventory={inventory}
+                            onSubmit={handleAddRequest}
+                            onPDFGenerated={handlePDFGenerated}
+                        />
+                    )}
+                    {currentView === 'history' && (
+                        <RequestHistory
+                            requests={allRequests}
+                            onUpdateRequestStatus={handleUpdateRequestStatus}
+                            onRequestUpdated={handleRequestUpdated}
+                            inventory={inventory}
+                        />
+                    )}
+                    {currentView === 'home' && (
+                        <UnifiedRequestForm
+                            inventory={inventory}
+                            onSubmit={handleAddRequest}
+                            onPDFGenerated={handlePDFGenerated}
+                        />
+                    )}
+                    {currentView === 'ai' && (
+                        <AIInsights />
+                    )}
+                    {currentView === 'dashboard' && (
+                        <Dashboard requests={allRequests} />
+                    )}
+                </div>
             </Layout>
         </ThemeProvider>
     );
