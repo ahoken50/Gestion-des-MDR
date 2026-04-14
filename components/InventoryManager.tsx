@@ -1,11 +1,15 @@
 import React, { useState, useCallback, useRef, memo, useEffect, useMemo } from 'react';
 import type { InventoryItem } from '../types';
 import { LOCATIONS, INITIAL_INVENTORY } from '../constants';
-import { PlusIcon, TrashIcon } from './icons';
+import { PlusIcon, TrashIcon, SparklesIcon } from './icons';
+import { AIService } from '../services/AIService';
+import type { PickupRequest } from '../types';
+import { FirebasePickupRequest } from '../services/firebaseService';
 
 interface InventoryManagerProps {
     inventory: InventoryItem[];
     onUpdateInventory: (updatedInventory: InventoryItem[]) => void;
+    requests: (PickupRequest | FirebasePickupRequest)[];
 }
 
 const AddItemForm: React.FC<{ onAddItem: (item: Omit<InventoryItem, 'id'>) => void }> = ({ onAddItem }) => {
@@ -50,6 +54,7 @@ interface LocationInventorySectionProps {
     items: InventoryItem[];
     onQuantityChange: (id: string, newQuantity: number) => void;
     onDelete: (id: string) => void;
+    prediction?: { avgInterval: number, daysSinceLast: number };
 }
 
 // Memoized Location Section Component with Custom Comparator
@@ -57,14 +62,41 @@ const LocationInventorySection = memo(({
     location,
     items,
     onQuantityChange,
-    onDelete
+    onDelete,
+    prediction
 }: LocationInventorySectionProps) => {
+    const isUrgent = prediction && prediction.avgInterval > 0 && prediction.daysSinceLast >= prediction.avgInterval * 0.9;
+    const isOverdue = prediction && prediction.avgInterval > 0 && prediction.daysSinceLast > prediction.avgInterval;
+
     return (
-        <div className="card p-6 slide-up">
-            <div className="card-header p-4 -m-6 mb-6">
-                <h2 className="text-2xl font-bold gradient-text">📍 {location}</h2>
+        <div className={`card overflow-hidden slide-up ${isUrgent ? 'ring-2 ring-orange-400/50' : ''} ${isOverdue ? 'ring-2 ring-red-500 shadow-red-500/10' : ''}`}>
+            <div className={`p-4 flex items-center justify-between ${
+                isOverdue ? 'bg-red-50 dark:bg-red-950/20' : 
+                isUrgent ? 'bg-orange-50 dark:bg-orange-950/20' : 
+                'bg-gray-50 dark:bg-gray-800/50'
+            } border-b border-gray-100 dark:border-gray-700`}>
+                <div className="flex items-center space-x-3">
+                    <span className="text-xl">📍</span>
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-white">{location}</h2>
+                    {(isUrgent || isOverdue) && (
+                        <div className={`flex items-center space-x-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider animate-pulse ${
+                            isOverdue ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'
+                        }`}>
+                            <SparklesIcon className="w-3 h-3" />
+                            <span>Ramassage Estimé</span>
+                        </div>
+                    )}
+                </div>
+                {prediction && prediction.avgInterval > 0 && (
+                    <div className="text-right">
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">Moyenne: {Math.round(prediction.avgInterval)} jours</p>
+                        <p className={`text-xs font-black ${isOverdue ? 'text-red-500' : isUrgent ? 'text-orange-500' : 'text-blue-500'}`}>
+                            Depuis: {prediction.daysSinceLast} jours
+                        </p>
+                    </div>
+                )}
             </div>
-            {items.length > 0 ? (
+            <div className="p-6 pt-2">
                 <div className="table-container">
                     <table className="table">
                         <thead className="table-header">
@@ -101,8 +133,9 @@ const LocationInventorySection = memo(({
                         </tbody>
                     </table>
                 </div>
-            ) : (
-                <p className="text-gray-500 italic">Aucun contenant dans l'inventaire pour ce lieu.</p>
+            </div>
+            {items.length === 0 && (
+                <p className="p-6 text-gray-500 italic">Aucun contenant dans l'inventaire pour ce lieu.</p>
             )}
         </div>
     );
@@ -131,8 +164,9 @@ const LocationInventorySection = memo(({
 
 LocationInventorySection.displayName = 'LocationInventorySection';
 
-const InventoryManager: React.FC<InventoryManagerProps> = ({ inventory, onUpdateInventory }) => {
+const InventoryManager: React.FC<InventoryManagerProps> = ({ inventory, onUpdateInventory, requests }) => {
     const [showAddForm, setShowAddForm] = useState(false);
+    const predictions = useMemo(() => AIService.getLocationStats(requests), [requests]);
 
     // Keep a ref to inventory to use in stable callbacks without dependency
     const inventoryRef = useRef(inventory);
@@ -205,6 +239,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ inventory, onUpdate
                     items={items}
                     onQuantityChange={handleQuantityChange}
                     onDelete={handleDeleteItem}
+                    prediction={predictions[location.split(',')[0].trim()]}
                 />
             ))}
             <div className="mt-6 bg-white p-6 rounded-lg shadow-lg">

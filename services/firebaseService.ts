@@ -171,6 +171,34 @@ class FirebaseService {
     });
   }
 
+  // Mettre à jour plusieurs demandes (bulk)
+  async updatePickupRequestsBulk(ids: string[], updates: Partial<FirebasePickupRequest>): Promise<void> {
+    if (ids.length === 0) return;
+
+    try {
+      const batchSize = 500;
+      const chunks = [];
+      for (let i = 0; i < ids.length; i += batchSize) {
+        chunks.push(ids.slice(i, i + batchSize));
+      }
+
+      for (const chunk of chunks) {
+        const batch = writeBatch(db);
+        chunk.forEach(id => {
+          const docRef = doc(db, 'pickupRequests', id);
+          batch.update(docRef, {
+            ...updates,
+            updatedAt: serverTimestamp()
+          });
+        });
+        await batch.commit();
+      }
+    } catch (error) {
+      console.error('Error in bulk update:', error);
+      throw error;
+    }
+  }
+
   // Obtenir toutes les demandes
   async getPickupRequests(): Promise<FirebasePickupRequest[]> {
     const q = query(collection(db, 'pickupRequests'), orderBy('requestNumber', 'desc'));

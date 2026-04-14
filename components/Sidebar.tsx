@@ -7,7 +7,8 @@ import {
     CubeIcon,
     SparklesIcon,
     MoonIcon,
-    SunIcon
+    SunIcon,
+    CalendarIcon
 } from './icons';
 
 interface SidebarProps {
@@ -25,6 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, on
         { id: 'dashboard', label: 'Tableau de bord', icon: ChartBarIcon },
         { id: 'history', label: 'Historique', icon: ClockIcon },
         { id: 'inventory', label: 'Inventaire', icon: CubeIcon },
+        { id: 'calendar', label: 'Calendrier', icon: CalendarIcon },
         { id: 'ai', label: 'AI Insights', icon: SparklesIcon },
     ];
 

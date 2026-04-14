@@ -1,7 +1,7 @@
 import React from 'react';
 import { TruckIcon } from './icons';
 
-export type View = 'inventory' | 'new_request' | 'history' | 'dashboard' | 'home' | 'ai';
+export type View = 'inventory' | 'new_request' | 'history' | 'dashboard' | 'home' | 'ai' | 'calendar';
 
 interface HeaderProps {
     currentView: View;

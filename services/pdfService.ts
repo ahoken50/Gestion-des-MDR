@@ -77,6 +77,11 @@ export const generatePdf = async (request: PickupRequest) => {
     { label: "Statut:", value: request.status.toUpperCase() }
   ];
 
+  if (request.bcNumber) {
+    const cleanBC = request.bcNumber.replace(/BC/gi, '').replace(/-/g, '').trim();
+    details.push({ label: "BC #:", value: cleanBC });
+  }
+
   details.forEach(detail => {
     doc.setFont('helvetica', 'bold');
     doc.text(detail.label, 120, y);

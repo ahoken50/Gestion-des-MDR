@@ -44,7 +44,6 @@ const getStatusLabel = (status: string) => {
         default: return status;
     }
 };
-
 interface RequestHistoryRowProps {
     request: PickupRequest | FirebasePickupRequest;
     onViewDetails: (request: PickupRequest | FirebasePickupRequest) => void;
@@ -52,6 +51,8 @@ interface RequestHistoryRowProps {
     onCancel: (requestId: string) => void;
     onOpenCostModal: (request: PickupRequest | FirebasePickupRequest) => void;
     onStatusChange: (requestId: string, status: 'pending' | 'completed' | 'in_progress' | 'cancelled') => void;
+    isSelected: boolean;
+    onToggleSelect: (id: string) => void;
 }
 
 const RequestHistoryRow = React.memo(({
@@ -60,7 +61,9 @@ const RequestHistoryRow = React.memo(({
     onRegeneratePDF,
     onCancel,
     onOpenCostModal,
-    onStatusChange
+    onStatusChange,
+    isSelected,
+    onToggleSelect
 }: RequestHistoryRowProps) => {
     const isFirebaseRequest = 'requestNumber' in request;
     const displayNumber = isFirebaseRequest
@@ -68,7 +71,15 @@ const RequestHistoryRow = React.memo(({
         : request.id.substring(0, 8);
 
     return (
-        <tr className="table-row hover:bg-gray-50 dark:hover:bg-gray-700">
+        <tr className={`table-row hover:bg-gray-50 dark:hover:bg-gray-700 ${isSelected ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
+            <td className="px-6 py-4 whitespace-nowrap">
+                <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onToggleSelect(request.id)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700"
+                />
+            </td>
             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                 {displayNumber}
                 {request.bcNumber && (
@@ -169,18 +180,25 @@ interface RequestHistoryProps {
     requests: (PickupRequest | FirebasePickupRequest)[];
     onUpdateRequestStatus: (requestId: string, status: 'pending' | 'completed' | 'in_progress' | 'cancelled') => void;
     onRequestUpdated?: (updatedRequest: PickupRequest | FirebasePickupRequest) => void;
+    onBulkUpdate: (ids: string[], updates: { status?: 'pending' | 'completed' | 'in_progress' | 'cancelled'; bcNumber?: string }) => void;
     inventory: Array<{ id: string; name: string; quantity: number; location: string }>;
+    selectedRequest: PickupRequest | FirebasePickupRequest | null;
+    onSelectedRequestChange: (request: PickupRequest | FirebasePickupRequest | null) => void;
 }
 
 const RequestHistory: React.FC<RequestHistoryProps> = ({
     requests,
     onUpdateRequestStatus,
     onRequestUpdated,
-    inventory
+    onBulkUpdate,
+    inventory,
+    selectedRequest,
+    onSelectedRequestChange
 }) => {
     const { success: toastSuccess } = useToast();
     const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed' | 'cancelled'>('all');
-    const [selectedRequest, setSelectedRequest] = useState<PickupRequest | FirebasePickupRequest | null>(null);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [bulkBCNumber, setBulkBCNumber] = useState('');
 
     // Advanced Filters
     const [startDate, setStartDate] = useState<string>('');
@@ -240,15 +258,15 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     }, [requestsWithMeta, filter, startDate, endDate, locationFilter, searchQuery]);
 
     const handleViewDetails = useCallback((request: PickupRequest | FirebasePickupRequest) => {
-        setSelectedRequest(request);
-    }, []);
+        onSelectedRequestChange(request);
+    }, [onSelectedRequestChange]);
 
     const handleRequestUpdated = useCallback((updatedRequest: PickupRequest | FirebasePickupRequest) => {
         if (onRequestUpdated) {
             onRequestUpdated(updatedRequest);
         }
-        setSelectedRequest(null);
-    }, [onRequestUpdated]);
+        onSelectedRequestChange(null);
+    }, [onRequestUpdated, onSelectedRequestChange]);
 
     const handleRegeneratePDF = useCallback(async (request: PickupRequest | FirebasePickupRequest) => {
         // Always try to use the new PDF service first
@@ -397,6 +415,32 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
         toastSuccess('Fichier Excel généré avec succès !');
     }, [filteredRequests, toastSuccess]);
 
+    const handleSelectAll = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedIds(filteredRequests.map(r => r.id));
+        } else {
+            setSelectedIds([]);
+        }
+    }, [filteredRequests]);
+
+    const toggleSelect = useCallback((id: string) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    }, []);
+
+    const handleBulkStatusChange = (status: any) => {
+        onBulkUpdate(selectedIds, { status });
+        setSelectedIds([]);
+    };
+
+    const handleBulkBCChange = () => {
+        if (!bulkBCNumber.trim()) return;
+        onBulkUpdate(selectedIds, { bcNumber: bulkBCNumber });
+        setBulkBCNumber('');
+        setSelectedIds([]);
+    };
+
     const handleStatusChange = useCallback((requestId: string, status: 'pending' | 'completed' | 'in_progress' | 'cancelled') => {
         onUpdateRequestStatus(requestId, status as any);
     }, [onUpdateRequestStatus]);
@@ -484,7 +528,15 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                     <table className="table w-full">
                         <thead className="table-header bg-gray-50 dark:bg-gray-700">
                             <tr>
-                                <th scope="col" className="table-header-cell dark:text-gray-200">Numéro</th>
+                                <th scope="col" className="px-6 py-3 text-left">
+                                    <input
+                                        type="checkbox"
+                                        onChange={handleSelectAll}
+                                        checked={selectedIds.length === filteredRequests.length && filteredRequests.length > 0}
+                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 cursor-pointer"
+                                    />
+                                </th>
+                                <th scope="col" className="table-header-cell dark:text-gray-200">No. Requete/BC</th>
                                 <th scope="col" className="table-header-cell dark:text-gray-200">Date</th>
                                 <th scope="col" className="table-header-cell dark:text-gray-200">Lieu(x)</th>
                                 <th scope="col" className="table-header-cell dark:text-gray-200">Contenants</th>
@@ -498,11 +550,13 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                 <RequestHistoryRow
                                     key={request.id}
                                     request={request}
-                                    onViewDetails={handleViewDetails}
+                                    onViewDetails={onSelectedRequestChange}
                                     onRegeneratePDF={handleRegeneratePDF}
                                     onCancel={handleCancelRequest}
                                     onOpenCostModal={handleOpenCostModal}
                                     onStatusChange={handleStatusChange}
+                                    isSelected={selectedIds.includes(request.id)}
+                                    onToggleSelect={toggleSelect}
                                 />
                             ))}
                         </tbody>
@@ -532,11 +586,59 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                 </div>
             )}
 
+            {/* Modals & Bulk Bar */}
+            {selectedIds.length > 0 && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 glass dark:glass-dark p-4 rounded-3xl shadow-2xl border border-blue-500/20 z-[60] flex items-center space-x-6 view-enter">
+                    <div className="flex items-center space-x-3 px-4 border-r border-gray-200 dark:border-gray-700">
+                        <span className="bg-blue-600 text-white w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold shadow-lg shadow-blue-500/30">
+                            {selectedIds.length}
+                        </span>
+                        <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Sélectionnés</span>
+                    </div>
+
+                    <div className="flex items-center space-x-3">
+                        <select 
+                            onChange={(e) => handleBulkStatusChange(e.target.value)}
+                            className="text-xs font-bold rounded-xl px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 transition-all outline-none dark:text-white"
+                        >
+                            <option value="">Changer Statut...</option>
+                            <option value="pending">En attente</option>
+                            <option value="in_progress">En cours</option>
+                            <option value="completed">Complétée</option>
+                            <option value="cancelled">Annulée</option>
+                        </select>
+
+                        <div className="flex items-center space-x-2">
+                             <input 
+                                type="text"
+                                placeholder="Numéro de BC..."
+                                value={bulkBCNumber}
+                                onChange={(e) => setBulkBCNumber(e.target.value)}
+                                className="text-xs font-bold rounded-xl px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 transition-all outline-none w-32 dark:text-white"
+                             />
+                             <button 
+                                onClick={handleBulkBCChange}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+                             >
+                                Appliquer BC
+                             </button>
+                        </div>
+
+                        <button 
+                            onClick={() => setSelectedIds([])}
+                            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                            <XMarkIcon className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {selectedRequest && (
                 <RequestDetail
                     request={selectedRequest}
                     onUpdate={handleRequestUpdated}
-                    onCancel={() => setSelectedRequest(null)}
+                    onCancel={() => onSelectedRequestChange(null)}
                     inventory={inventory}
                 />
             )}

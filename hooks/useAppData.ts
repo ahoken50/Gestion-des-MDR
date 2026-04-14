@@ -5,7 +5,7 @@ import type { PickupRequestPDF } from '../types-pdf';
 import { INITIAL_INVENTORY } from '../constants';
 import { useToast } from '../components/ui/Toast';
 
-export type View = 'inventory' | 'new_request' | 'history' | 'dashboard' | 'home' | 'ai';
+export type View = 'inventory' | 'new_request' | 'history' | 'dashboard' | 'home' | 'ai' | 'calendar';
 
 export const useAppData = () => {
     const { success, error, info } = useToast();
@@ -38,6 +38,7 @@ export const useAppData = () => {
 
     const [firebaseRequests, setFirebaseRequests] = useState<FirebasePickupRequest[]>([]);
     const [isFirebaseEnabled, setIsFirebaseEnabled] = useState(false);
+    const [selectedRequest, setSelectedRequest] = useState<PickupRequest | FirebasePickupRequest | null>(null);
 
     // Keep a ref to inventory for beforeunload saving
     const inventoryRef = useRef(inventory);
@@ -238,7 +239,43 @@ export const useAppData = () => {
             console.error('Error updating request status:', error);
             toast.error('Erreur lors de la mise à jour du statut');
         }
-    }, [firebaseRequests, isFirebaseEnabled, toast]);
+    }, [firebaseRequests, isFirebaseEnabled, toast, pickupRequests]);
+
+    const handleBulkUpdateRequests = useCallback(async (
+        requestIds: string[], 
+        updates: { status?: 'pending' | 'completed' | 'in_progress' | 'cancelled'; bcNumber?: string }
+    ) => {
+        try {
+            if (isFirebaseEnabled) {
+                // Prepare Firebase updates
+                const firebaseUpdates: any = { ...updates };
+                if (updates.status === 'completed') {
+                    firebaseUpdates.completedAt = new Date().toISOString();
+                }
+
+                // Batch update in Firebase
+                await firebaseService.updatePickupRequestsBulk(requestIds, firebaseUpdates);
+
+                // Update local state
+                setFirebaseRequests(prev => prev.map(req => 
+                    requestIds.includes(req.id) ? { ...req, ...firebaseUpdates, updatedAt: new Date().toISOString() } : req
+                ));
+            } else {
+                const localUpdates: any = { ...updates };
+                if (updates.status === 'completed') {
+                    localUpdates.completedAt = new Date().toISOString();
+                }
+
+                setPickupRequests(prev => prev.map(req => 
+                    requestIds.includes(req.id) ? { ...req, ...localUpdates } : req
+                ));
+            }
+            toast.success(`${requestIds.length} demandes mises à jour avec succès`);
+        } catch (error) {
+            console.error('Error in bulk update:', error);
+            toast.error('Erreur lors de la mise à jour groupée');
+        }
+    }, [isFirebaseEnabled, toast]);
 
     const handleRequestUpdated = useCallback(async (updatedRequest: PickupRequest | FirebasePickupRequest) => {
         try {
@@ -340,6 +377,9 @@ export const useAppData = () => {
         handleAddRequest,
         handleUpdateRequestStatus,
         handleRequestUpdated,
-        handlePDFGenerated
+        handlePDFGenerated,
+        handleBulkUpdateRequests,
+        selectedRequest,
+        setSelectedRequest
     };
 };

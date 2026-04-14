@@ -87,4 +87,56 @@ export class AIService {
         const predictions = this.predictUpcomingPickups(requests);
         return [...anomalies, ...predictions];
     }
+
+    static getLocationStats(requests: (PickupRequest | FirebasePickupRequest)[]): Record<string, { avgInterval: number, daysSinceLast: number, lastDate: string }> {
+        const stats: Record<string, { avgInterval: number, daysSinceLast: number, lastDate: string }> = {};
+        const locationLastPickup: Record<string, Date> = {};
+        const locationFrequency: Record<string, number[]> = {};
+
+        const sortedRequests = [...requests].sort((a, b) => a.date.localeCompare(b.date));
+
+        sortedRequests.forEach(req => {
+            const loc = req.location.split(',')[0].trim();
+            const date = new Date(req.date);
+
+            if (locationLastPickup[loc]) {
+                const diffTime = Math.abs(date.getTime() - locationLastPickup[loc].getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (!locationFrequency[loc]) locationFrequency[loc] = [];
+                locationFrequency[loc].push(diffDays);
+            }
+            locationLastPickup[loc] = date;
+        });
+
+        const today = new Date();
+        Object.entries(locationLastPickup).forEach(([loc, lastDate]) => {
+            const frequencies = locationFrequency[loc];
+            const avgInterval = frequencies && frequencies.length > 0 
+                ? frequencies.reduce((a, b) => a + b, 0) / frequencies.length 
+                : 0;
+            const daysSinceLast = Math.ceil((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+
+            stats[loc] = {
+                avgInterval,
+                daysSinceLast,
+                lastDate: lastDate.toISOString()
+            };
+        });
+
+        return stats;
+    }
+
+    static calculateAverageProcessingTime(requests: (PickupRequest | FirebasePickupRequest)[]): number {
+        const completedRequests = requests.filter(req => req.status === 'completed' && req.completedAt);
+        if (completedRequests.length === 0) return 0;
+
+        const totalProcessingTime = completedRequests.reduce((sum, req) => {
+            const start = new Date(req.date).getTime();
+            const end = new Date(req.completedAt!).getTime();
+            return sum + (end - start);
+        }, 0);
+
+        const avgMs = totalProcessingTime / completedRequests.length;
+        return avgMs / (1000 * 60 * 60 * 24); // Return in days
+    }
 }
