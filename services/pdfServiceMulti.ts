@@ -113,7 +113,8 @@ export class PDFService {
     ];
 
     if (request.bcNumber) {
-      details.push({ label: "BC #:", value: request.bcNumber });
+      const cleanBC = request.bcNumber.replace(/BC/gi, '').replace(/-/g, '').trim();
+      details.push({ label: "BC #:", value: cleanBC });
     }
 
     details.forEach(detail => {
