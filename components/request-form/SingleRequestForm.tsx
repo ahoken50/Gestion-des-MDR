@@ -35,12 +35,19 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
         }
     }, [inventory, location]);
 
-    const handleAddItem = () => {
-        if (availableItems.length > 0) {
-            const firstItemName = availableItems[0];
-            if (!requestedItems.some(item => item.name === firstItemName)) {
-                setRequestedItems([...requestedItems, { name: firstItemName, quantity: 1 }]);
+    const handleAddItemFromInventory = (itemName: string, quantity: number, replaceBin: boolean = false) => {
+        const existingIndex = requestedItems.findIndex(item => item.name === itemName);
+        if (existingIndex >= 0) {
+            const newItems = [...requestedItems];
+            if (quantity > 0) {
+                newItems[existingIndex].quantity = quantity;
+                newItems[existingIndex].replaceBin = replaceBin;
+            } else {
+                newItems.splice(existingIndex, 1);
             }
+            setRequestedItems(newItems);
+        } else if (quantity > 0) {
+            setRequestedItems([...requestedItems, { name: itemName, quantity, replaceBin }]);
         }
     };
 
@@ -59,24 +66,6 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
         setRequestedItems(requestedItems.filter((_, i) => i !== index));
     };
 
-    const handleItemChange = (index: number, field: 'name' | 'quantity' | 'replaceBin', value: string | number | boolean) => {
-        const newItems = [...requestedItems];
-        if (field === 'name' && typeof value === 'string') {
-            if (newItems.some((item, i) => i !== index && item.name === value)) {
-                toastError("Ce contenant est déjà dans la demande.");
-                return;
-            }
-            newItems[index].name = value;
-        } else if (field === 'quantity' && typeof value === 'number') {
-            const inventoryItem = inventory.find(i => i.name === newItems[index].name && i.location === location);
-            const maxQuantity = inventoryItem ? inventoryItem.quantity : Infinity;
-            newItems[index].quantity = Math.max(1, Math.min(value, maxQuantity));
-        } else if (field === 'replaceBin' && typeof value === 'boolean') {
-            newItems[index].replaceBin = value;
-        }
-        setRequestedItems(newItems);
-    };
-
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -90,7 +79,7 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
         try {
             await onSubmit({ location, items: requestedItems });
             setRequestedItems([]);
-            setLocation(LOCATIONS[0]);
+            // Keep location consistent for user convenience
         } catch (error) {
             console.error("Error submitting request:", error);
             toastError("Une erreur est survenue lors de la soumission.");
@@ -100,110 +89,154 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
     };
 
     return (
-        <form onSubmit={handleSubmit} className="card p-6 space-y-6 slide-up dark:bg-gray-800 dark:border-gray-700">
+        <form onSubmit={handleSubmit} className="card p-6 space-y-8 slide-up dark:bg-gray-800 dark:border-gray-700">
             <div className="card-header p-4 -m-6 mb-6 dark:border-gray-700">
                 <h3 className="text-xl font-bold gradient-text">📦 Détails de la demande</h3>
                 <p className="text-sm text-gray-600 mt-1 dark:text-gray-400">Sélectionnez le lieu et les contenants à ramasser</p>
             </div>
 
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded dark:bg-blue-900/20 dark:border-blue-500">
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-xl dark:bg-blue-900/20 dark:border-blue-500">
                 <label htmlFor="location" className="block text-sm font-semibold text-blue-900 mb-2 dark:text-blue-100">📍 Lieu de cueillette</label>
                 <select
                     id="location"
                     value={location}
                     onChange={e => setLocation(e.target.value)}
-                    className="block w-full rounded-lg border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base p-3 bg-white font-medium dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="block w-full rounded-xl border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-lg p-3 bg-white font-medium dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
                     {LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
                 </select>
             </div>
 
-            <div className="border-t pt-6 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">📦 Contenants à ramasser</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Ajoutez les contenants de l'inventaire ou créez-en manuellement</p>
-                    </div>
-                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold dark:bg-blue-900 dark:text-blue-100">
-                        {requestedItems.length} contenant{requestedItems.length !== 1 ? 's' : ''}
-                    </span>
+            {/* Visual Inventory Grid */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                        <span>📦</span> Sélection Visuelle (Inventaire)
+                    </h3>
                 </div>
-                {requestedItems.map((item, index) => {
-                    const inventoryItem = inventory.find(i => i.name === item.name && i.location === location);
-                    const maxQuantity = inventoryItem ? inventoryItem.quantity : undefined;
 
-                    return (
-                        <div key={index} className="flex items-center gap-4 mb-2 p-2 bg-gray-50 rounded-md dark:bg-gray-700/50">
-                            <select
-                                value={item.name}
-                                onChange={e => handleItemChange(index, 'name', e.target.value)}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 flex-grow dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                aria-label={`Type de contenant pour l'item ${index + 1}`}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {availableItems.map(itemName => {
+                        const inventoryItem = inventory.find(i => i.name === itemName && i.location === location);
+                        const requestedItem = requestedItems.find(i => i.name === itemName);
+                        const qty = requestedItem?.quantity || 0;
+                        const isRequested = qty > 0;
+                        const maxQty = inventoryItem ? inventoryItem.quantity : 999;
+
+                        return (
+                            <div
+                                key={itemName}
+                                className={`p-4 rounded-xl border-2 transition-all duration-200 ${isRequested
+                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500/20'
+                                    : 'border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 bg-white dark:bg-gray-800/50'
+                                    }`}
                             >
-                                {availableItems.map(name => <option key={name} value={name}>{name}</option>)}
-                            </select>
-                            <input
-                                type="number"
-                                value={item.quantity}
-                                onChange={e => handleItemChange(index, 'quantity', parseInt(e.target.value, 10) || 1)}
-                                min="1"
-                                max={maxQuantity}
-                                className="w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                required
-                                aria-label={`Quantité pour ${item.name}`}
-                            />
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    id={`replace-${index}`}
-                                    checked={item.replaceBin || false}
-                                    onChange={e => handleItemChange(index, 'replaceBin', e.target.checked)}
-                                    className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                                    aria-label={`Remplacer ${item.name}`}
-                                />
-                                <label htmlFor={`replace-${index}`} className="text-sm text-gray-700 dark:text-gray-300 select-none">
-                                    Remplacer
-                                </label>
+                                <div className="font-bold text-gray-900 dark:text-white mb-1 truncate" title={itemName}>
+                                    {itemName}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                                    {inventoryItem ? `Libre: ${inventoryItem.quantity}` : 'Spécial (Hors inventaire)'}
+                                </div>
+
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAddItemFromInventory(itemName, Math.max(0, qty - 1), requestedItem?.replaceBin)}
+                                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-gray-700 border dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 active:scale-95 transition-all"
+                                        >
+                                            -
+                                        </button>
+                                        <input
+                                            type="number"
+                                            value={qty}
+                                            onChange={e => {
+                                                const val = parseInt(e.target.value, 10) || 0;
+                                                handleAddItemFromInventory(itemName, Math.min(val, maxQty), requestedItem?.replaceBin);
+                                            }}
+                                            className="w-12 text-center font-bold text-sm border-none bg-transparent focus:ring-0 dark:text-white"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAddItemFromInventory(itemName, Math.min(maxQty, qty + 1), requestedItem?.replaceBin)}
+                                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-500 text-white hover:bg-blue-600 active:scale-95 transition-all shadow-sm"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id={`replace-grid-${itemName}`}
+                                            checked={requestedItem?.replaceBin || false}
+                                            disabled={!isRequested}
+                                            onChange={e => handleAddItemFromInventory(itemName, qty, e.target.checked)}
+                                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                                        />
+                                        <label htmlFor={`replace-grid-${itemName}`} className={`text-xs select-none ${!isRequested ? 'text-gray-400' : 'text-gray-700 dark:text-gray-300 cursor-pointer'}`}>
+                                            Remplacement
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
-                            {inventoryItem && <span className="text-sm text-gray-500 dark:text-gray-400">(Max: {maxQuantity})</span>}
-                            <button
-                                type="button"
-                                onClick={() => handleRemoveItem(index)}
-                                className="text-red-600 hover:text-red-800 transition-colors dark:text-red-400 dark:hover:text-red-300"
-                                aria-label={`Supprimer ${item.name}`}
-                            >
-                                <TrashIcon className="w-5 h-5" aria-hidden="true" />
-                            </button>
-                        </div>
-                    );
-                })}
-                <div className="mt-2 flex gap-2">
-                    <button type="button" onClick={handleAddItem} className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 flex items-center justify-center gap-2 text-sm dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
-                        <PlusIcon className="w-4 h-4" /> Ajouter de l'inventaire
-                    </button>
-                    <button type="button" onClick={handleAddCustomItem} className="flex-1 bg-blue-100 text-blue-800 py-2 px-4 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 flex items-center justify-center gap-2 text-sm font-medium dark:bg-blue-900 dark:text-blue-100 dark:hover:bg-blue-800">
-                        ✏️ Ajouter manuellement
+                        );
+                    })}
+                </div>
+
+                <div className="flex justify-center">
+                    <button
+                        type="button"
+                        onClick={handleAddCustomItem}
+                        className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                    >
+                        ✏️ Ajouter un contenant personnalisé
                     </button>
                 </div>
             </div>
 
-            <div className="text-right">
+            {/* Summary List */}
+            {requestedItems.length > 0 && (
+                <div className="border-t pt-6 dark:border-gray-700">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">✅ Récapitulatif</h3>
+                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold dark:bg-blue-900 dark:text-blue-100">
+                            {requestedItems.length} contenant{requestedItems.length !== 1 ? 's' : ''}
+                        </span>
+                    </div>
+
+                    <div className="space-y-2">
+                        {requestedItems.map((item, index) => (
+                            <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600">
+                                <span className="flex-1 font-medium text-gray-700 dark:text-gray-200">{item.name}</span>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-sm font-bold text-blue-600 dark:text-blue-400">Qté: {item.quantity}</span>
+                                    {item.replaceBin && (
+                                        <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-bold uppercase dark:bg-orange-900/30 dark:text-orange-400">
+                                            Remplacement
+                                        </span>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveItem(index)}
+                                        className="text-red-500 hover:text-red-700 p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    >
+                                        <TrashIcon className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <div className="pt-4">
                 <button
                     type="submit"
                     disabled={isSubmitting}
-                    className={`btn btn-primary py-3 px-8 text-lg flex items-center gap-2 ml-auto ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+                    className="btn btn-primary w-full py-4 text-xl flex items-center justify-center gap-3 shadow-xl hover:shadow-blue-500/20 transition-all active:scale-[0.98]"
                 >
-                    {isSubmitting ? (
-                        <>
-                            <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Traitement en cours...
-                        </>
-                    ) : (
-                        '✅ Soumettre la demande'
-                    )}
+                    {isSubmitting ? 'Traitement en cours...' : '✅ Soumettre la demande'}
                 </button>
             </div>
         </form>
