@@ -150,10 +150,7 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
                                         <input
                                             type="number"
                                             value={qty}
-                                            onChange={e => {
-                                                const val = parseInt(e.target.value, 10) || 0;
-                                                handleAddItemFromInventory(itemName, Math.min(val, maxQty), requestedItem?.replaceBin);
-                                            }}
+                                            readOnly
                                             className="w-12 text-center font-bold text-sm border-none bg-transparent focus:ring-0 dark:text-white"
                                         />
                                         <button
@@ -205,27 +202,66 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
                         </span>
                     </div>
 
-                    <div className="space-y-2">
-                        {requestedItems.map((item, index) => (
-                            <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600">
-                                <span className="flex-1 font-medium text-gray-700 dark:text-gray-200">{item.name}</span>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-sm font-bold text-blue-600 dark:text-blue-400">Qté: {item.quantity}</span>
-                                    {item.replaceBin && (
-                                        <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-bold uppercase dark:bg-orange-900/30 dark:text-orange-400">
+                    <div className="space-y-3">
+                        {requestedItems.map((item, index) => {
+                            const inventoryItem = inventory.find(i => i.name === item.name && i.location === location);
+                            const maxQty = inventoryItem ? inventoryItem.quantity : 999;
+
+                            return (
+                                <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm transition-all">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="font-bold text-gray-800 dark:text-gray-200 truncate">{item.name}</div>
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+                                            {inventoryItem ? 'Inventaire' : 'Personnalisé'}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-4">
+                                        {/* Quantity Controls */}
+                                        <div className="flex items-center bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-600 p-1 shadow-inner">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleAddItemFromInventory(item.name, Math.max(0, item.quantity - 1), item.replaceBin)}
+                                                className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
+                                            >
+                                                -
+                                            </button>
+                                            <span className="w-8 text-center font-bold text-blue-600 dark:text-blue-400 text-sm">
+                                                {item.quantity}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleAddItemFromInventory(item.name, Math.min(maxQty, item.quantity + 1), item.replaceBin)}
+                                                className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+
+                                        {/* Replacement Toggle */}
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAddItemFromInventory(item.name, item.quantity, !item.replaceBin)}
+                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${item.replaceBin
+                                                ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400 border border-orange-200 dark:border-orange-800'
+                                                : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500 border border-gray-200 dark:border-gray-700'
+                                                }`}
+                                        >
                                             Remplacement
-                                        </span>
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveItem(index)}
-                                        className="text-red-500 hover:text-red-700 p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
-                                    >
-                                        <TrashIcon className="w-5 h-5" />
-                                    </button>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveItem(index)}
+                                            className="text-red-400 hover:text-red-600 p-1.5 transition-colors"
+                                            aria-label="Supprimer"
+                                        >
+                                            <TrashIcon className="w-5 h-5" />
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             )}
