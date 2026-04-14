@@ -32,9 +32,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, on
 
     return (
         <>
-            <aside className={`w-64 glass dark:glass-dark flex flex-col shadow-2xl border-r border-white/20 dark:border-white/5 transition-all duration-300 z-50 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+            <aside className={`w-64 glass flex flex-col shadow-2xl transition-all duration-300 z-50 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
                 {/* Logo/Brand */}
-                <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+                <div className="p-6 border-b border-gray-200/30 dark:border-gray-700/30">
                     <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
                             <span className="text-2xl filter drop-shadow-md">♻️</span>
@@ -58,12 +58,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, on
                                 onClick={() => onViewChange(item.id)}
                                 aria-current={isActive ? 'page' : undefined}
                                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-blue-600 dark:hover:text-blue-400'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40 translate-x-1'
+                                    : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400'
                                     }`}
                             >
                                 <Icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
-                                <span className="font-semibold">{item.label}</span>
+                                <span className="font-bold">{item.label}</span>
                             </button>
                         );
                     })}

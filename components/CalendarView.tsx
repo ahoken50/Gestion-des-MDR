@@ -30,15 +30,43 @@ const CalendarView: React.FC<CalendarViewProps> = ({ requests, onViewRequest }) 
         return daysArray;
     }, [currentMonth]);
 
+    const formatDateKey = (date: Date | string) => {
+        try {
+            const d = new Date(date);
+            if (isNaN(d.getTime())) return null;
+            // Format to YYYY-MM-DD in local time
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        } catch (e) {
+            return null;
+        }
+    };
+
     const requestsByDay = useMemo(() => {
         const map: Record<string, (PickupRequest | FirebasePickupRequest)[]> = {};
         requests.forEach(req => {
-            const dateStr = new Date(req.date).toISOString().split('T')[0];
-            if (!map[dateStr]) map[dateStr] = [];
-            map[dateStr].push(req);
+            const dateStr = formatDateKey(req.date);
+            if (dateStr) {
+                if (!map[dateStr]) map[dateStr] = [];
+                map[dateStr].push(req);
+            }
         });
         return map;
     }, [requests]);
+
+    const otherMonthsWithData = useMemo(() => {
+        const months = new Set<string>();
+        requests.forEach(req => {
+            const d = new Date(req.date);
+            if (!isNaN(d.getTime())) {
+                const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
+                const currentMonthKey = `${currentMonth.getFullYear()}-${currentMonth.getMonth()}`;
+                if (monthKey !== currentMonthKey) {
+                    months.add(monthKey);
+                }
+            }
+        });
+        return months.size;
+    }, [requests, currentMonth]);
 
     const navigateMonth = (direction: number) => {
         setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + direction, 1));
@@ -59,7 +87,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ requests, onViewRequest }) 
 
     return (
         <div className="space-y-6 slide-up">
-            <div className="flex items-center justify-between glass dark:glass-dark p-6 rounded-3xl shadow-xl">
+            <div className="flex items-center justify-between glass p-6 rounded-3xl shadow-xl">
                 <h2 className="text-3xl font-bold capitalize text-gray-800 dark:text-white">
                     {monthName}
                 </h2>
@@ -85,7 +113,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ requests, onViewRequest }) 
                 </div>
             </div>
 
-            <div className="glass dark:glass-dark rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+            <div className="glass rounded-3xl overflow-hidden shadow-2xl border border-white/10">
                 <div className="grid grid-cols-7 bg-white/50 dark:bg-black/20 border-b border-gray-200 dark:border-gray-800">
                     {weekDays.map(day => (
                         <div key={day} className="py-4 text-center text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -95,9 +123,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({ requests, onViewRequest }) 
                 </div>
                 <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-800">
                     {daysInMonth.map((day, idx) => {
-                        const dateStr = day ? day.toISOString().split('T')[0] : '';
-                        const dailyReqs = day ? requestsByDay[dateStr] || [] : [];
-                        const isToday = dateStr === new Date().toISOString().split('T')[0];
+                        const formattedDay = day ? formatDateKey(day) : '';
+                        const dailyReqs = day ? requestsByDay[formattedDay || ''] || [] : [];
+                        const isToday = formattedDay === formatDateKey(new Date());
 
                         return (
                             <div 
@@ -145,8 +173,34 @@ const CalendarView: React.FC<CalendarViewProps> = ({ requests, onViewRequest }) 
                 </div>
             </div>
 
+            {Object.keys(requestsByDay).filter(k => k.startsWith(`${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`)).length === 0 && otherMonthsWithData > 0 && (
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-2xl flex items-center justify-between scale-in">
+                    <div className="flex items-center space-x-3">
+                        <div className="bg-blue-500 text-white p-2 rounded-lg">
+                            <span className="text-xl">ℹ️</span>
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-blue-900 dark:text-blue-100">Aucune demande ce mois-ci</p>
+                            <p className="text-xs text-blue-700 dark:text-blue-300">Nous avons trouvé {requests.length} demande(s) dans d'autres mois de l'historique.</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => {
+                            // Find month with most recent request
+                            const lastReq = [...requests].sort((a, b) => b.date.localeCompare(a.date))[0];
+                            if (lastReq) {
+                                setCurrentMonth(new Date(lastReq.date));
+                            }
+                        }}
+                        className="text-xs font-bold bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+                    >
+                        Aller à la dernière demande
+                    </button>
+                </div>
+            )}
+
             {/* Legend */}
-            <div className="flex flex-wrap gap-6 p-4 glass dark:glass-dark rounded-2xl justify-center text-xs font-semibold">
+            <div className="flex flex-wrap gap-6 p-4 glass rounded-2xl justify-center text-xs font-semibold">
                 <div className="flex items-center space-x-2">
                     <span className="w-3 h-3 rounded-full bg-yellow-400" />
                     <span className="text-gray-600 dark:text-gray-300">En attente</span>
