@@ -30,4 +30,5 @@ export interface PickupRequest {
   invoiceUrl?: string;
   emails?: string[];
   attachments?: string[];
+  completedAt?: string; // ISO date string when status becomes 'completed'
 }

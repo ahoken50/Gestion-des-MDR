@@ -6,7 +6,8 @@ import {
     MapPinIcon,
     CalendarIcon,
     LightBulbIcon,
-    ArrowTrendingUpIcon
+    ArrowTrendingUpIcon,
+    ClockIcon
 } from '@heroicons/react/24/outline';
 
 const AIInsights: React.FC = () => {
@@ -53,12 +54,38 @@ const AIInsights: React.FC = () => {
             ? ((recentRequests - previousRequests) / previousRequests) * 100
             : 0;
 
+        // 5. Average Processing Time
+        const completedRequests = allRequests.filter(r => r.status === 'completed' && r.completedAt);
+        let avgProcessingTime = 'N/A';
+        let avgProcessingMs = 0;
+
+        if (completedRequests.length > 0) {
+            const durations = completedRequests.map(r => {
+                const start = new Date(r.date).getTime();
+                const end = new Date(r.completedAt!).getTime();
+                return Math.max(0, end - start);
+            });
+            avgProcessingMs = durations.reduce((a, b) => a + b, 0) / durations.length;
+
+            const daysDiff = Math.floor(avgProcessingMs / (1000 * 60 * 60 * 24));
+            const hoursDiff = Math.floor((avgProcessingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+            if (daysDiff > 0) {
+                avgProcessingTime = `${daysDiff}j ${hoursDiff}h`;
+            } else if (hoursDiff > 0) {
+                avgProcessingTime = `${hoursDiff}h`;
+            } else {
+                avgProcessingTime = `${Math.floor(avgProcessingMs / (1000 * 60))}m`;
+            }
+        }
+
         return {
             topLocation: topLocation ? topLocation[0] : 'N/A',
             topDay: topDay ? topDay[0] : 'N/A',
             avgCost,
             trend,
-            totalRequests: allRequests.length
+            totalRequests: allRequests.length,
+            avgProcessingTime
         };
     }, [allRequests]);
 
@@ -83,20 +110,17 @@ const AIInsights: React.FC = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                 {/* Card 1: Top Location */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start mb-4">
                         <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                             <MapPinIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                         </div>
-                        <span className="text-xs font-medium px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-full">
-                            Top Lieu
-                        </span>
                     </div>
                     <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Lieu le plus actif</h3>
                     <p className="text-xl font-bold text-gray-800 dark:text-white mt-1">{insights.topLocation}</p>
-                    <p className="text-xs text-gray-400 mt-2">Basé sur le volume de demandes</p>
+                    <p className="text-xs text-gray-400 mt-2">Volume de demandes</p>
                 </div>
 
                 {/* Card 2: Busiest Day */}
@@ -105,13 +129,10 @@ const AIInsights: React.FC = () => {
                         <div className="p-2 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
                             <CalendarIcon className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                         </div>
-                        <span className="text-xs font-medium px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 rounded-full">
-                            Pic d'activité
-                        </span>
                     </div>
                     <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Jour le plus chargé</h3>
                     <p className="text-xl font-bold text-gray-800 dark:text-white mt-1">{insights.topDay}</p>
-                    <p className="text-xs text-gray-400 mt-2">Optimisez vos horaires ce jour-là</p>
+                    <p className="text-xs text-gray-400 mt-2">Optimisation recommandée</p>
                 </div>
 
                 {/* Card 3: Average Cost */}
@@ -123,7 +144,7 @@ const AIInsights: React.FC = () => {
                     </div>
                     <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Coût moyen / demande</h3>
                     <p className="text-xl font-bold text-gray-800 dark:text-white mt-1">{insights.avgCost.toFixed(2)} $</p>
-                    <p className="text-xs text-gray-400 mt-2">Moyenne sur les factures saisies</p>
+                    <p className="text-xs text-gray-400 mt-2">Sur factures saisies</p>
                 </div>
 
                 {/* Card 4: Trend */}
@@ -136,11 +157,23 @@ const AIInsights: React.FC = () => {
                             {insights.trend > 0 ? '+' : ''}{insights.trend.toFixed(1)}%
                         </span>
                     </div>
-                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Tendance (30 jours)</h3>
+                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Tendance (30j)</h3>
                     <p className="text-xl font-bold text-gray-800 dark:text-white mt-1">
                         {insights.trend >= 0 ? 'En hausse' : 'En baisse'}
                     </p>
-                    <p className="text-xs text-gray-400 mt-2">Par rapport aux 30 jours précédents</p>
+                    <p className="text-xs text-gray-400 mt-2">Vs période précédente</p>
+                </div>
+
+                {/* Card 5: Processing Time */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
+                            <ClockIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                        </div>
+                    </div>
+                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Temps de traitement</h3>
+                    <p className="text-xl font-bold text-gray-800 dark:text-white mt-1">{insights.avgProcessingTime}</p>
+                    <p className="text-xs text-gray-400 mt-2">Moyenne creation-fermeture</p>
                 </div>
             </div>
 
@@ -153,10 +186,10 @@ const AIInsights: React.FC = () => {
                     <div>
                         <h3 className="text-xl font-bold mb-2">Recommandation de l'IA</h3>
                         <p className="text-indigo-100 leading-relaxed">
-                            D'après l'analyse de vos {insights.totalRequests} demandes, nous recommandons d'augmenter la fréquence de collecte à
+                            D'après l'analyse de vos {insights.totalRequests} demandes, nous recommandons d'optimiser le temps de traitement pour
                             <span className="font-bold text-white"> {insights.topLocation} </span>
-                            le <span className="font-bold text-white">{insights.topDay}</span>.
-                            Cela pourrait réduire les demandes urgentes et optimiser vos coûts de déplacement.
+                            car votre moyenne est de <span className="font-bold text-white">{insights.avgProcessingTime}</span>.
+                            Une planification le <span className="font-bold text-white">{insights.topDay}</span> semble être la plus efficace.
                         </p>
                     </div>
                 </div>

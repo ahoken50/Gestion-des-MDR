@@ -12,7 +12,7 @@ export const useAppData = () => {
     // Helper for toast usage because useToast returns object with methods
     const toast = useMemo(() => ({ success, error, info }), [success, error, info]);
 
-    const [currentView, setCurrentView] = useState<View>('inventory');
+    const [currentView, setCurrentView] = useState<View>('home');
 
     // State for inventory
     const [inventory, setInventory] = useState<InventoryItem[]>(() => {
@@ -221,10 +221,18 @@ export const useAppData = () => {
             const firebaseRequest = firebaseRequests.find(req => req.id === requestId);
 
             if (firebaseRequest && isFirebaseEnabled) {
-                await firebaseService.updatePickupRequest(requestId, { status });
-                setFirebaseRequests(prev => prev.map(req => req.id === requestId ? { ...req, status } : req));
+                const updates: any = { status };
+                if (status === 'completed') {
+                    updates.completedAt = new Date().toISOString();
+                }
+                await firebaseService.updatePickupRequest(requestId, updates);
+                setFirebaseRequests(prev => prev.map(req => req.id === requestId ? { ...req, ...updates } : req));
             } else {
-                setPickupRequests(prev => prev.map(req => req.id === requestId ? { ...req, status } : req));
+                const updates: any = { status };
+                if (status === 'completed') {
+                    updates.completedAt = new Date().toISOString();
+                }
+                setPickupRequests(prev => prev.map(req => req.id === requestId ? { ...req, ...updates } : req));
             }
         } catch (error) {
             console.error('Error updating request status:', error);
