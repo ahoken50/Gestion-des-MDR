@@ -23,13 +23,13 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
   const [editedRequest, setEditedRequest] = useState<PickupRequest | FirebasePickupRequest>(request);
   const [emails, setEmails] = useState<string[]>(request.emails || []);
   const [newEmail, setNewEmail] = useState('');
-  const [images, setImages] = useState<string[]>(request.images || []);
+  const [attachments, setAttachments] = useState<string[]>(request.attachments || []);
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     setEditedRequest(request);
     setEmails(request.emails || []);
-    setImages(request.images || []);
+    setAttachments(request.attachments || []);
   }, [request]);
 
   const availableItems = useMemo(() => {
@@ -99,7 +99,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
     setEmails(emails.filter(email => email !== emailToRemove));
   };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAttachmentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
@@ -111,35 +111,43 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
           continue;
         }
 
-        if (!file.type.startsWith('image/')) {
-          alert(`Le fichier ${file.name} n'est pas une image`);
+        const allowedTypes = [
+          'application/pdf',
+          'image/jpeg',
+          'image/png',
+          'image/webp',
+          'image/gif'
+        ];
+
+        if (!allowedTypes.includes(file.type) && !file.type.startsWith('image/')) {
+          alert(`Le fichier ${file.name} n'est pas supporté (PDF ou Image unique)`);
           continue;
         }
 
         if (isFirebase && 'id' in request) {
-          const imageUrl = await firebaseService.addImageToRequest(request.id!, file);
-          setImages(prev => [...prev, imageUrl]);
+          const url = await firebaseService.addAttachmentToRequest(request.id!, file);
+          setAttachments(prev => [...prev, url]);
         } else {
           // Pour le mode local, convertir en base64
           const reader = new FileReader();
           reader.onload = (e) => {
             if (e.target?.result) {
-              setImages(prev => [...prev, e.target!.result as string]);
+              setAttachments(prev => [...prev, e.target!.result as string]);
             }
           };
           reader.readAsDataURL(file);
         }
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
-      alert('Erreur lors du téléchargement de l\'image');
+      console.error('Error uploading attachment:', error);
+      alert('Erreur lors du téléchargement du fichier');
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleRemoveImage = (imageUrl: string) => {
-    setImages(images.filter(img => img !== imageUrl));
+  const handleRemoveAttachment = (url: string) => {
+    setAttachments(attachments.filter(att => att !== url));
   };
 
   const handleSave = async () => {
@@ -147,7 +155,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
       const updatedRequest = {
         ...editedRequest,
         emails,
-        images
+        attachments
       };
 
       if (isFirebase && 'id' in request) {
@@ -380,46 +388,59 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
 
           {/* Images / Pièces jointes */}
           <div>
-            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">📎 Pièces jointes (Images)</h3>
+            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">📎 Pièces jointes (Documents et Images)</h3>
             <div className="space-y-3">
-              {images.length > 0 && (
+              {attachments.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {images.map((imageUrl, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={imageUrl}
-                        alt={`Pièce jointe ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
-                      />
-                      {isEditing && (
-                        <button
-                          onClick={() => handleRemoveImage(imageUrl)}
-                          className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  {attachments.map((url, index) => {
+                    const isPdf = url.includes('application/pdf') || url.toLowerCase().endsWith('.pdf') || url.includes('blob:') && url.includes('pdf');
+                    // Better check for data url or filename
+                    const isPdfLiteral = url.startsWith('data:application/pdf') || url.split('?')[0].toLowerCase().endsWith('.pdf');
+
+                    return (
+                      <div key={index} className="relative group">
+                        {isPdfLiteral ? (
+                          <div className="w-full h-32 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                            <span className="text-2xl mb-1">📄</span>
+                            <span className="text-[10px] text-gray-500 px-2 truncate w-full text-center">Document PDF</span>
+                          </div>
+                        ) : (
+                          <img
+                            src={url}
+                            alt={`Pièce jointe ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                          />
+                        )}
+                        {isEditing && (
+                          <button
+                            onClick={() => handleRemoveAttachment(url)}
+                            className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <XMarkIcon className="w-4 h-4" />
+                          </button>
+                        )}
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="absolute bottom-1 right-1 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <XMarkIcon className="w-4 h-4" />
-                        </button>
-                      )}
-                      <a
-                        href={imageUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="absolute bottom-1 right-1 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        Voir
-                      </a>
-                    </div>
-                  ))}
+                          Voir
+                        </a>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
               {isEditing && (
                 <div>
                   <label className="block">
-                    <span className="sr-only">Choisir des images</span>
+                    <span className="sr-only">Choisir des fichiers</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/*,.pdf"
                       multiple
-                      onChange={handleImageUpload}
+                      onChange={handleAttachmentUpload}
                       disabled={isUploading}
                       className="block w-full text-sm text-gray-500 dark:text-gray-400
                     file:mr-4 file:py-2 file:px-4
@@ -432,11 +453,11 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
                     />
                   </label>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {isUploading ? '⏳ Téléchargement en cours...' : 'Max 10MB par image. Formats: JPG, PNG, GIF, WEBP'}
+                    {isUploading ? '⏳ Téléchargement en cours...' : 'Max 10MB par fichier. Formats: PDF, JPG, PNG, GIF, WEBP'}
                   </p>
                 </div>
               )}
-              {images.length === 0 && !isEditing && (
+              {attachments.length === 0 && !isEditing && (
                 <p className="text-gray-500 italic text-sm dark:text-gray-400">Aucune pièce jointe</p>
               )}
             </div>

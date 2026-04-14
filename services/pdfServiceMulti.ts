@@ -87,9 +87,7 @@ export class PDFService {
       y += 5;
     }
 
-    if (request.bcNumber) {
-      this.doc.text(`BC #: ${request.bcNumber}`, 14, y);
-    }
+    // BC Number will be added to Right Column details below
 
     // Right Column: Request Details
     // Moved details back to right as QR code is removed
@@ -113,6 +111,10 @@ export class PDFService {
       { label: "Lieux:", value: request.totalLocations.toString() },
       { label: "Total Items:", value: request.totalItems.toString() }
     ];
+
+    if (request.bcNumber) {
+      details.push({ label: "BC #:", value: request.bcNumber });
+    }
 
     details.forEach(detail => {
       this.doc.setFont('helvetica', 'bold');
@@ -237,9 +239,9 @@ export class PDFService {
           borderBottomColor: [30, 58, 138]
         },
         columnStyles: {
-          0: { cellWidth: 120 },
+          0: { cellWidth: 110 },
           1: { halign: 'center', cellWidth: 32, fontStyle: 'bold' },
-          2: { halign: 'center', cellWidth: 32 }
+          2: { halign: 'center', cellWidth: 42 }
         },
         margin: { left: 14, right: 14, bottom: bottomMargin },
         alternateRowStyles: { fillColor: [250, 250, 250] },
@@ -297,7 +299,11 @@ export class PDFService {
       this.doc.setFontSize(8);
       this.doc.setTextColor(150, 150, 150);
       this.doc.text("Ville de Val-d'Or - Service de l'Environnement", 14, pageHeight - 10);
-      this.doc.text(`Généré le ${new Date().toLocaleString('fr-CA')}`, 14, pageHeight - 6);
+      
+      const now = new Date();
+      const formattedDate = now.toLocaleDateString('fr-CA');
+      const formattedTime = now.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      this.doc.text(`Généré le ${formattedDate} à ${formattedTime}`, 14, pageHeight - 6);
 
       this.doc.text(`Page ${i} de ${pageCount}`, 196, pageHeight - 10, { align: 'right' });
     }

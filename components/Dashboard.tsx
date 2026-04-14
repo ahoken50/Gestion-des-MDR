@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     BarChart,
     Bar,
@@ -133,7 +133,8 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
                     typeCounts[item.name] = (typeCounts[item.name] || 0) + qty;
 
                     // Location Data
-                    const loc = (item.location || req.location || '').split(',')[0].trim();
+                    const itemLocation = 'location' in item ? item.location : undefined;
+                    const loc = (itemLocation || req.location || '').split(',')[0].trim();
                     if (loc) locationCounts[loc] = (locationCounts[loc] || 0) + qty;
                 }
             }

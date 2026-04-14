@@ -5,7 +5,7 @@ import type { PickupRequestPDF } from '../types-pdf';
 import { INITIAL_INVENTORY } from '../constants';
 import { useToast } from '../components/ui/Toast';
 
-export type View = 'inventory' | 'new_request' | 'history' | 'dashboard';
+export type View = 'inventory' | 'new_request' | 'history' | 'dashboard' | 'home' | 'ai';
 
 export const useAppData = () => {
     const { success, error, info } = useToast();

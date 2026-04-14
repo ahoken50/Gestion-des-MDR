@@ -3,6 +3,7 @@ export interface InventoryItem {
   name: string;
   quantity: number; // Quantity of empty containers
   location: string;
+  updatedAt?: any;
 }
 
 export interface RequestedItem {
@@ -27,4 +28,6 @@ export interface PickupRequest {
   cost?: number;
   locationCosts?: Record<string, number>;
   invoiceUrl?: string;
+  emails?: string[];
+  attachments?: string[];
 }

@@ -17,38 +17,16 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
+import type { RequestedItem, InventoryItem, PickupRequest } from '../types';
+
 // Types pour les données
-export interface FirebasePickupRequest {
-  id?: string;
-  bcNumber?: string;
+export interface FirebasePickupRequest extends Omit<PickupRequest, 'items'> {
   requestNumber: number; // Numéro séquentiel
-  location: string;
-  items: Array<{
-    name: string;
-    quantity: number;
-  }>;
-  date: string;
-  contactName: string;
-  contactPhone: string;
-  notes?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  emails?: string[]; // Courriels en suivi
-  images?: string[]; // URLs des images
-  locationComments?: Record<string, string>; // Commentaires par lieu
-  locationCosts?: Record<string, number>; // Coûts par lieu
-  cost?: number; // Coût de la demande
-  invoiceUrl?: string; // URL de la facture (PDF ou image)
+  items: RequestedItem[];
   createdAt: any; // Timestamp Firebase
   updatedAt: any; // Timestamp Firebase
 }
 
-export interface InventoryItem {
-  id: string;
-  name: string;
-  quantity: number;
-  location: string;
-  updatedAt: any;
-}
 
 class FirebaseService {
   // Obtenir le prochain numéro de requête de manière atomique
@@ -219,14 +197,21 @@ class FirebaseService {
     return null;
   }
 
-  // Ajouter une image à une demande
-  async addImageToRequest(requestId: string, file: File): Promise<string> {
+  // Ajouter une pièce jointe à une demande (Image ou PDF)
+  async addAttachmentToRequest(requestId: string, file: File): Promise<string> {
     // SECURITY: Validate file size (max 10MB) and type
     if (file.size > 10 * 1024 * 1024) {
       throw new Error('File size exceeds 10MB limit');
     }
-    if (!file.type.startsWith('image/')) {
-      throw new Error('Invalid file type. Only images are allowed.');
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif'
+    ];
+    if (!allowedTypes.includes(file.type) && !file.type.startsWith('image/')) {
+      throw new Error('Invalid file type. Only PDF and images are allowed.');
     }
 
     const storageRef = ref(storage, `requests/${requestId}/${Date.now()}_${file.name}`);
@@ -236,9 +221,9 @@ class FirebaseService {
     // Ajouter l'URL à la demande
     const request = await this.getPickupRequest(requestId);
     if (request) {
-      const images = request.images || [];
-      images.push(downloadURL);
-      await this.updatePickupRequest(requestId, { images });
+      const attachments = request.attachments || [];
+      attachments.push(downloadURL);
+      await this.updatePickupRequest(requestId, { attachments });
     }
 
     return downloadURL;

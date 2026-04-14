@@ -16,7 +16,7 @@ export class AIService {
         const quantityThreshold = 50; // Arbitrary threshold for "high quantity"
 
         requests.forEach(req => {
-            const totalQuantity = req.items.reduce((sum, item) => sum + item.quantity, 0);
+            const totalQuantity = req.items.reduce((sum: number, item) => sum + item.quantity, 0);
 
             if (totalQuantity > quantityThreshold) {
                 insights.push({
