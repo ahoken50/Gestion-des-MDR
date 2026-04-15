@@ -16,43 +16,12 @@ export const generatePdf = async (request: PickupRequest) => {
 
   // 2. Logo Area with Robust Clipping and Proportion Control
   try {
-    const radius = 17.5;
-    const x = 14;
-    const y = 5;
-    const centerX = x + radius;
-    const centerY = y + radius;
+    const displayWidth = 64; // Based on 1024x558 actual image size
+    const displayHeight = 35;
+    const imgX = 14;
+    const imgY = 5;
 
-    // Draw white background for the badge just in case
-    doc.setFillColor(255, 255, 255);
-    doc.circle(centerX, centerY, radius, 'F');
-    
-    // Calculate aspect ratio
-    const d = doc as any;
-    const imgProps = d.getImageProperties(logo);
-    const ratio = imgProps.width / imgProps.height;
-    let displayWidth = 35;
-    let displayHeight = 35;
-    
-    if (ratio > 1) {
-      displayHeight = 35 / ratio;
-    } else {
-      displayWidth = 35 * ratio;
-    }
-    
-    const imgX = centerX - (displayWidth / 2);
-    const imgY = centerY - (displayHeight / 2);
-
-    // Perform Clipping with robust path
-    d.saveGraphicsState();
-    d.circle(centerX, centerY, radius, 'F');
-    d.clip();
-    d.addImage(logo, 'PNG', imgX, imgY, displayWidth, displayHeight);
-    d.restoreGraphicsState();
-    
-    // Elegant Gold Ring
-    doc.setDrawColor(234, 179, 8); // Gold
-    doc.setLineWidth(1.0);
-    doc.circle(centerX, centerY, radius, 'D');
+    doc.addImage(logo, 'PNG', imgX, imgY, displayWidth, displayHeight);
   } catch (e) {
     console.error("Logo error:", e);
     doc.setFontSize(14);

@@ -241,7 +241,14 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
             const pdfService = new PDFService();
             let requestForPdf = request as any;
             if (!requestForPdf.groupedItems) {
-                const groupedItems = groupItemsByLocation(request.items as SelectedItem[]);
+                // Fix for the missing location bug in history: items may not have item.location
+                // We inject the general request.location if the item doesn't have one to prevent 'Non spécifié'
+                const itemsWithLocation = request.items.map(item => ({
+                    ...item,
+                    location: ('location' in item && item.location) ? item.location : (request.location || 'Non spécifié')
+                }));
+
+                const groupedItems = groupItemsByLocation(itemsWithLocation as SelectedItem[]);
                 if (request.locationComments) {
                     Object.keys(groupedItems).forEach(location => {
                         if (request.locationComments && request.locationComments[location]) {
