@@ -32,33 +32,13 @@ export class PDFService {
     this.doc.setFillColor(0, 0, 0); 
     this.doc.rect(0, 0, pageWidth, 45, 'F');
 
-    // 2. Logo Area with Robust Clipping
+    // 2. Logo Area (Now properly transparent and square from source)
     try {
-      const displayWidth = 64; // Based on 1024x558 actual image size
-      const displayHeight = 35;
+      const displaySize = 35; // Perfect square
       const imgX = 14;
       const imgY = 5;
 
-      // The center of the drawn image
-      const cx = imgX + (displayWidth / 2);
-      const cy = imgY + (displayHeight / 2);
-      // The radius of the circular badge in the center of the image
-      const radius = 17.5;
-
-      const d = this.doc as any;
-      d.saveGraphicsState();
-      // Trace the circular path
-      d.circle(cx, cy, radius, 'S'); // 'S' strokes the path invisibly if drawColor is transparent but creates the path
-      d.clip();
-      
-      this.doc.addImage(logo, 'PNG', imgX, imgY, displayWidth, displayHeight);
-      
-      d.restoreGraphicsState();
-      
-      // Elegant Gold Ring around the clipped circle
-      this.doc.setDrawColor(234, 179, 8); // Gold
-      this.doc.setLineWidth(1.0);
-      this.doc.circle(cx, cy, radius, 'D');
+      this.doc.addImage(logo, 'PNG', imgX, imgY, displaySize, displaySize);
     } catch (e) {
       console.error("Logo error:", e);
       this.doc.setFontSize(14);
