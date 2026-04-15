@@ -6,7 +6,7 @@ import logo from '../src/assets/logo.png';
 // QR Code function removed
 
 export const generatePdf = async (request: PickupRequest) => {
-  const doc = new jsPDF();
+  const doc = new jsPDF({ format: 'letter' });
   const margin = 14;
   const pageWidth = doc.internal.pageSize.width;
 

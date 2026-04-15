@@ -10,7 +10,7 @@ export class PDFService {
     includeHeader: true,
     includeContactInfo: true,
     includeNotes: true,
-    pageSize: 'a4',
+    pageSize: 'letter',
     orientation: 'portrait'
   };
 
