@@ -30,29 +30,52 @@ export class PDFService {
     this.doc.setFillColor(15, 23, 42); // slate-900
     this.doc.rect(0, 0, 210, 45, 'F');
 
-    // Logo Area
+    // Logo Area with Circular Clipping for High-End Look
     try {
-      this.doc.addImage(logo, 'PNG', 14, 5, 35, 35);
+      const radius = 17.5;
+      const x = 14;
+      const y = 5;
+      
+      // Draw white background for the badge
+      this.doc.setFillColor(255, 255, 255);
+      this.doc.circle(x + radius, y + radius, radius, 'F');
+      
+      // Setup clipping path for circular logo
+      this.doc.saveGraphicsState();
+      this.doc.circle(x + radius, y + radius, radius, 'f');
+      this.doc.clip();
+      this.doc.addImage(logo, 'PNG', x, y, 35, 35);
+      this.doc.restoreGraphicsState();
+      
+      // Add a elegant gold border around the logo badge
+      this.doc.setDrawColor(234, 179, 8); // amber-500 / Gold
+      this.doc.setLineWidth(0.8);
+      this.doc.circle(x + radius, y + radius, radius, 'D');
     } catch (e) {
       // Fallback if logo fails
       this.doc.setFontSize(16);
       this.doc.setTextColor(255, 255, 255);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text("VILLE DE VAL-D'OR", 14, 22);
+      this.doc.text("VILLE DE VAL-D'OR", 55, 22);
       this.doc.setFontSize(10);
       this.doc.setFont('helvetica', 'normal');
-      this.doc.text("Service de l'Environnement", 14, 28);
+      this.doc.text("Service de l'Environnement", 55, 28);
     }
+
+    // Header Accent Line (Gold)
+    this.doc.setDrawColor(234, 179, 8);
+    this.doc.setLineWidth(1.5);
+    this.doc.line(0, 44, 210, 44);
 
     // Title and Badge
     this.doc.setTextColor(255, 255, 255);
     this.doc.setFontSize(24);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(title, 200, 20, { align: 'right' });
+    this.doc.text(title, 200, 24, { align: 'right' }); // Shifted down for centering
 
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text("DOCUMENT OFFICIEL", 200, 28, { align: 'right' });
+    this.doc.text("DOCUMENT OFFICIEL", 200, 32, { align: 'right' });
   }
 
   private async addContactInfo(request: PickupRequestPDF): Promise<void> {
@@ -105,10 +128,13 @@ export class PDFService {
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
 
+    const locationNames = Object.keys(request.groupedItems);
+    const locationValue = locationNames.length === 1 ? locationNames[0] : "Lieux multiples (voir détails)";
+
     const details = [
       { label: "Date:", value: new Date(request.date).toLocaleDateString('fr-CA') },
       { label: "NO DE REQUÊTE:", value: request.requestNumber ? `#${request.requestNumber}` : request.id, isBold: true },
-      { label: "Lieux:", value: request.totalLocations.toString() },
+      { label: "LIEU DE RAMASSAGE:", value: locationValue, isBold: true },
       { label: "Total Items:", value: request.totalItems.toString() }
     ];
 
