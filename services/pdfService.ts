@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { PickupRequest } from '../types';
-import logoValdor from '../src/assets/logo_valdor.png';
+import logo from '../src/assets/logo.png';
 
 // QR Code function removed
 
@@ -11,12 +11,13 @@ export const generatePdf = async (request: PickupRequest) => {
   const pageWidth = doc.internal.pageSize.width;
 
   // --- Header ---
-  doc.setFillColor(30, 58, 138); // Navy Blue
-  doc.rect(0, 0, pageWidth, 40, 'F');
+  doc.setFillColor(15, 23, 42); // Deep Slate (match dark mode)
+  doc.rect(0, 0, pageWidth, 45, 'F');
 
   // Logo
   try {
-    doc.addImage(logoValdor, 'PNG', 14, 5, 45, 28);
+    // Increased size and centered vertically in the header
+    doc.addImage(logo, 'PNG', 14, 5, 35, 35);
   } catch (e) {
     doc.setFontSize(16);
     doc.setTextColor(255, 255, 255);
@@ -116,11 +117,11 @@ export const generatePdf = async (request: PickupRequest) => {
     },
     headStyles: {
       fillColor: [255, 255, 255],
-      textColor: [30, 58, 138],
+      textColor: [15, 23, 42],
       fontStyle: 'bold',
       lineWidth: 0,
       borderBottomWidth: 1,
-      borderBottomColor: [30, 58, 138]
+      borderBottomColor: [15, 23, 42]
     },
     columnStyles: {
       0: { cellWidth: 150 },

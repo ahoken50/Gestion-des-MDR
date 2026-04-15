@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { GroupedItemsByLocation, PickupRequestPDF, PDFGenerationOptions, SelectedItem } from '../types-pdf';
 import { LOCATION_ADDRESSES } from '../constants';
-import logoValdor from '../src/assets/logo_valdor.png';
+import logo from '../src/assets/logo.png';
 
 export class PDFService {
   private doc: jsPDF;
@@ -26,22 +26,22 @@ export class PDFService {
 
 
   private addHeader(title: string): void {
-    // Professional Header Background
-    this.doc.setFillColor(30, 58, 138); // Navy Blue
-    this.doc.rect(0, 0, 210, 40, 'F');
+    // Professional Header Background - Slate Premium
+    this.doc.setFillColor(15, 23, 42); // slate-900
+    this.doc.rect(0, 0, 210, 45, 'F');
 
-    // Logo Area (Placeholder or Actual)
+    // Logo Area
     try {
-      this.doc.addImage(logoValdor, 'PNG', 14, 5, 45, 28);
+      this.doc.addImage(logo, 'PNG', 14, 5, 35, 35);
     } catch (e) {
       // Fallback if logo fails
       this.doc.setFontSize(16);
       this.doc.setTextColor(255, 255, 255);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text("VILLE DE VAL-D'OR", 14, 20);
+      this.doc.text("VILLE DE VAL-D'OR", 14, 22);
       this.doc.setFontSize(10);
       this.doc.setFont('helvetica', 'normal');
-      this.doc.text("Service de l'Environnement", 14, 26);
+      this.doc.text("Service de l'Environnement", 14, 28);
     }
 
     // Title and Badge
@@ -184,11 +184,11 @@ export class PDFService {
       y += 5; // Small gap before header
 
       // Location Header
-      this.doc.setFillColor(230, 240, 255);
+      this.doc.setFillColor(248, 250, 252); // slate-50
       // Draw background rect for title
       this.doc.rect(14, y, 182, 8, 'F');
 
-      this.doc.setTextColor(30, 58, 138);
+      this.doc.setTextColor(15, 23, 42); // slate-900
       this.doc.setFontSize(11);
       this.doc.setFont('helvetica', 'bold');
       this.doc.text(`LIEU ${index + 1}: ${location.toUpperCase()}`, 18, y + 5.5);
@@ -233,11 +233,11 @@ export class PDFService {
         },
         headStyles: {
           fillColor: [255, 255, 255],
-          textColor: [30, 58, 138],
+          textColor: [15, 23, 42],
           fontStyle: 'bold',
           lineWidth: 0,
           borderBottomWidth: 1,
-          borderBottomColor: [30, 58, 138]
+          borderBottomColor: [15, 23, 42]
         },
         columnStyles: {
           0: { cellWidth: 110 },
@@ -273,14 +273,14 @@ export class PDFService {
       y = 20;
     }
 
-    this.doc.setDrawColor(30, 58, 138);
+    this.doc.setDrawColor(15, 23, 42);
     this.doc.setLineWidth(0.5);
     this.doc.line(120, y, 196, y);
     y += 8;
 
     this.doc.setFontSize(12);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.setTextColor(30, 58, 138);
+    this.doc.setTextColor(15, 23, 42);
     this.doc.text('TOTAL CONTENANTS:', 120, y);
     this.doc.text(request.totalItems.toString(), 196, y, { align: 'right' });
   }

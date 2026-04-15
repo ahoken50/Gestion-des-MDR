@@ -35,15 +35,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, on
         <>
             <aside className={`w-64 glass flex flex-col shadow-2xl transition-all duration-300 z-50 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
                 {/* Logo/Brand */}
-                <div className="p-6 border-b border-gray-200/30 dark:border-gray-700/30">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg border-2 border-white/20 ring-4 ring-blue-500/10">
-                            <img src={logo} alt="Val-d'Or Logo" className="w-full h-full object-cover" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-gray-800 dark:text-white leading-tight">Gestion MDR</h1>
-                            <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 opacity-80 uppercase tracking-widest">VILLE DE VAL-D'OR</p>
-                        </div>
+                <div className="p-8 border-b border-gray-200/30 dark:border-gray-700/30 flex flex-col items-center text-center">
+                    <div className="w-28 h-28 rounded-full overflow-hidden shadow-2xl border-2 border-white/20 ring-4 ring-blue-500/10 mb-4 transition-transform hover:scale-105 duration-300">
+                        <img src={logo} alt="Val-d'Or Logo" className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-bold text-gray-800 dark:text-white leading-tight">Gestion MDR</h1>
+                        <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 opacity-80 uppercase tracking-widest">VILLE DE VAL-D'OR</p>
                     </div>
                 </div>
 
