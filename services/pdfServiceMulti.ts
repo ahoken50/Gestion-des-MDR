@@ -26,56 +26,42 @@ export class PDFService {
 
 
   private addHeader(title: string): void {
-    // Professional Header Background - Slate Premium
+    const pageWidth = 210;
+    
+    // 1. Top Accent Bar (Slate Premium)
     this.doc.setFillColor(15, 23, 42); // slate-900
-    this.doc.rect(0, 0, 210, 45, 'F');
+    this.doc.rect(0, 0, pageWidth, 8, 'F');
 
-    // Logo Area with Circular Clipping for High-End Look
+    // 2. White Header Body (Standard Official Look)
+    this.doc.setFillColor(255, 255, 255);
+    this.doc.rect(0, 8, pageWidth, 37, 'F');
+
+    // 3. Logo (Standard placement on white - hide corners naturally)
     try {
-      const radius = 17.5;
-      const x = 14;
-      const y = 5;
-      
-      // Draw white background for the badge
-      this.doc.setFillColor(255, 255, 255);
-      this.doc.circle(x + radius, y + radius, radius, 'F');
-      
-      // Setup clipping path for circular logo
-      this.doc.saveGraphicsState();
-      this.doc.circle(x + radius, y + radius, radius, 'f');
-      this.doc.clip();
-      this.doc.addImage(logo, 'PNG', x, y, 35, 35);
-      this.doc.restoreGraphicsState();
-      
-      // Add a elegant gold border around the logo badge
-      this.doc.setDrawColor(234, 179, 8); // amber-500 / Gold
-      this.doc.setLineWidth(0.8);
-      this.doc.circle(x + radius, y + radius, radius, 'D');
+      this.doc.addImage(logo, 'PNG', 14, 10, 30, 30);
     } catch (e) {
       // Fallback if logo fails
-      this.doc.setFontSize(16);
-      this.doc.setTextColor(255, 255, 255);
+      this.doc.setFontSize(14);
+      this.doc.setTextColor(15, 23, 42);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text("VILLE DE VAL-D'OR", 55, 22);
-      this.doc.setFontSize(10);
-      this.doc.setFont('helvetica', 'normal');
-      this.doc.text("Service de l'Environnement", 55, 28);
+      this.doc.text("VILLE DE VAL-D'OR", 14, 25);
     }
 
-    // Header Accent Line (Gold)
-    this.doc.setDrawColor(234, 179, 8);
-    this.doc.setLineWidth(1.5);
-    this.doc.line(0, 44, 210, 44);
-
-    // Title and Badge
-    this.doc.setTextColor(255, 255, 255);
-    this.doc.setFontSize(24);
+    // 4. Title and Document Label
+    this.doc.setTextColor(15, 23, 42); // Deep Slate
+    this.doc.setFontSize(22);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(title, 200, 24, { align: 'right' }); // Shifted down for centering
+    this.doc.text(title, 200, 25, { align: 'right' });
 
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text("DOCUMENT OFFICIEL", 200, 32, { align: 'right' });
+    this.doc.setTextColor(100, 100, 100);
+    this.doc.text("DOCUMENT OFFICIEL", 200, 33, { align: 'right' });
+
+    // 5. Header Bottom Divider
+    this.doc.setDrawColor(226, 232, 240); // slate-200
+    this.doc.setLineWidth(0.5);
+    this.doc.line(14, 45, 196, 45);
   }
 
   private async addContactInfo(request: PickupRequestPDF): Promise<void> {

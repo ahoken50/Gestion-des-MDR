@@ -10,55 +10,39 @@ export const generatePdf = async (request: PickupRequest) => {
   const margin = 14;
   const pageWidth = doc.internal.pageSize.width;
 
-  // --- Header ---
-  doc.setFillColor(15, 23, 42); // Deep Slate (match dark mode)
-  doc.rect(0, 0, pageWidth, 45, 'F');
+  // 1. Top Accent Bar (Slate Premium)
+  doc.setFillColor(15, 23, 42); // slate-900
+  doc.rect(0, 0, pageWidth, 8, 'F');
 
-  // Logo with Circular Clipping for High-End Look
+  // 2. White Header Body
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 8, pageWidth, 37, 'F');
+
+  // 3. Logo
   try {
-    const radius = 17.5;
-    const x = 14;
-    const y = 5;
-    
-    // Draw white background for the badge
-    doc.setFillColor(255, 255, 255);
-    doc.circle(x + radius, y + radius, radius, 'F');
-    
-    // Setup clipping path for circular logo
-    doc.saveGraphicsState();
-    doc.circle(x + radius, y + radius, radius, 'f');
-    doc.clip();
-    doc.addImage(logo, 'PNG', x, y, 35, 35);
-    doc.restoreGraphicsState();
-    
-    // Add a elegant gold border around the logo badge
-    doc.setDrawColor(234, 179, 8); // amber-500 / Gold
-    doc.setLineWidth(0.8);
-    doc.circle(x + radius, y + radius, radius, 'D');
+    doc.addImage(logo, 'PNG', 14, 10, 30, 30);
   } catch (e) {
-    doc.setFontSize(16);
-    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
     doc.setFont('helvetica', 'bold');
-    doc.text("VILLE DE VAL-D'OR", 55, 22);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text("Service de l'Environnement", 55, 28);
+    doc.text("VILLE DE VAL-D'OR", 14, 25);
   }
 
-  // Header Accent Line (Gold)
-  doc.setDrawColor(234, 179, 8);
-  doc.setLineWidth(1.5);
-  doc.line(0, 44, pageWidth, 44);
-
-  // Title
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
+  // 4. Title
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text('DEMANDE DE CUEILLETTE', pageWidth - margin, 24, { align: 'right' }); // Vertical align
+  doc.text('DEMANDE DE CUEILLETTE', pageWidth - margin, 25, { align: 'right' });
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text("DOCUMENT OFFICIEL", pageWidth - margin, 32, { align: 'right' });
+  doc.setTextColor(100, 100, 100);
+  doc.text("DOCUMENT OFFICIEL", pageWidth - margin, 33, { align: 'right' });
+
+  // 5. Divider
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.5);
+  doc.line(margin, 45, pageWidth - margin, 45);
 
   let y = 50;
 
