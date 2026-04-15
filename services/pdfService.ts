@@ -132,7 +132,7 @@ export const generatePdf = async (request: PickupRequest) => {
       borderBottomColor: [15, 23, 42]
     },
     columnStyles: {
-      0: { cellWidth: 150 },
+      0: { fontStyle: 'normal' },
       1: { halign: 'center', cellWidth: 32, fontStyle: 'bold' }
     },
     margin: { left: margin, right: margin },

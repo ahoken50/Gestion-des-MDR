@@ -26,7 +26,8 @@ export class PDFService {
 
 
   private addHeader(title: string): void {
-    const pageWidth = 210;
+    const pageWidth = this.doc.internal.pageSize.width;
+    const rightMargin = pageWidth - 14;
     
     // 1. Premium Deep Black Header (Max contrast, removes "grayness")
     this.doc.setFillColor(0, 0, 0); 
@@ -56,12 +57,12 @@ export class PDFService {
     this.doc.setTextColor(255, 255, 255);
     this.doc.setFontSize(22);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(title, 200, 24, { align: 'right' });
+    this.doc.text(title, rightMargin, 24, { align: 'right' });
 
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
     this.doc.setTextColor(200, 200, 200);
-    this.doc.text("DOCUMENT OFFICIEL", 200, 32, { align: 'right' });
+    this.doc.text("DOCUMENT OFFICIEL", rightMargin, 32, { align: 'right' });
   }
 
   private async addContactInfo(request: PickupRequestPDF): Promise<void> {
@@ -148,9 +149,10 @@ export class PDFService {
     // Start notes at y=85 to have good spacing.
     if (request.notes && request.notes.trim()) {
       y = 85;
+      const pageWidth = this.doc.internal.pageSize.width;
       this.doc.setFillColor(245, 247, 250);
       this.doc.setDrawColor(200, 200, 200);
-      this.doc.roundedRect(14, y, 182, 15, 2, 2, 'FD');
+      this.doc.roundedRect(14, y, pageWidth - 28, 15, 2, 2, 'FD');
 
       this.doc.setFontSize(9);
       this.doc.setTextColor(100, 100, 100);
@@ -196,9 +198,10 @@ export class PDFService {
       y += 5; // Small gap before header
 
       // Location Header
+      const pageWidth = this.doc.internal.pageSize.width;
       this.doc.setFillColor(248, 250, 252); // slate-50
       // Draw background rect for title
-      this.doc.rect(14, y, 182, 8, 'F');
+      this.doc.rect(14, y, pageWidth - 28, 8, 'F');
 
       this.doc.setTextColor(15, 23, 42); // slate-900
       this.doc.setFontSize(11);
@@ -252,7 +255,7 @@ export class PDFService {
           borderBottomColor: [15, 23, 42]
         },
         columnStyles: {
-          0: { cellWidth: 110 },
+          0: { fontStyle: 'normal' },
           1: { halign: 'center', cellWidth: 32, fontStyle: 'bold' },
           2: { halign: 'center', cellWidth: 42 }
         },
@@ -302,11 +305,12 @@ export class PDFService {
     for (let i = 1; i <= pageCount; i++) {
       (this.doc as any).setPage(i);
       const pageHeight = this.doc.internal.pageSize.height;
+      const pageWidth = this.doc.internal.pageSize.width;
 
       // Footer Line
       this.doc.setDrawColor(200, 200, 200);
       this.doc.setLineWidth(0.1);
-      this.doc.line(14, pageHeight - 15, 196, pageHeight - 15);
+      this.doc.line(14, pageHeight - 15, pageWidth - 14, pageHeight - 15);
 
       // Footer Text
       this.doc.setFontSize(8);
@@ -318,7 +322,7 @@ export class PDFService {
       const formattedTime = now.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       this.doc.text(`Généré le ${formattedDate} à ${formattedTime}`, 14, pageHeight - 6);
 
-      this.doc.text(`Page ${i} de ${pageCount}`, 196, pageHeight - 10, { align: 'right' });
+      this.doc.text(`Page ${i} de ${pageCount}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
     }
   }
 
