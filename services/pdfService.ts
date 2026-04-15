@@ -10,15 +10,51 @@ export const generatePdf = async (request: PickupRequest) => {
   const margin = 14;
   const pageWidth = doc.internal.pageSize.width;
 
-  // 1. Premium Dark Header Background (Slate-950)
-  doc.setFillColor(15, 23, 42); // slate-900 / dark slate
+  // 1. Premium Deep Black Header (Max contrast, removes "grayness")
+  doc.setFillColor(0, 0, 0); 
   doc.rect(0, 0, pageWidth, 45, 'F');
 
-  // 2. Logo (Now with transparent background)
+  // 2. Logo Area with Robust Clipping and Proportion Control
   try {
-    doc.addImage(logo, 'PNG', 14, 5, 35, 35);
+    const radius = 17.5;
+    const x = 14;
+    const y = 5;
+    const centerX = x + radius;
+    const centerY = y + radius;
+
+    // Draw white background for the badge just in case
+    doc.setFillColor(255, 255, 255);
+    doc.circle(centerX, centerY, radius, 'F');
+    
+    // Calculate aspect ratio
+    const d = doc as any;
+    const imgProps = d.getImageProperties(logo);
+    const ratio = imgProps.width / imgProps.height;
+    let displayWidth = 35;
+    let displayHeight = 35;
+    
+    if (ratio > 1) {
+      displayHeight = 35 / ratio;
+    } else {
+      displayWidth = 35 * ratio;
+    }
+    
+    const imgX = centerX - (displayWidth / 2);
+    const imgY = centerY - (displayHeight / 2);
+
+    // Perform Clipping with robust path
+    d.saveGraphicsState();
+    d.circle(centerX, centerY, radius, 'F');
+    d.clip();
+    d.addImage(logo, 'PNG', imgX, imgY, displayWidth, displayHeight);
+    d.restoreGraphicsState();
+    
+    // Elegant Gold Ring
+    doc.setDrawColor(234, 179, 8); // Gold
+    doc.setLineWidth(1.0);
+    doc.circle(centerX, centerY, radius, 'D');
   } catch (e) {
-    // Fallback if logo fails
+    console.error("Logo error:", e);
     doc.setFontSize(14);
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
@@ -26,15 +62,15 @@ export const generatePdf = async (request: PickupRequest) => {
   }
 
   // 3. Header Accent Line (Gold)
-  doc.setDrawColor(234, 179, 8); // amber-500 / Gold
+  doc.setDrawColor(234, 179, 8);
   doc.setLineWidth(1.2);
   doc.line(0, 44, pageWidth, 44);
 
-  // 4. Title (White on Dark)
+  // 4. Title (White on Black)
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text('DEMANDE DE CUEILLETTE', pageWidth - margin, 24, { align: 'right' });
+  doc.text('DEMANDE DE CUEILLETTE', pageWidth - margin, 24, { align: 'right' }); // Vertical align
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
@@ -78,7 +114,7 @@ export const generatePdf = async (request: PickupRequest) => {
   const details = [
     { label: "Date:", value: new Date(request.date).toLocaleDateString('fr-CA') },
     { label: "ID:", value: reqNum },
-    { label: "LIEU DE RAMASSAGE:", value: request.location.toUpperCase(), isBold: true },
+    { label: "LIEU DE COLLECTE:", value: (request.location || 'Non spécifié').toUpperCase(), isBold: true },
     { label: "Statut:", value: request.status.toUpperCase() }
   ];
 

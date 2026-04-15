@@ -28,15 +28,51 @@ export class PDFService {
   private addHeader(title: string): void {
     const pageWidth = 210;
     
-    // 1. Premium Dark Header Background (Slate-950)
-    this.doc.setFillColor(15, 23, 42); // slate-900 / dark slate
+    // 1. Premium Deep Black Header (Max contrast, removes "grayness")
+    this.doc.setFillColor(0, 0, 0); 
     this.doc.rect(0, 0, pageWidth, 45, 'F');
 
-    // 2. Logo (Now with transparent background)
+    // 2. Logo Area with Robust Clipping and Proportion Control
     try {
-      this.doc.addImage(logo, 'PNG', 14, 5, 35, 35);
+      const radius = 17.5;
+      const x = 14;
+      const y = 5;
+      const centerX = x + radius;
+      const centerY = y + radius;
+
+      // Draw white background for the badge just in case
+      this.doc.setFillColor(255, 255, 255);
+      this.doc.circle(centerX, centerY, radius, 'F');
+      
+      // Calculate aspect ratio
+      const imgProps = (this.doc as any).getImageProperties(logo);
+      const ratio = imgProps.width / imgProps.height;
+      let displayWidth = 35;
+      let displayHeight = 35;
+      
+      if (ratio > 1) {
+        displayHeight = 35 / ratio;
+      } else {
+        displayWidth = 35 * ratio;
+      }
+      
+      const imgX = centerX - (displayWidth / 2);
+      const imgY = centerY - (displayHeight / 2);
+
+      // Perform Clipping with robust path
+      const d = this.doc as any;
+      d.saveGraphicsState();
+      d.circle(centerX, centerY, radius, 'F');
+      d.clip();
+      d.addImage(logo, 'PNG', imgX, imgY, displayWidth, displayHeight);
+      d.restoreGraphicsState();
+      
+      // Elegant Gold Ring
+      this.doc.setDrawColor(234, 179, 8); // Gold
+      this.doc.setLineWidth(1.0);
+      this.doc.circle(centerX, centerY, radius, 'D');
     } catch (e) {
-      // Fallback if logo fails
+      console.error("Logo error:", e);
       this.doc.setFontSize(14);
       this.doc.setTextColor(255, 255, 255);
       this.doc.setFont('helvetica', 'bold');
@@ -44,11 +80,11 @@ export class PDFService {
     }
 
     // 3. Header Accent Line (Gold)
-    this.doc.setDrawColor(234, 179, 8); // amber-500 / Gold
+    this.doc.setDrawColor(234, 179, 8);
     this.doc.setLineWidth(1.2);
     this.doc.line(0, 44, pageWidth, 44);
 
-    // 4. Title and Document Label (White on Dark)
+    // 4. Title and Document Label (White on Black)
     this.doc.setTextColor(255, 255, 255);
     this.doc.setFontSize(22);
     this.doc.setFont('helvetica', 'bold');
@@ -116,7 +152,7 @@ export class PDFService {
     const details = [
       { label: "Date:", value: new Date(request.date).toLocaleDateString('fr-CA') },
       { label: "NO DE REQUÊTE:", value: request.requestNumber ? `#${request.requestNumber}` : request.id, isBold: true },
-      { label: "LIEU DE RAMASSAGE:", value: locationValue, isBold: true },
+      { label: "LIEU DE COLLECTE:", value: locationValue, isBold: true },
       { label: "Total Items:", value: request.totalItems.toString() }
     ];
 
@@ -199,7 +235,7 @@ export class PDFService {
       this.doc.setTextColor(15, 23, 42); // slate-900
       this.doc.setFontSize(11);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text(`LIEU ${index + 1}: ${location.toUpperCase()}`, 18, y + 5.5);
+      this.doc.text(`PIÈCE / LIEU DE COLLECTE ${index + 1}: ${location.toUpperCase()}`, 18, y + 5.5);
 
       y += 8; // Move past title rect
 
