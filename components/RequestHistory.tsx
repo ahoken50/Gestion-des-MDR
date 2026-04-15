@@ -4,11 +4,9 @@ import { FirebasePickupRequest } from '../services/firebaseService';
 import { generatePdf } from '../services/pdfService';
 import { PDFService, createPickupRequestPDF, groupItemsByLocation } from '../services/pdfServiceMulti';
 import { FileTextIcon, XMarkIcon, ArrowDownTrayIcon, PaperClipIcon, MagnifyingGlassIcon } from './icons';
-import RequestDetail from './RequestDetail';
 import type { SelectedItem } from '../types-pdf';
 import { LOCATIONS } from '../constants';
 import * as XLSX from 'xlsx';
-import CostDistributionModal from './CostDistributionModal';
 import { useToast } from './ui/Toast';
 
 const calculateTotalQuantity = (items: { quantity: number }[]) => {
@@ -44,6 +42,7 @@ const getStatusLabel = (status: string) => {
         default: return status;
     }
 };
+
 interface RequestHistoryRowProps {
     request: PickupRequest | FirebasePickupRequest;
     onViewDetails: (request: PickupRequest | FirebasePickupRequest) => void;
@@ -109,7 +108,6 @@ const RequestHistoryRow = React.memo(({
                     onClick={() => onOpenCostModal(request)}
                     className={`font-medium hover:underline ${request.cost ? 'text-gray-900 dark:text-white' : 'text-blue-600 dark:text-blue-400 italic'}`}
                     title="Cliquez pour modifier le coût"
-                    aria-label={`Modifier le coût de la demande ${displayNumber}`}
                 >
                     {request.cost ? `${request.cost.toFixed(2)} $` : 'Ajouter coût'}
                 </button>
@@ -120,7 +118,6 @@ const RequestHistoryRow = React.memo(({
                         rel="noopener noreferrer"
                         className="ml-2 inline-block text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                         title="Voir la facture"
-                        aria-label={`Voir la facture de la demande ${displayNumber}`}
                     >
                         <PaperClipIcon className="w-4 h-4" />
                     </a>
@@ -131,12 +128,11 @@ const RequestHistoryRow = React.memo(({
                     value={request.status}
                     onChange={(e) => onStatusChange(request.id, e.target.value as any)}
                     className={`text-xs font-semibold rounded-full px-2 py-1 border-0 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-500 ${getStatusBadge(request.status)}`}
-                    aria-label={`Modifier le statut de la demande ${displayNumber}`}
                 >
                     <option value="pending">En attente</option>
                     <option value="in_progress">En cours</option>
                     <option value="completed">Complétée</option>
-                    <option value="cancelled">Annulées</option>
+                    <option value="cancelled">Annulée</option>
                 </select>
             </td>
             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -144,16 +140,12 @@ const RequestHistoryRow = React.memo(({
                     <button
                         onClick={() => onViewDetails(request)}
                         className="text-blue-600 hover:text-blue-800 transition-colors px-2 py-1 rounded hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-gray-700"
-                        title="Voir les détails"
-                        aria-label={`Voir les détails de la demande ${displayNumber}`}
                     >
                         Détails
                     </button>
                     <button
                         onClick={() => onRegeneratePDF(request)}
                         className="text-green-600 hover:text-green-800 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-gray-700"
-                        title="Régénérer PDF"
-                        aria-label={`Régénérer le PDF de la demande ${displayNumber}`}
                     >
                         <FileTextIcon className="w-4 h-4" />
                         <span className="text-xs">PDF</span>
@@ -162,8 +154,6 @@ const RequestHistoryRow = React.memo(({
                         <button
                             onClick={() => onCancel(request.id)}
                             className="text-red-600 hover:text-red-800 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-gray-700"
-                            title="Annuler la demande"
-                            aria-label={`Annuler la demande ${displayNumber}`}
                         >
                             <XMarkIcon className="w-4 h-4" />
                         </button>
@@ -184,6 +174,7 @@ interface RequestHistoryProps {
     inventory: Array<{ id: string; name: string; quantity: number; location: string }>;
     selectedRequest: PickupRequest | FirebasePickupRequest | null;
     onSelectedRequestChange: (request: PickupRequest | FirebasePickupRequest | null) => void;
+    onOpenCostModal: (request: PickupRequest | FirebasePickupRequest) => void;
 }
 
 const RequestHistory: React.FC<RequestHistoryProps> = ({
@@ -193,31 +184,27 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     onBulkUpdate,
     inventory,
     selectedRequest,
-    onSelectedRequestChange
+    onSelectedRequestChange,
+    onOpenCostModal
 }) => {
     const { success: toastSuccess } = useToast();
     const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed' | 'cancelled'>('all');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [bulkBCNumber, setBulkBCNumber] = useState('');
 
-    // Advanced Filters
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
     const [locationFilter, setLocationFilter] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState<string>('');
 
-    // Optimization: Pre-calculate timestamps for all requests when 'requests' changes.
-    // This avoids O(N) `new Date()` operations during every filter render (e.g., typing in search box).
     const requestsWithMeta = useMemo(() => {
         return requests.map(req => ({
             original: req,
-            // Cache timestamp for fast range comparison
             timestamp: new Date(req.date).getTime()
         }));
     }, [requests]);
 
     const filteredRequests = useMemo(() => {
-        // Optimization: Normalize query and boundary timestamps outside the loop
         const startTimestamp = startDate ? new Date(startDate).getTime() : null;
         const end = endDate ? new Date(endDate) : null;
         let endTimestamp: number | null = null;
@@ -230,25 +217,17 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
         const query = searchQuery ? searchQuery.toLowerCase() : '';
 
         return requestsWithMeta.filter(({ original: request, timestamp }) => {
-            // Status Filter
             if (filter !== 'all' && request.status !== filter) return false;
-
-            // Date Range Filter (using pre-calculated timestamp)
             if (startTimestamp !== null && timestamp < startTimestamp) return false;
             if (endTimestamp !== null && timestamp > endTimestamp) return false;
-
-            // Location Filter
             if (locationFilter && !request.location.includes(locationFilter)) return false;
 
-            // Search Filter (Container name or ID)
             if (query) {
                 const matchesId = 'requestNumber' in request
                     ? request.requestNumber.toString().includes(query)
                     : request.id.toLowerCase().includes(query);
 
                 if (matchesId) return true;
-
-                // Only check items if ID doesn't match (short-circuit)
                 const matchesItems = request.items.some(item => item.name.toLowerCase().includes(query));
                 if (!matchesItems) return false;
             }
@@ -257,31 +236,12 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
         }).map(item => item.original);
     }, [requestsWithMeta, filter, startDate, endDate, locationFilter, searchQuery]);
 
-    const handleViewDetails = useCallback((request: PickupRequest | FirebasePickupRequest) => {
-        onSelectedRequestChange(request);
-    }, [onSelectedRequestChange]);
-
-    const handleRequestUpdated = useCallback((updatedRequest: PickupRequest | FirebasePickupRequest) => {
-        if (onRequestUpdated) {
-            onRequestUpdated(updatedRequest);
-        }
-        onSelectedRequestChange(null);
-    }, [onRequestUpdated, onSelectedRequestChange]);
-
     const handleRegeneratePDF = useCallback(async (request: PickupRequest | FirebasePickupRequest) => {
-        // Always try to use the new PDF service first
-        // Check if we have items to generate a PDF for
         if (request.items && request.items.length > 0) {
             const pdfService = new PDFService();
-
-            // If groupedItems is missing (legacy/history data), reconstruct it
             let requestForPdf = request as any;
             if (!requestForPdf.groupedItems) {
-                // Reconstruct groupedItems from the flat items list
-                // Ensure items are cast correctly to include replaceBin
                 const groupedItems = groupItemsByLocation(request.items as SelectedItem[]);
-
-                // Inject location comments if available
                 if (request.locationComments) {
                     Object.keys(groupedItems).forEach(location => {
                         if (request.locationComments && request.locationComments[location]) {
@@ -290,13 +250,11 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                     });
                 }
 
-                // Create a temporary object that matches PickupRequestPDF interface
                 requestForPdf = {
                     ...request,
                     groupedItems,
                     totalItems: calculateTotalQuantity(request.items),
                     totalLocations: Object.keys(groupedItems).length,
-                    // Ensure other required fields are present
                     contactName: request.contactName || 'N/A',
                     contactPhone: request.contactPhone || 'N/A',
                     date: request.date,
@@ -309,11 +267,9 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
             }
 
             await pdfService.generatePickupRequestPDF(requestForPdf);
-
             const requestNumber = (request as FirebasePickupRequest).requestNumber || request.id.substring(0, 8);
             pdfService.save(`demande_ramassage_${requestNumber}.pdf`);
         } else {
-            // Fallback only if absolutely necessary (shouldn't happen for valid requests)
             await generatePdf(request as PickupRequest);
         }
     }, []);
@@ -324,56 +280,26 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
         }
     }, [onUpdateRequestStatus]);
 
-    const [isCostModalOpen, setIsCostModalOpen] = useState(false);
-    const [requestToEditCost, setRequestToEditCost] = useState<PickupRequest | FirebasePickupRequest | null>(null);
-
-    const handleOpenCostModal = useCallback((request: PickupRequest | FirebasePickupRequest) => {
-        setRequestToEditCost(request);
-        setIsCostModalOpen(true);
-    }, []);
-
-    const handleSaveCost = useCallback((totalCost: number, locationCosts: Record<string, number>) => {
-        if (requestToEditCost) {
-            const updatedRequest = {
-                ...requestToEditCost,
-                cost: totalCost,
-                locationCosts: locationCosts
-            };
-            if (onRequestUpdated) {
-                onRequestUpdated(updatedRequest);
-            }
-        }
-        setIsCostModalOpen(false);
-        setRequestToEditCost(null);
-    }, [requestToEditCost, onRequestUpdated]);
-
     const handleExportExcel = useCallback(() => {
         if (filteredRequests.length === 0) {
             alert("Aucune donnée à exporter");
             return;
         }
 
-        // 1. Prepare Summary Data
         const summaryData = filteredRequests.map(req => {
             const number = 'requestNumber' in req ? req.requestNumber : req.id.substring(0, 8);
-            const date = new Date(req.date).toLocaleDateString('fr-CA');
-            const status = getStatusLabel(req.status);
-            const totalQty = calculateTotalQuantity(req.items);
-            const cost = req.cost || 0;
-
             return {
                 'Numéro': number,
-                'Date de Demande': date,
-                'Statut': status,
+                'Date de Demande': new Date(req.date).toLocaleDateString('fr-CA'),
+                'Statut': getStatusLabel(req.status),
                 'Lieu Principal': req.location,
-                'Total Contenants': totalQty,
-                'Coût ($)': cost,
+                'Total Contenants': calculateTotalQuantity(req.items),
+                'Coût ($)': req.cost || 0,
                 'BC #': req.bcNumber || '',
                 'Notes': req.notes || ''
             };
         });
 
-        // 2. Prepare Detailed Items Data
         const detailedData: any[] = [];
         filteredRequests.forEach(req => {
             const number = 'requestNumber' in req ? req.requestNumber : req.id.substring(0, 8);
@@ -390,27 +316,8 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
         });
 
         const workbook = XLSX.utils.book_new();
-
-        // Create Summary Sheet
-        const wsSummary = XLSX.utils.json_to_sheet(summaryData);
-        XLSX.utils.book_append_sheet(workbook, wsSummary, "Résumé des Demandes");
-
-        // Create Detailed Sheet
-        const wsDetailed = XLSX.utils.json_to_sheet(detailedData);
-        XLSX.utils.book_append_sheet(workbook, wsDetailed, "Détails par Article");
-
-        // Adjust Summary Column Widths
-        wsSummary['!cols'] = [
-            { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 35 },
-            { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 40 }
-        ];
-
-        // Adjust Detailed Column Widths
-        wsDetailed['!cols'] = [
-            { wch: 12 }, { wch: 12 }, { wch: 30 }, { wch: 10 },
-            { wch: 35 }, { wch: 15 }
-        ];
-
+        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(summaryData), "Résumé des Demandes");
+        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(detailedData), "Détails par Article");
         XLSX.writeFile(workbook, `Rapport_MDR_${new Date().toISOString().split('T')[0]}.xlsx`);
         toastSuccess('Fichier Excel généré avec succès !');
     }, [filteredRequests, toastSuccess]);
@@ -424,9 +331,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
     }, [filteredRequests]);
 
     const toggleSelect = useCallback((id: string) => {
-        setSelectedIds(prev =>
-            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-        );
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     }, []);
 
     const handleBulkStatusChange = (status: any) => {
@@ -452,47 +357,23 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                 <div className="flex flex-col gap-4 w-full md:w-auto">
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="flex flex-col">
-                            <label htmlFor="startDate" className="text-xs font-medium text-gray-500 dark:text-gray-400">Du</label>
-                            <input
-                                type="date"
-                                id="startDate"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            />
+                            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Du</label>
+                            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                         </div>
                         <div className="flex flex-col">
-                            <label htmlFor="endDate" className="text-xs font-medium text-gray-500 dark:text-gray-400">Au</label>
-                            <input
-                                type="date"
-                                id="endDate"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            />
+                            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Au</label>
+                            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                         </div>
                         <div className="flex flex-col">
-                            <label htmlFor="locationFilter" className="text-xs font-medium text-gray-500 dark:text-gray-400">Lieu</label>
-                            <select
-                                id="locationFilter"
-                                value={locationFilter}
-                                onChange={(e) => setLocationFilter(e.target.value)}
-                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1 w-32 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            >
+                            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Lieu</label>
+                            <select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1 w-32 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                                 <option value="">Tous</option>
-                                {LOCATIONS.map(loc => (
-                                    <option key={loc} value={loc}>{loc}</option>
-                                ))}
+                                {LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
                             </select>
                         </div>
                         <div className="flex flex-col">
-                            <label htmlFor="statusFilter" className="text-xs font-medium text-gray-500 dark:text-gray-400">Statut</label>
-                            <select
-                                id="statusFilter"
-                                value={filter}
-                                onChange={(e) => setFilter(e.target.value as any)}
-                                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            >
+                            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Statut</label>
+                            <select value={filter} onChange={(e) => setFilter(e.target.value as any)} className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                                 <option value="all">Tous</option>
                                 <option value="pending">En attente</option>
                                 <option value="in_progress">En cours</option>
@@ -508,14 +389,8 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-1.5 flex-grow dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            aria-label="Rechercher dans l'historique"
                         />
-                        <button
-                            onClick={handleExportExcel}
-                            className="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition-colors flex items-center gap-1 text-sm"
-                            title="Exporter en Excel"
-                            aria-label="Exporter l'historique en Excel"
-                        >
+                        <button onClick={handleExportExcel} className="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition-colors flex items-center gap-1 text-sm">
                             <ArrowDownTrayIcon className="w-4 h-4" />
                             <span className="hidden sm:inline">Excel</span>
                         </button>
@@ -528,7 +403,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                     <table className="table w-full">
                         <thead className="table-header bg-gray-50 dark:bg-gray-700">
                             <tr>
-                                <th scope="col" className="px-6 py-3 text-left">
+                                <th className="px-6 py-3 text-left">
                                     <input
                                         type="checkbox"
                                         onChange={handleSelectAll}
@@ -536,13 +411,13 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 dark:border-gray-600 dark:bg-gray-700 cursor-pointer"
                                     />
                                 </th>
-                                <th scope="col" className="table-header-cell dark:text-gray-200">No. Requete/BC</th>
-                                <th scope="col" className="table-header-cell dark:text-gray-200">Date</th>
-                                <th scope="col" className="table-header-cell dark:text-gray-200">Lieu(x)</th>
-                                <th scope="col" className="table-header-cell dark:text-gray-200">Contenants</th>
-                                <th scope="col" className="table-header-cell dark:text-gray-200">Coût</th>
-                                <th scope="col" className="table-header-cell dark:text-gray-200">Statut</th>
-                                <th scope="col" className="table-header-cell text-right dark:text-gray-200">Actions</th>
+                                <th className="table-header-cell dark:text-gray-200">No. Requete/BC</th>
+                                <th className="table-header-cell dark:text-gray-200">Date</th>
+                                <th className="table-header-cell dark:text-gray-200">Lieu(x)</th>
+                                <th className="table-header-cell dark:text-gray-200">Contenants</th>
+                                <th className="table-header-cell dark:text-gray-200">Coût</th>
+                                <th className="table-header-cell dark:text-gray-200">Statut</th>
+                                <th className="table-header-cell text-right dark:text-gray-200">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
@@ -553,7 +428,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                                     onViewDetails={onSelectedRequestChange}
                                     onRegeneratePDF={handleRegeneratePDF}
                                     onCancel={handleCancelRequest}
-                                    onOpenCostModal={handleOpenCostModal}
+                                    onOpenCostModal={onOpenCostModal}
                                     onStatusChange={handleStatusChange}
                                     isSelected={selectedIds.includes(request.id)}
                                     onToggleSelect={toggleSelect}
@@ -569,16 +444,10 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">Aucune demande trouvée</h3>
                     <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-4">
-                        Aucun résultat ne correspond à vos filtres actuels. Essayez de modifier vos critères de recherche.
+                        Aucun résultat ne correspond à vos filtres actuels.
                     </p>
                     <button
-                        onClick={() => {
-                            setFilter('all');
-                            setStartDate('');
-                            setEndDate('');
-                            setLocationFilter('');
-                            setSearchQuery('');
-                        }}
+                        onClick={() => { setFilter('all'); setStartDate(''); setEndDate(''); setLocationFilter(''); setSearchQuery(''); }}
                         className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
                     >
                         Réinitialiser tous les filtres
@@ -586,7 +455,6 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                 </div>
             )}
 
-            {/* Modals & Bulk Bar */}
             {selectedIds.length > 0 && (
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 glass dark:glass-dark p-4 rounded-3xl shadow-2xl border border-blue-500/20 z-[60] flex items-center space-x-6 view-enter">
                     <div className="flex items-center space-x-3 px-4 border-r border-gray-200 dark:border-gray-700">
@@ -597,63 +465,22 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
                     </div>
 
                     <div className="flex items-center space-x-3">
-                        <select 
-                            onChange={(e) => handleBulkStatusChange(e.target.value)}
-                            className="text-xs font-bold rounded-xl px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 transition-all outline-none dark:text-white"
-                        >
+                        <select onChange={(e) => handleBulkStatusChange(e.target.value)} className="text-xs font-bold rounded-xl px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 transition-all outline-none dark:text-white">
                             <option value="">Changer Statut...</option>
                             <option value="pending">En attente</option>
                             <option value="in_progress">En cours</option>
                             <option value="completed">Complétée</option>
                             <option value="cancelled">Annulée</option>
                         </select>
-
                         <div className="flex items-center space-x-2">
-                             <input 
-                                type="text"
-                                placeholder="Numéro de BC..."
-                                value={bulkBCNumber}
-                                onChange={(e) => setBulkBCNumber(e.target.value)}
-                                className="text-xs font-bold rounded-xl px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 transition-all outline-none w-32 dark:text-white"
-                             />
-                             <button 
-                                onClick={handleBulkBCChange}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95"
-                             >
-                                Appliquer BC
-                             </button>
+                             <input type="text" placeholder="Numéro de BC..." value={bulkBCNumber} onChange={(e) => setBulkBCNumber(e.target.value)} className="text-xs font-bold rounded-xl px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 transition-all outline-none w-32 dark:text-white" />
+                             <button onClick={handleBulkBCChange} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95">Appliquer BC</button>
                         </div>
-
-                        <button 
-                            onClick={() => setSelectedIds([])}
-                            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                        >
+                        <button onClick={() => setSelectedIds([])} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
                             <XMarkIcon className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
-            )}
-
-            {selectedRequest && (
-                <RequestDetail
-                    request={selectedRequest}
-                    onUpdate={handleRequestUpdated}
-                    onCancel={() => onSelectedRequestChange(null)}
-                    inventory={inventory}
-                />
-            )}
-            {isCostModalOpen && requestToEditCost && (
-                <CostDistributionModal
-                    isOpen={isCostModalOpen}
-                    onClose={() => setIsCostModalOpen(false)}
-                    onSave={handleSaveCost}
-                    locations={
-                        // Extract unique locations from items
-                        Array.from(new Set(requestToEditCost.items.map(item => item.location || requestToEditCost.location)))
-                    }
-                    initialTotalCost={requestToEditCost.cost}
-                    initialLocationCosts={requestToEditCost.locationCosts}
-                />
             )}
         </div>
     );

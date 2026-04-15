@@ -87,7 +87,7 @@ const CostDistributionModal: React.FC<CostDistributionModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md overflow-hidden slide-up">
                 <div className="flex justify-between items-center p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Répartition des Coûts</h3>

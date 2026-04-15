@@ -39,6 +39,8 @@ export const useAppData = () => {
     const [firebaseRequests, setFirebaseRequests] = useState<FirebasePickupRequest[]>([]);
     const [isFirebaseEnabled, setIsFirebaseEnabled] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<PickupRequest | FirebasePickupRequest | null>(null);
+    const [isCostModalOpen, setIsCostModalOpen] = useState(false);
+    const [requestToEditCost, setRequestToEditCost] = useState<PickupRequest | FirebasePickupRequest | null>(null);
 
     // Keep a ref to inventory for beforeunload saving
     const inventoryRef = useRef(inventory);
@@ -380,6 +382,10 @@ export const useAppData = () => {
         handlePDFGenerated,
         handleBulkUpdateRequests,
         selectedRequest,
-        setSelectedRequest
+        setSelectedRequest,
+        isCostModalOpen,
+        setIsCostModalOpen,
+        requestToEditCost,
+        setRequestToEditCost
     };
 };
