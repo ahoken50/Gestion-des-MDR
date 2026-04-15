@@ -10,39 +10,36 @@ export const generatePdf = async (request: PickupRequest) => {
   const margin = 14;
   const pageWidth = doc.internal.pageSize.width;
 
-  // 1. Top Accent Bar (Slate Premium)
-  doc.setFillColor(15, 23, 42); // slate-900
-  doc.rect(0, 0, pageWidth, 8, 'F');
+  // 1. Premium Dark Header Background (Slate-950)
+  doc.setFillColor(15, 23, 42); // slate-900 / dark slate
+  doc.rect(0, 0, pageWidth, 45, 'F');
 
-  // 2. White Header Body
-  doc.setFillColor(255, 255, 255);
-  doc.rect(0, 8, pageWidth, 37, 'F');
-
-  // 3. Logo
+  // 2. Logo (Now with transparent background)
   try {
-    doc.addImage(logo, 'PNG', 14, 10, 30, 30);
+    doc.addImage(logo, 'PNG', 14, 5, 35, 35);
   } catch (e) {
+    // Fallback if logo fails
     doc.setFontSize(14);
-    doc.setTextColor(15, 23, 42);
+    doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.text("VILLE DE VAL-D'OR", 14, 25);
+    doc.text("VILLE DE VAL-D'OR", 55, 22);
   }
 
-  // 4. Title
-  doc.setTextColor(15, 23, 42);
+  // 3. Header Accent Line (Gold)
+  doc.setDrawColor(234, 179, 8); // amber-500 / Gold
+  doc.setLineWidth(1.2);
+  doc.line(0, 44, pageWidth, 44);
+
+  // 4. Title (White on Dark)
+  doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text('DEMANDE DE CUEILLETTE', pageWidth - margin, 25, { align: 'right' });
+  doc.text('DEMANDE DE CUEILLETTE', pageWidth - margin, 24, { align: 'right' });
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 100, 100);
-  doc.text("DOCUMENT OFFICIEL", pageWidth - margin, 33, { align: 'right' });
-
-  // 5. Divider
-  doc.setDrawColor(226, 232, 240);
-  doc.setLineWidth(0.5);
-  doc.line(margin, 45, pageWidth - margin, 45);
+  doc.setTextColor(200, 200, 200);
+  doc.text("DOCUMENT OFFICIEL", pageWidth - margin, 32, { align: 'right' });
 
   let y = 50;
 

@@ -28,40 +28,36 @@ export class PDFService {
   private addHeader(title: string): void {
     const pageWidth = 210;
     
-    // 1. Top Accent Bar (Slate Premium)
-    this.doc.setFillColor(15, 23, 42); // slate-900
-    this.doc.rect(0, 0, pageWidth, 8, 'F');
+    // 1. Premium Dark Header Background (Slate-950)
+    this.doc.setFillColor(15, 23, 42); // slate-900 / dark slate
+    this.doc.rect(0, 0, pageWidth, 45, 'F');
 
-    // 2. White Header Body (Standard Official Look)
-    this.doc.setFillColor(255, 255, 255);
-    this.doc.rect(0, 8, pageWidth, 37, 'F');
-
-    // 3. Logo (Standard placement on white - hide corners naturally)
+    // 2. Logo (Now with transparent background)
     try {
-      this.doc.addImage(logo, 'PNG', 14, 10, 30, 30);
+      this.doc.addImage(logo, 'PNG', 14, 5, 35, 35);
     } catch (e) {
       // Fallback if logo fails
       this.doc.setFontSize(14);
-      this.doc.setTextColor(15, 23, 42);
+      this.doc.setTextColor(255, 255, 255);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text("VILLE DE VAL-D'OR", 14, 25);
+      this.doc.text("VILLE DE VAL-D'OR", 55, 22);
     }
 
-    // 4. Title and Document Label
-    this.doc.setTextColor(15, 23, 42); // Deep Slate
+    // 3. Header Accent Line (Gold)
+    this.doc.setDrawColor(234, 179, 8); // amber-500 / Gold
+    this.doc.setLineWidth(1.2);
+    this.doc.line(0, 44, pageWidth, 44);
+
+    // 4. Title and Document Label (White on Dark)
+    this.doc.setTextColor(255, 255, 255);
     this.doc.setFontSize(22);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(title, 200, 25, { align: 'right' });
+    this.doc.text(title, 200, 24, { align: 'right' });
 
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.setTextColor(100, 100, 100);
-    this.doc.text("DOCUMENT OFFICIEL", 200, 33, { align: 'right' });
-
-    // 5. Header Bottom Divider
-    this.doc.setDrawColor(226, 232, 240); // slate-200
-    this.doc.setLineWidth(0.5);
-    this.doc.line(14, 45, 196, 45);
+    this.doc.setTextColor(200, 200, 200);
+    this.doc.text("DOCUMENT OFFICIEL", 200, 32, { align: 'right' });
   }
 
   private async addContactInfo(request: PickupRequestPDF): Promise<void> {
@@ -343,7 +339,8 @@ export class PDFService {
 
 export function groupItemsByLocation(selectedItems: SelectedItem[]): GroupedItemsByLocation {
   return selectedItems.reduce((groups, item) => {
-    const location = item.location || 'Non spécifié';
+    // Trim and ensure location is not just whitespace
+    const location = (item.location && item.location.trim()) || 'Non spécifié';
     if (!groups[location]) {
       groups[location] = { items: [], comments: undefined };
     }
