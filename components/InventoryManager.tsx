@@ -27,18 +27,18 @@ const AddItemForm: React.FC<{ onAddItem: (item: Omit<InventoryItem, 'id'>) => vo
     };
 
     return (
-        <form onSubmit={handleSubmit} className="mt-4 p-4 bg-gray-100 rounded-lg grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <form onSubmit={handleSubmit} className="mt-4 p-4 bg-gray-100 dark:bg-slate-800/50 rounded-lg grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div className="md:col-span-2">
-                <label htmlFor="itemName" className="block text-sm font-medium text-gray-700">Nom du contenant</label>
+                <label htmlFor="itemName" className="block text-sm font-medium text-gray-700 dark:text-slate-300">Nom du contenant</label>
                 <input type="text" id="itemName" value={name} onChange={e => setName(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2" required />
             </div>
             <div>
-                <label htmlFor="itemQuantity" className="block text-sm font-medium text-gray-700">Quantité</label>
-                <input type="number" id="itemQuantity" value={quantity} onChange={e => setQuantity(parseInt(e.target.value, 10))} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2" min="0" required />
+                <label htmlFor="itemQuantity" className="block text-sm font-medium text-gray-700 dark:text-slate-300">Quantité</label>
+                <input type="number" id="itemQuantity" value={quantity} onChange={e => setQuantity(parseInt(e.target.value, 10))} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2" min="0" required />
             </div>
             <div>
-                <label htmlFor="itemLocation" className="block text-sm font-medium text-gray-700">Lieu</label>
-                <select id="itemLocation" value={location} onChange={e => setLocation(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+                <label htmlFor="itemLocation" className="block text-sm font-medium text-gray-700 dark:text-slate-300">Lieu</label>
+                <select id="itemLocation" value={location} onChange={e => setLocation(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
                     {LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
                 </select>
             </div>

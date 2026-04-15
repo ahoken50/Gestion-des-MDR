@@ -89,8 +89,8 @@ const SingleRequestForm: React.FC<SingleRequestFormProps> = ({ inventory, onSubm
     };
 
     return (
-        <form onSubmit={handleSubmit} className="card p-6 space-y-8 slide-up dark:bg-gray-800 dark:border-gray-700">
-            <div className="card-header p-4 -m-6 mb-6 dark:border-gray-700">
+        <form onSubmit={handleSubmit} className="card p-6 space-y-8 slide-up">
+            <div className="card-header p-4 -m-6 mb-6">
                 <h3 className="text-xl font-bold gradient-text">📦 Détails de la demande</h3>
                 <p className="text-sm text-gray-600 mt-1 dark:text-gray-400">Sélectionnez le lieu et les contenants à ramasser</p>
             </div>

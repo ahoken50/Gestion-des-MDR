@@ -216,8 +216,8 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
 
     return (
         <div className="space-y-6">
-            <div className="card p-6 slide-up dark:bg-gray-800 dark:border-gray-700">
-                <div className="card-header p-4 -m-6 mb-6 dark:border-gray-700">
+            <div className="card p-6 slide-up">
+                <div className="card-header p-4 -m-6 mb-6">
                     <h3 className="text-xl font-bold gradient-text">📦 Sélectionner les contenants à ramasser</h3>
                     <p className="text-sm text-gray-600 mt-1 dark:text-gray-400">Choisissez les contenants de différents lieux et ajoutez des commentaires spécifiques</p>
                 </div>

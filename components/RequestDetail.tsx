@@ -171,10 +171,10 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border dark:border-gray-700">
+    <div className="fixed inset-0 bg-slate-950/60 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border dark:border-slate-800">
         {/* Header */}
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-6 flex justify-between items-center z-10">
+        <div className="sticky top-0 bg-white dark:bg-slate-900 border-b dark:border-slate-800 p-6 flex justify-between items-center z-10">
           <div>
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
               {isFirebase ? `Demande #${(request as FirebasePickupRequest).requestNumber}` : `Demande ${request.id}`}

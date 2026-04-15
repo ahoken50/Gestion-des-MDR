@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useTheme } from './ThemeContext';
 import {
     BarChart,
     Bar,
@@ -28,6 +29,11 @@ interface DashboardProps {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
+    const gridColor = isDark ? '#334155' : '#e2e8f0'; // slate-700 : slate-200
+    const textColor = isDark ? '#94a3b8' : '#64748b'; // slate-400 : slate-500
+
     const { error: toastError, success: toastSuccess } = useToast();
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     const [selectedPeriod, setSelectedPeriod] = useState<string>('all');
@@ -616,12 +622,18 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={locationData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis type="number" />
-                                <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
-                                <Tooltip />
+                                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                                <XAxis type="number" tick={{ fill: textColor }} stroke={gridColor} />
+                                <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12, fill: textColor }} stroke={gridColor} />
+                                <Tooltip 
+                                    contentStyle={{ 
+                                        backgroundColor: isDark ? '#0f172a' : '#fff', 
+                                        borderColor: isDark ? '#1e293b' : '#e2e8f0',
+                                        color: isDark ? '#f8fafc' : '#0f172a'
+                                    }}
+                                />
                                 <Legend />
-                                <Bar dataKey="value" name="Quantité" fill="#8884d8" radius={[0, 4, 4, 0]} />
+                                <Bar dataKey="value" name="Quantité" fill="#3b82f6" radius={[0, 4, 4, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -663,12 +675,18 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={timelineData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="date" />
-                                <YAxis />
-                                <Tooltip />
+                                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                                <XAxis dataKey="date" tick={{ fill: textColor }} stroke={gridColor} />
+                                <YAxis tick={{ fill: textColor }} stroke={gridColor} />
+                                <Tooltip 
+                                    contentStyle={{ 
+                                        backgroundColor: isDark ? '#0f172a' : '#fff', 
+                                        borderColor: isDark ? '#1e293b' : '#e2e8f0',
+                                        color: isDark ? '#f8fafc' : '#0f172a'
+                                    }}
+                                />
                                 <Legend />
-                                <Line type="monotone" dataKey="count" name="Contenants" stroke="#82ca9d" strokeWidth={2} activeDot={{ r: 8 }} />
+                                <Line type="monotone" dataKey="count" name="Contenants" stroke="#10b981" strokeWidth={2} activeDot={{ r: 8 }} />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
@@ -680,12 +698,19 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={costByLocationData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis type="number" />
-                                <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
-                                <Tooltip formatter={(value) => `${Number(value).toFixed(2)} $`} />
+                                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                                <XAxis type="number" tick={{ fill: textColor }} stroke={gridColor} />
+                                <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12, fill: textColor }} stroke={gridColor} />
+                                <Tooltip 
+                                    contentStyle={{ 
+                                        backgroundColor: isDark ? '#0f172a' : '#fff', 
+                                        borderColor: isDark ? '#1e293b' : '#e2e8f0',
+                                        color: isDark ? '#f8fafc' : '#0f172a'
+                                    }}
+                                    formatter={(value) => `${Number(value).toFixed(2)} $`} 
+                                />
                                 <Legend />
-                                <Bar dataKey="value" name="Coût ($)" fill="#ff8042" radius={[0, 4, 4, 0]} />
+                                <Bar dataKey="value" name="Coût ($)" fill="#f97316" radius={[0, 4, 4, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from './ThemeContext';
+import logo from '../src/assets/logo.png';
 import {
     HomeIcon,
     ChartBarIcon,
@@ -36,12 +37,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOpen, on
                 {/* Logo/Brand */}
                 <div className="p-6 border-b border-gray-200/30 dark:border-gray-700/30">
                     <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-                            <span className="text-2xl filter drop-shadow-md">♻️</span>
+                        <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg border-2 border-white/20 ring-4 ring-blue-500/10">
+                            <img src={logo} alt="Val-d'Or Logo" className="w-full h-full object-cover" />
                         </div>
                         <div>
                             <h1 className="text-xl font-bold text-gray-800 dark:text-white leading-tight">Gestion MDR</h1>
-                            <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Service Env.</p>
+                            <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 opacity-80 uppercase tracking-widest">VILLE DE VAL-D'OR</p>
                         </div>
                     </div>
                 </div>

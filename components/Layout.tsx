@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import { View } from './Header';
 import { Bars3Icon } from './icons';
+import logo from '../src/assets/logo.png';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -32,7 +33,12 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewChange }) 
                     >
                         <Bars3Icon className="w-6 h-6" />
                     </button>
-                    <span className="font-semibold text-gray-800 dark:text-white">Gestion MDR</span>
+                    <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 rounded-full overflow-hidden shadow-md border border-gray-200 dark:border-gray-700">
+                            <img src={logo} alt="Val-d'Or" className="w-full h-full object-cover" />
+                        </div>
+                        <span className="font-bold text-gray-800 dark:text-white text-sm">Gestion MDR</span>
+                    </div>
                     <div className="w-8" /> {/* Spacer for centering */}
                 </header>
 

@@ -2,12 +2,19 @@
 
 /* Custom styles */
 body {
-  /* background: linear-gradient(135deg, #f9fafb 0%, #eff6ff 50%, #f3f4f6 100%); Removed to allow dark mode */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #f8fafc; /* slate-50 */
+  color: #0f172a; /* slate-900 */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+:is(.dark body) {
+  background-color: #020617; /* slate-950 */
+  color: #f8fafc; /* slate-50 */
 }
 
 code {
@@ -25,10 +32,8 @@ code {
 }
 
 :is(.dark .card) {
-  background-color: #1f2937;
-  /* gray-800 */
-  border-color: #374151;
-  /* gray-700 */
+  background-color: #0f172a; /* slate-900 */
+  border-color: #1e293b; /* slate-800 */
 }
 
 .card:hover {
@@ -42,10 +47,8 @@ code {
 }
 
 :is(.dark .card-header) {
-  border-bottom-color: #374151;
-  /* gray-700 */
-  background: linear-gradient(to right, #1f2937, #111827);
-  /* gray-800 to gray-900 */
+  border-bottom-color: #1e293b; /* slate-800 */
+  background: linear-gradient(to right, #0f172a, #020617); /* slate-900 to slate-950 */
 }
 
 /* Button styles */
@@ -138,7 +141,11 @@ code {
 }
 
 .table-row:hover {
-  background-color: #eff6ff;
+  background-color: #f1f5f9; /* slate-100 */
+}
+
+:is(.dark .table-row:hover) {
+  background-color: #1e293b; /* slate-800 */
 }
 
 .table-cell {
@@ -165,11 +172,11 @@ code {
 }
 
 .dark .glass, .glass-dark {
-  background: rgba(17, 24, 39, 0.7); /* Slightly more opaque for better contrast */
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.05); /* Very subtle border */
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  background: rgba(15, 23, 42, 0.8); /* slate-900 with opacity */
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
 .glass-border {
