@@ -204,42 +204,10 @@ class FirebaseService {
     const q = query(collection(db, 'pickupRequests'), orderBy('requestNumber', 'desc'));
     const querySnapshot = await getDocs(q);
 
-    return querySnapshot.docs.map(docSnap => {
-      const data = docSnap.data();
-
-      // Sanitize legacy data: ensure required fields always have safe defaults
-      const sanitized: FirebasePickupRequest = {
-        id: docSnap.id,
-        requestNumber: data.requestNumber ?? 0,
-        location: data.location ?? '',
-        items: Array.isArray(data.items) ? data.items.map((item: any) => ({
-          id: item?.id ?? '',
-          name: item?.name ?? 'Inconnu',
-          quantity: typeof item?.quantity === 'number' ? item.quantity : 1,
-          location: item?.location ?? data.location ?? '',
-          replaceBin: item?.replaceBin ?? false,
-        })) : [],
-        date: data.date ?? new Date().toISOString(),
-        status: (['pending', 'in_progress', 'completed', 'cancelled'].includes(data.status))
-          ? data.status
-          : 'pending',
-        contactName: data.contactName ?? '',
-        contactPhone: data.contactPhone ?? '',
-        notes: data.notes ?? '',
-        bcNumber: data.bcNumber ?? '',
-        cost: data.cost,
-        locationCosts: data.locationCosts,
-        invoiceUrl: data.invoiceUrl,
-        emails: Array.isArray(data.emails) ? data.emails : [],
-        attachments: Array.isArray(data.attachments) ? data.attachments : [],
-        locationComments: data.locationComments ?? {},
-        completedAt: data.completedAt,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
-      };
-
-      return sanitized;
-    });
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as FirebasePickupRequest));
   }
 
   // Obtenir une demande spécifique

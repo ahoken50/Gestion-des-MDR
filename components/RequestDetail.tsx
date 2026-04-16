@@ -19,35 +19,23 @@ const RequestDetail: React.FC<RequestDetailProps> = ({
 }) => {
   const isFirebase = 'requestNumber' in request;
 
-  // Sanitize request data defensively to handle legacy Firestore documents
-  const sanitizeRequest = (req: PickupRequest | FirebasePickupRequest): PickupRequest | FirebasePickupRequest => ({
-    ...req,
-    location: req.location || '',
-    items: Array.isArray(req.items) ? req.items : [],
-    contactName: req.contactName || '',
-    contactPhone: req.contactPhone || '',
-    emails: Array.isArray(req.emails) ? req.emails : [],
-    attachments: Array.isArray(req.attachments) ? req.attachments : [],
-  });
-
   const [isEditing, setIsEditing] = useState(false);
-  const [editedRequest, setEditedRequest] = useState<PickupRequest | FirebasePickupRequest>(() => sanitizeRequest(request));
+  const [editedRequest, setEditedRequest] = useState<PickupRequest | FirebasePickupRequest>(request);
   const [emails, setEmails] = useState<string[]>(request.emails || []);
   const [newEmail, setNewEmail] = useState('');
   const [attachments, setAttachments] = useState<string[]>(request.attachments || []);
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    setEditedRequest(sanitizeRequest(request));
+    setEditedRequest(request);
     setEmails(request.emails || []);
     setAttachments(request.attachments || []);
   }, [request]);
 
   const availableItems = useMemo(() => {
-    const location = editedRequest.location || '';
-    const specialItems = (SPECIAL_ITEMS_BY_LOCATION[location] || []);
+    const specialItems = SPECIAL_ITEMS_BY_LOCATION[editedRequest.location] || [];
     const inventoryItems = inventory
-      .filter(item => item.location === location)
+      .filter(item => item.location === editedRequest.location)
       .map(item => item.name);
 
     let allItems = Array.from(new Set([...specialItems, ...inventoryItems]));
