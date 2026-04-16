@@ -24,11 +24,12 @@ import { useToast } from './ui/Toast';
 
 interface DashboardProps {
     requests: (PickupRequest | FirebasePickupRequest)[];
+    onViewRequest?: (request: PickupRequest | FirebasePickupRequest) => void;
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
-const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
+const Dashboard: React.FC<DashboardProps> = React.memo(({ requests, onViewRequest }) => {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
     const gridColor = isDark ? '#334155' : '#e2e8f0'; // slate-700 : slate-200
@@ -716,6 +717,68 @@ const Dashboard: React.FC<DashboardProps> = React.memo(({ requests }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Recent Requests Table */}
+            {onViewRequest && (
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h3 className="text-lg font-semibold text-gray-700 dark:text-white mb-4">📋 Demandes récentes</h3>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b dark:border-gray-700">
+                                    <th className="text-left py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">No.</th>
+                                    <th className="text-left py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">Date</th>
+                                    <th className="text-left py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">Lieu</th>
+                                    <th className="text-left py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">Statut</th>
+                                    <th className="text-right py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredItems.slice(0, 10).map(({ original: req }) => {
+                                    const num = 'requestNumber' in req ? `#${(req as any).requestNumber}` : req.id.substring(0, 8);
+                                    const statusColors: Record<string, string> = {
+                                        pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200',
+                                        in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200',
+                                        completed: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200',
+                                        cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200',
+                                    };
+                                    const statusLabels: Record<string, string> = {
+                                        pending: 'En attente',
+                                        in_progress: 'En cours',
+                                        completed: 'Complétée',
+                                        cancelled: 'Annulée',
+                                    };
+                                    return (
+                                        <tr key={req.id} className="border-b dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                            <td className="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">{num}</td>
+                                            <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{new Date(req.date).toLocaleDateString('fr-CA')}</td>
+                                            <td className="py-2 px-3 text-gray-600 dark:text-gray-400 max-w-[180px] truncate" title={req.location}>{req.location || '—'}</td>
+                                            <td className="py-2 px-3">
+                                                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusColors[req.status] || 'bg-gray-100 text-gray-700'}`}>
+                                                    {statusLabels[req.status] || req.status}
+                                                </span>
+                                            </td>
+                                            <td className="py-2 px-3 text-right">
+                                                <button
+                                                    onClick={() => onViewRequest(req)}
+                                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs font-medium hover:underline"
+                                                >
+                                                    Ouvrir →
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {filteredItems.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} className="py-6 text-center text-gray-400 dark:text-gray-500 italic">Aucune demande pour cette période</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </div>
     );
 });

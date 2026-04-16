@@ -99,7 +99,10 @@ const App: React.FC = () => {
                         <AIInsights />
                     )}
                     {currentView === 'dashboard' && (
-                        <Dashboard requests={allRequests} />
+                        <Dashboard 
+                            requests={allRequests} 
+                            onViewRequest={(req) => setSelectedRequest(req)}
+                        />
                     )}
                 </div>
             </Layout>
