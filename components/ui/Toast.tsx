@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { XMarkIcon } from '../icons';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -49,7 +50,12 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return (
         <ToastContext.Provider value={{ addToast, success, error, info }}>
             {children}
-            <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+            <div
+                className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"
+                role="region"
+                aria-label="Notifications"
+                aria-live="polite"
+            >
                 {toasts.map(toast => (
                     <div
                         key={toast.id}
@@ -58,15 +64,23 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                             ${toast.type === 'success' ? 'bg-green-600' : ''}
                             ${toast.type === 'error' ? 'bg-red-600' : ''}
                             ${toast.type === 'info' ? 'bg-blue-600' : ''}
-                            flex items-center gap-2 min-w-[300px] animate-slide-in
+                            flex items-center gap-3 min-w-[300px] animate-slide-in relative pr-10
                         `}
+                        role={toast.type === 'error' ? 'alert' : 'status'}
                     >
-                        <span className="text-xl">
+                        <span className="text-xl shrink-0">
                             {toast.type === 'success' && '✅'}
                             {toast.type === 'error' && '❌'}
                             {toast.type === 'info' && 'ℹ️'}
                         </span>
-                        <p className="font-medium">{toast.message}</p>
+                        <p className="font-medium text-sm sm:text-base leading-snug">{toast.message}</p>
+                        <button
+                            onClick={() => removeToast(toast.id)}
+                            className="absolute top-2 right-2 p-1 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+                            aria-label="Fermer la notification"
+                        >
+                            <XMarkIcon className="w-4 h-4 text-white" />
+                        </button>
                     </div>
                 ))}
             </div>
