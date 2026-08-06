@@ -18,7 +18,13 @@ export const useAppData = () => {
     const [inventory, setInventory] = useState<InventoryItem[]>(() => {
         try {
             const savedInventory = localStorage.getItem('inventory');
-            return savedInventory ? JSON.parse(savedInventory) : INITIAL_INVENTORY;
+            if (!savedInventory) return INITIAL_INVENTORY;
+            const parsed: InventoryItem[] = JSON.parse(savedInventory);
+            // Migrate old address "1200 6e rue" to "1400 6e rue"
+            return parsed.map(item => ({
+                ...item,
+                location: item.location === '1200 6e rue' ? '1400 6e rue' : item.location
+            }));
         } catch (error) {
             console.error("Failed to parse inventory from localStorage", error);
             return INITIAL_INVENTORY;
@@ -29,7 +35,13 @@ export const useAppData = () => {
     const [pickupRequests, setPickupRequests] = useState<(PickupRequest | FirebasePickupRequest)[]>(() => {
         try {
             const savedRequests = localStorage.getItem('pickupRequests');
-            return savedRequests ? JSON.parse(savedRequests) : [];
+            if (!savedRequests) return [];
+            const parsed: (PickupRequest | FirebasePickupRequest)[] = JSON.parse(savedRequests);
+            // Migrate old address "1200 6e rue" to "1400 6e rue"
+            return parsed.map(req => ({
+                ...req,
+                location: req.location.replaceAll('1200 6e rue', '1400 6e rue')
+            }));
         } catch (error) {
             console.error("Failed to parse pickup requests from localStorage", error);
             return [];
@@ -90,9 +102,11 @@ export const useAppData = () => {
                 const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
                 const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
 
-                if (apiKey && projectId && apiKey !== 'undefined' && projectId !== 'undefined') {
+                const isPlaceholder = (val?: string) =>
+                    !val || val === 'undefined' || val.includes('votre_') || val.includes('your_') || val.includes('placeholder');
+
+                if (!isPlaceholder(apiKey) && !isPlaceholder(projectId)) {
                     console.log('Firebase configuration detected, initializing...');
-                    setIsFirebaseEnabled(true);
 
                     try {
                         // Sync Inventory
@@ -113,6 +127,7 @@ export const useAppData = () => {
                         // Sync Requests
                         const fbRequests = await firebaseService.getPickupRequests();
                         setFirebaseRequests(fbRequests);
+                        setIsFirebaseEnabled(true);
 
                         // Process Offline Queue (Local Requests)
                         const savedRequests = localStorage.getItem('pickupRequests');
@@ -145,6 +160,7 @@ export const useAppData = () => {
 
                     } catch (error) {
                         console.error('Error loading/syncing data from Firebase:', error);
+                        setIsFirebaseEnabled(false);
                         // Fallback to local data
                         const savedInventory = localStorage.getItem('inventory');
                         const localInventory = savedInventory ? JSON.parse(savedInventory) : INITIAL_INVENTORY;
@@ -164,10 +180,11 @@ export const useAppData = () => {
     const allRequests = useMemo(() => [...firebaseRequests, ...pickupRequests], [firebaseRequests, pickupRequests]);
 
     const handleAddRequest = useCallback(async (newRequest: Omit<PickupRequest, 'id' | 'status'>): Promise<number | undefined> => {
-        try {
-            let requestNumber: number | undefined;
+        let requestNumber: number | undefined;
+        let savedToFirebase = false;
 
-            if (isFirebaseEnabled) {
+        if (isFirebaseEnabled) {
+            try {
                 const firebaseRequest: Omit<FirebasePickupRequest, 'id' | 'requestNumber' | 'createdAt' | 'updatedAt'> = {
                     ...newRequest,
                     status: 'pending',
@@ -177,43 +194,45 @@ export const useAppData = () => {
 
                 const fbRequests = await firebaseService.getPickupRequests();
                 setFirebaseRequests(fbRequests);
-            } else {
-                const requestWithId: PickupRequest = {
-                    ...newRequest,
-                    id: Date.now().toString(),
-                    status: 'pending',
-                };
-                setPickupRequests(prev => [requestWithId, ...prev]);
+                savedToFirebase = true;
+            } catch (error) {
+                console.error('Error saving request to Firebase, falling back to local storage:', error);
+                toast.info('Serveur indisponible. La demande est enregistrée localement.');
             }
-
-            // Optimization: Create a map for O(1) lookup
-            const requestedItemsMap = new Map<string, number>();
-            newRequest.items.forEach(item => {
-                if (!requestedItemsMap.has(item.name)) {
-                    requestedItemsMap.set(item.name, item.quantity);
-                }
-            });
-
-            // Functional update to avoid dependency on 'inventory'
-            setInventory(currentInventory => currentInventory.map(invItem => {
-                // Optimization: Only process items in the requested location
-                if (invItem.location === newRequest.location) {
-                    const requestedQty = requestedItemsMap.get(invItem.name);
-                    if (requestedQty !== undefined) {
-                        return { ...invItem, quantity: Math.max(0, invItem.quantity - requestedQty) };
-                    }
-                }
-                return invItem;
-            }));
-
-            setCurrentView('history');
-            toast.success('Demande créée avec succès !');
-            return requestNumber;
-        } catch (error) {
-            console.error('Error saving request:', error);
-            toast.error('Erreur lors de la sauvegarde de la demande');
-            return undefined;
         }
+
+        if (!savedToFirebase) {
+            const requestWithId: PickupRequest = {
+                ...newRequest,
+                id: Date.now().toString(),
+                status: 'pending',
+            };
+            setPickupRequests(prev => [requestWithId, ...prev]);
+        }
+
+        // Optimization: Create a map for O(1) lookup
+        const requestedItemsMap = new Map<string, number>();
+        newRequest.items.forEach(item => {
+            if (!requestedItemsMap.has(item.name)) {
+                requestedItemsMap.set(item.name, item.quantity);
+            }
+        });
+
+        // Functional update to avoid dependency on 'inventory'
+        setInventory(currentInventory => currentInventory.map(invItem => {
+            // Check if invItem matches target location
+            if (invItem.location === newRequest.location || newRequest.location.includes(invItem.location)) {
+                const requestedQty = requestedItemsMap.get(invItem.name);
+                if (requestedQty !== undefined) {
+                    return { ...invItem, quantity: Math.max(0, invItem.quantity - requestedQty) };
+                }
+            }
+            return invItem;
+        }));
+
+        setCurrentView('history');
+        toast.success('Demande créée avec succès !');
+        return requestNumber;
     }, [isFirebaseEnabled, toast]);
 
     const handleUpdateRequestStatus = useCallback(async (requestId: string, status: 'pending' | 'in_progress' | 'completed' | 'cancelled') => {

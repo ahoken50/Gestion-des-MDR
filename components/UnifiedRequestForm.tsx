@@ -67,7 +67,7 @@ const UnifiedRequestForm: React.FC<UnifiedRequestFormProps> = ({
             await pdfService.generatePickupRequestPDF(pdfRequest);
             pdfService.save(`demande_ramassage_${pdfRequest.requestNumber || pdfRequest.id}.pdf`);
 
-            if (onPDFGenerated) {
+            if (onPDFGenerated && !onSubmit) {
                 onPDFGenerated(pdfRequest);
             }
         } catch (error) {

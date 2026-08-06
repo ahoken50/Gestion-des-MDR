@@ -2,7 +2,7 @@ import type { InventoryItem } from './types';
 
 export const LOCATIONS = [
   "2200 Jean-Jacques Cossette",
-  "1200 6e rue",
+  "1400 6e rue",
   "1199 rue de l'Escale",
   "Forêt Récréative",
 ];
@@ -15,11 +15,11 @@ export const LOCATION_ADDRESSES: Record<string, { street: string; city: string; 
     postalCode: "J9P 0B9",
     fullAddress: "2200 Jean-Jacques Cossette, Val-d'Or, QC J9P 0B9"
   },
-  "1200 6e rue": {
-    street: "1200 6e rue",
+  "1400 6e rue": {
+    street: "1400 6e rue",
     city: "Val-d'Or, QC",
     postalCode: "J9P 3Y1",
-    fullAddress: "1200 6e rue, Val-d'Or, QC J9P 3Y1"
+    fullAddress: "1400 6e rue, Val-d'Or, QC J9P 3Y1"
   },
   "1199 rue de l'Escale": {
     street: "1199 rue de l'Escale",
@@ -39,7 +39,7 @@ export const INITIAL_INVENTORY: InventoryItem[] = [
   // 2200 Jean-Jacques Cossette
   { id: '1', name: 'Bac contenant Urée vide', quantity: 2, location: LOCATIONS[0] },
 
-  // 1200 6e rue
+  // 1400 6e rue
   { id: '3', name: 'Bac solides huileux', quantity: 2, location: LOCATIONS[1] },
   { id: '4', name: "Bac d'aérosols", quantity: 1, location: LOCATIONS[1] },
   { id: '5', name: "Baril d'essence huileuse", quantity: 1, location: LOCATIONS[1] },
