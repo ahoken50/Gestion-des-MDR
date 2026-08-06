@@ -1,9 +1,11 @@
 // Helper to migrate legacy location strings (e.g., 1200 6e rue -> 1400 6e rue)
 const sanitizeLocationStr = (loc?: string): string => {
     if (!loc) return '';
-    return loc
-        .replace(/1200\s*(?:6e|6ème|6eme)?\s*rue/gi, '1400 6e rue')
-        .replace(/\b1200\b/g, '1400');
+    const str = String(loc).replace(/\u00a0/g, ' ').trim();
+    if (str.includes('1200')) {
+        return '1400 6e rue';
+    }
+    return str;
 };
 
 const sanitizeInventoryItem = (item: InventoryItem): InventoryItem => ({

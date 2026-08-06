@@ -213,9 +213,10 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ inventory, onUpdate
 
         // Single pass O(N) grouping instead of N * Locations
         inventory.forEach(item => {
-            const locKey = item.location
-                ? item.location.replace(/1200\s*(?:6e|6ème|6eme)?\s*rue/gi, '1400 6e rue').replace(/\b1200\b/g, '1400')
-                : '';
+            let locKey = item.location ? String(item.location).replace(/\u00a0/g, ' ').trim() : '';
+            if (locKey.includes('1200')) {
+                locKey = '1400 6e rue';
+            }
             if (!newGroups[locKey]) {
                 newGroups[locKey] = [];
             }

@@ -35,8 +35,8 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
             items: inventory
                 .map(item => ({
                     ...item,
-                    location: item.location
-                        ? item.location.replace(/1200\s*(?:6e|6ème|6eme)?\s*rue/gi, '1400 6e rue').replace(/\b1200\b/g, '1400')
+                    location: item.location && String(item.location).includes('1200')
+                        ? '1400 6e rue'
                         : item.location
                 }))
                 .filter(item => item.location === loc && item.quantity > 0)
