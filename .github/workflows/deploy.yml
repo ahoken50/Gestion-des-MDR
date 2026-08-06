@@ -1,8 +1,10 @@
-name: Build and Commit Docs to Main
+name: Build and Deploy Docs
 
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
   workflow_dispatch:
 
 permissions:
@@ -14,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -34,10 +38,10 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
         run: npm run build
 
-      - name: Commit docs to main
+      - name: Commit and push docs
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add docs/
-          git diff-index --quiet HEAD || git commit -m "build: update compiled docs folder on main"
-          git push origin main
+          git add docs/ --force
+          git diff-index --quiet HEAD || git commit -m "build: update docs [skip ci]"
+          git push
