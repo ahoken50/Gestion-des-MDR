@@ -11,7 +11,7 @@ export default defineConfig(() => {
       plugins: [react()],
       base: '/Gestion-des-MDR/',
       build: {
-        outDir: 'dist',
+        outDir: 'docs',
         assetsDir: 'assets',
         sourcemap: true,
       },

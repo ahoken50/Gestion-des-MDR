@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Build and Commit Docs to Main
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build-and-deploy:
+  build-and-commit-docs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,8 +34,10 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
         run: npm run build
 
-      - name: Deploy to gh-pages branch
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+      - name: Commit docs to main
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add docs/
+          git diff-index --quiet HEAD || git commit -m "build: update compiled docs folder on main"
+          git push origin main
