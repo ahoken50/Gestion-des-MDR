@@ -201,13 +201,38 @@ class FirebaseService {
 
   // Obtenir toutes les demandes
   async getPickupRequests(): Promise<FirebasePickupRequest[]> {
-    const q = query(collection(db, 'pickupRequests'), orderBy('requestNumber', 'desc'));
-    const querySnapshot = await getDocs(q);
+    try {
+      const q = query(collection(db, 'pickupRequests'), orderBy('requestNumber', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const docs = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as FirebasePickupRequest));
 
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as FirebasePickupRequest));
+      if (docs.length > 0) return docs;
+
+      // Fallback if ordered query returned no docs: try without orderBy
+      const rawSnapshot = await getDocs(collection(db, 'pickupRequests'));
+      const rawDocs = rawSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as FirebasePickupRequest));
+
+      return rawDocs.sort((a, b) => (b.requestNumber || 0) - (a.requestNumber || 0));
+    } catch (error) {
+      console.error('Error fetching pickup requests with orderBy, trying raw collection:', error);
+      try {
+        const rawSnapshot = await getDocs(collection(db, 'pickupRequests'));
+        const rawDocs = rawSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as FirebasePickupRequest));
+        return rawDocs.sort((a, b) => (b.requestNumber || 0) - (a.requestNumber || 0));
+      } catch (err2) {
+        console.error('Error fetching pickup requests from Firebase:', err2);
+        throw err2;
+      }
+    }
   }
 
   // Obtenir une demande spécifique

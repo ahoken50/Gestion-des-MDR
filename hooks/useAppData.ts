@@ -219,7 +219,23 @@ export const useAppData = () => {
         initFirebase();
     }, [toast]);
 
-    const allRequests = useMemo(() => [...firebaseRequests, ...pickupRequests], [firebaseRequests, pickupRequests]);
+    const allRequests = useMemo(() => {
+        const map = new Map<string, PickupRequest | FirebasePickupRequest>();
+        firebaseRequests.forEach(req => {
+            const key = req.id || String(req.requestNumber);
+            if (key) map.set(key, req);
+        });
+        pickupRequests.forEach(req => {
+            if (req.id && !map.has(req.id)) {
+                map.set(req.id, req);
+            }
+        });
+        return Array.from(map.values()).sort((a, b) => {
+            const numA = 'requestNumber' in a && typeof a.requestNumber === 'number' ? a.requestNumber : (parseInt(a.id, 10) || 0);
+            const numB = 'requestNumber' in b && typeof b.requestNumber === 'number' ? b.requestNumber : (parseInt(b.id, 10) || 0);
+            return numB - numA;
+        });
+    }, [firebaseRequests, pickupRequests]);
 
     const handleAddRequest = useCallback(async (newRequest: Omit<PickupRequest, 'id' | 'status'>): Promise<number | undefined> => {
         let requestNumber: number | undefined;
