@@ -1,3 +1,9 @@
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import type { InventoryItem, PickupRequest, View } from '../types';
+import { INITIAL_INVENTORY } from '../constants';
+import { firebaseService, type FirebasePickupRequest } from '../services/firebaseService';
+import { useToast } from '../components/ui/Toast';
+
 // Helper to migrate legacy location strings (e.g., 1200 6e rue -> 1400 6e rue)
 const sanitizeLocationStr = (loc?: string): string => {
     if (!loc) return '';
