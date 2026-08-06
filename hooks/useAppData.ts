@@ -1,11 +1,45 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { firebaseService, type FirebasePickupRequest } from '../services/firebaseService';
-import type { InventoryItem, PickupRequest, RequestedItem } from '../types';
-import type { PickupRequestPDF } from '../types-pdf';
-import { INITIAL_INVENTORY } from '../constants';
-import { useToast } from '../components/ui/Toast';
+// Helper to migrate legacy location strings (e.g., 1200 6e rue -> 1400 6e rue)
+const sanitizeLocationStr = (loc?: string): string => {
+    if (!loc) return '';
+    return loc.replaceAll('1200 6e rue', '1400 6e rue');
+};
 
-export type View = 'inventory' | 'new_request' | 'history' | 'dashboard' | 'home' | 'ai' | 'calendar';
+const sanitizeInventoryItem = (item: InventoryItem): InventoryItem => ({
+    ...item,
+    location: sanitizeLocationStr(item.location)
+});
+
+const sanitizePickupRequest = <T extends PickupRequest | FirebasePickupRequest>(req: T): T => {
+    const updatedLocation = sanitizeLocationStr(req.location);
+    const updatedItems = req.items ? req.items.map(item => ({
+        ...item,
+        location: item.location ? sanitizeLocationStr(item.location) : item.location
+    })) : [];
+
+    let updatedLocationComments = req.locationComments;
+    if (req.locationComments) {
+        updatedLocationComments = {};
+        Object.entries(req.locationComments).forEach(([k, v]) => {
+            updatedLocationComments![sanitizeLocationStr(k)] = v;
+        });
+    }
+
+    let updatedLocationCosts = req.locationCosts;
+    if (req.locationCosts) {
+        updatedLocationCosts = {};
+        Object.entries(req.locationCosts).forEach(([k, v]) => {
+            updatedLocationCosts![sanitizeLocationStr(k)] = v;
+        });
+    }
+
+    return {
+        ...req,
+        location: updatedLocation,
+        items: updatedItems,
+        locationComments: updatedLocationComments,
+        locationCosts: updatedLocationCosts
+    };
+};
 
 export const useAppData = () => {
     const { success, error, info } = useToast();
@@ -18,16 +52,12 @@ export const useAppData = () => {
     const [inventory, setInventory] = useState<InventoryItem[]>(() => {
         try {
             const savedInventory = localStorage.getItem('inventory');
-            if (!savedInventory) return INITIAL_INVENTORY;
+            if (!savedInventory) return INITIAL_INVENTORY.map(sanitizeInventoryItem);
             const parsed: InventoryItem[] = JSON.parse(savedInventory);
-            // Migrate old address "1200 6e rue" to "1400 6e rue"
-            return parsed.map(item => ({
-                ...item,
-                location: item.location === '1200 6e rue' ? '1400 6e rue' : item.location
-            }));
+            return parsed.map(sanitizeInventoryItem);
         } catch (error) {
             console.error("Failed to parse inventory from localStorage", error);
-            return INITIAL_INVENTORY;
+            return INITIAL_INVENTORY.map(sanitizeInventoryItem);
         }
     });
 
@@ -37,11 +67,7 @@ export const useAppData = () => {
             const savedRequests = localStorage.getItem('pickupRequests');
             if (!savedRequests) return [];
             const parsed: (PickupRequest | FirebasePickupRequest)[] = JSON.parse(savedRequests);
-            // Migrate old address "1200 6e rue" to "1400 6e rue"
-            return parsed.map(req => ({
-                ...req,
-                location: req.location.replaceAll('1200 6e rue', '1400 6e rue')
-            }));
+            return parsed.map(sanitizePickupRequest);
         } catch (error) {
             console.error("Failed to parse pickup requests from localStorage", error);
             return [];
@@ -112,7 +138,12 @@ export const useAppData = () => {
                         // Sync Inventory
                         const fbInventory = await firebaseService.getInventory();
                         if (fbInventory.length > 0) {
-                            setInventory(fbInventory);
+                            const sanitized = fbInventory.map(sanitizeInventoryItem);
+                            setInventory(sanitized);
+                            // If legacy address existed in Firebase, update Firebase permanently
+                            if (fbInventory.some(i => i.location && i.location.includes('1200 6e rue'))) {
+                                firebaseService.updateInventory(sanitized).catch(e => console.error('Error updating Firebase inventory locations:', e));
+                            }
                         } else {
                             // Initial seed if Firebase is empty
                             const savedInventory = localStorage.getItem('inventory');
@@ -120,13 +151,14 @@ export const useAppData = () => {
                             if (!localInventory || localInventory.length === 0) {
                                 localInventory = INITIAL_INVENTORY;
                             }
-                            await firebaseService.updateInventory(localInventory);
-                            setInventory(localInventory);
+                            const sanitizedLocal = localInventory.map(sanitizeInventoryItem);
+                            await firebaseService.updateInventory(sanitizedLocal);
+                            setInventory(sanitizedLocal);
                         }
 
                         // Sync Requests
                         const fbRequests = await firebaseService.getPickupRequests();
-                        setFirebaseRequests(fbRequests);
+                        setFirebaseRequests(fbRequests.map(sanitizePickupRequest));
                         setIsFirebaseEnabled(true);
 
                         // Process Offline Queue (Local Requests)
@@ -138,7 +170,7 @@ export const useAppData = () => {
 
                                 try {
                                     const firebaseRequestsToSync: Omit<FirebasePickupRequest, 'id' | 'requestNumber' | 'createdAt' | 'updatedAt'>[] = localRequests.map(req => ({
-                                        ...req,
+                                        ...sanitizePickupRequest(req),
                                         status: req.status as any, // Ensure status matches
                                     }));
 
@@ -150,7 +182,7 @@ export const useAppData = () => {
                                     localStorage.removeItem('pickupRequests');
                                     // Refresh Firebase requests
                                     const updatedFbRequests = await firebaseService.getPickupRequests();
-                                    setFirebaseRequests(updatedFbRequests);
+                                    setFirebaseRequests(updatedFbRequests.map(sanitizePickupRequest));
                                 } catch (err) {
                                     console.error("Failed to sync requests", err);
                                     toast.error("Erreur lors de la synchronisation des demandes");
@@ -164,7 +196,7 @@ export const useAppData = () => {
                         // Fallback to local data
                         const savedInventory = localStorage.getItem('inventory');
                         const localInventory = savedInventory ? JSON.parse(savedInventory) : INITIAL_INVENTORY;
-                        setInventory(localInventory);
+                        setInventory(localInventory.map(sanitizeInventoryItem));
                     }
                 } else {
                     setIsFirebaseEnabled(false);
