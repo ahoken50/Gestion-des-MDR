@@ -32,7 +32,14 @@ const MultiRequestForm: React.FC<MultiRequestFormProps> = ({ inventory, contactI
     const inventoryByLocation = useMemo(() => {
         return LOCATIONS.map(loc => ({
             location: loc,
-            items: inventory.filter(item => item.location === loc && item.quantity > 0)
+            items: inventory
+                .map(item => ({
+                    ...item,
+                    location: item.location
+                        ? item.location.replace(/1200\s*(?:6e|6ème|6eme)?\s*rue/gi, '1400 6e rue').replace(/\b1200\b/g, '1400')
+                        : item.location
+                }))
+                .filter(item => item.location === loc && item.quantity > 0)
         }));
     }, [inventory]);
 
