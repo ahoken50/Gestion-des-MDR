@@ -1,3 +1,4 @@
+// Version 2.1.0 - Updated address to 1400 6e rue
 import type { InventoryItem } from './types';
 
 export const LOCATIONS = [
